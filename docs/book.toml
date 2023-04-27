@@ -1,0 +1,20 @@
+[book]
+src = 'src'
+title = 'Optimistic Oracle'
+authors = ['Optimistic Oracle', 'Wonderland']
+description = ''
+language = 'en'
+
+[output.html]
+copy-fonts = false # avoid copying default fonts to book
+theme = 'src/opoo-theme'
+additional-css = ['src/opoo-theme/css/fonts.css', 'src/opoo-theme/css/colors.css', 'src/opoo-theme/css/base.css']
+additional-js = ['src/opoo-theme/js/theme.js', 'src/opoo-theme/js/base.js', 'src/opoo-theme/js/solidity.min.js']
+git-repository-url = 'https://github.com/defi-wonderland/opoo'
+git-repository-icon = 'fa-github'
+no-section-label = true
+mathjax-support = true
+
+[output.html.fold]
+enable = true    # whether or not to enable section folding
+level = 1        # the depth to start folding

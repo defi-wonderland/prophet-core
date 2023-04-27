@@ -1,22 +1,32 @@
 # General
-yarn-error.log
 node_modules
 .DS_STORE
 
 # Foundry files
-cache
-out-via-ir
+cache/
+out/
 
 # Config files
 .env
+.vscode
 
-# Avoid ignoring gitkeep
+# Not ignore gitkeep
 !/**/.gitkeep
 
-# Keep related abi
-out/*/*
-!out/Greeter.sol/*
-
-# Keep the latest deployment only
+# Ignore the deployment files
 broadcast/*/*/*
-!broadcast/*/*/run-latest.json
+
+# Temp files
+manipulations/
+
+# Npm generated files
+npm
+
+# Docs build files
+docs/book
+docs/src/solidity/interfaces
+docs/src/static
+
+# Coverage
+lcov.info
+report

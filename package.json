@@ -16,35 +16,54 @@
     "gas1cent (https://github.com/gas1cent)"
   ],
   "scripts": {
-    "build": "forge build",
+    "build": "yarn compile",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
+    "compile": "forge build",
     "coverage": "forge coverage --match-contract Unit",
-    "deploy:mainnet": "bash -c 'source .env && forge script DeployMainnet --rpc-url $MAINNET_RPC --broadcast --private-key $MAINNET_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
-    "deploy:rinkeby": "bash -c 'source .env && forge script DeployRinkeby --rpc-url $RINKEBY_RPC --broadcast --private-key $RINKEBY_DEPLOYER_PK --verify --etherscan-api-key $ETHERSCAN_API_KEY'",
-    "postinstall": "forge install",
+    "deploy": "dotenv -- bash -c 'forge script Deploy -vv --slow --broadcast --rpc-url $OPTIMISM_RPC'",
+    "deploy:local": "dotenv -- bash -c 'forge script Deploy -vv --slow --broadcast --rpc-url $LOCAL_RPC'",
+    "docs:build": "./build-docs.sh",
+    "docs:run": "mdbook serve docs",
+    "postinstall": "husky install",
     "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
-    "lint:sol-logic": "cross-env solhint -c .solhint.json 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol'",
-    "lint:sol-tests": "cross-env solhint 'solidity/test/**/*.sol'",
+    "lint:sol-logic": "solhint -c .solhint.logic.json 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol'",
+    "lint:sol-tests": "solhint 'solidity/test/**/*.sol'",
     "prepare": "husky install",
-    "test": "forge test -vvv",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable",
+    "release": "standard-version",
+    "test": "yarn test:unit && yarn test:e2e",
     "test:e2e": "forge test --match-contract E2E -vvv",
-    "test:unit": "forge test --match-contract Unit -vvv",
-    "test:unit:deep": "FOUNDRY_FUZZ_RUNS=5000 yarn test:unit"
+    "test:gas": "forge test --match-contract E2E -vvv --gas-report",
+    "test:unit": "forge test --match-contract Unit -vvv"
   },
   "lint-staged": {
     "*.{js,css,md,ts,sol}": "forge fmt",
-    "*.sol": "cross-env solhint --fix 'solidity/**/*.sol",
+    "*.sol": "solhint --fix 'solidity/**/*.sol'",
     "package.json": "sort-package-json"
+  },
+  "dependencies": {
+    "@defi-wonderland/solidity-utils": "0.0.0-4298c6c6",
+    "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "forge-std": "https://github.com/foundry-rs/forge-std.git#06c5a8f760f7d2392697cb092eda80c864e4fc06"
   },
   "devDependencies": {
     "@commitlint/cli": "17.0.3",
     "@commitlint/config-conventional": "17.0.3",
-    "cross-env": "7.0.3",
-    "husky": ">=8",
-    "lint-staged": ">=10",
+    "@typechain/ethers-v6": "0.3.0",
+    "@typechain/truffle-v5": "8.0.2",
+    "@typechain/web3-v1": "6.0.2",
+    "dotenv-cli": "7.2.1",
+    "fs-extra": "10.1.0",
+    "husky": "8.0.3",
+    "lint-staged": "13.2.2",
+    "pinst": "3.0.0",
     "solhint": "3.3.6",
     "solhint-plugin-defi-wonderland": "1.1.0",
-    "sort-package-json": "1.53.1"
+    "solidity-docgen": "0.6.0-beta.35",
+    "sort-package-json": "2.4.1",
+    "standard-version": "9.5.0",
+    "typechain": "8.1.1"
   }
 }
