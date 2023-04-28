@@ -16,9 +16,6 @@ out/
 # Ignore the deployment files
 broadcast/*/*/*
 
-# Temp files
-manipulations/
-
 # Npm generated files
 npm
 

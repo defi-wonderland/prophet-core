@@ -8,6 +8,7 @@ on:
 
 jobs:
   deploy-docs:
+    if: ${{ false }}
     name: Deploy docs
     runs-on: ubuntu-latest
     environment:
