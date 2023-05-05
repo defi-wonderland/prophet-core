@@ -1,110 +1,46 @@
-<img src="https://raw.githubusercontent.com/defi-wonderland/brand/v1.0.0/external/solidity-foundry-boilerplate-banner.png" alt="wonderland banner" align="center" />
-<br />
+# Optimistic Oracle Core
 
-<div align="center"><strong>Start your next Solidity project with Foundry in seconds</strong></div>
-<div align="center">A highly scalable foundation focused on DX and best practices</div>
+[![License: AGPL 3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://github.com/defi-wonderland/opoo-core/blob/main/LICENSE)
 
-<br />
+⚠️ The code has not been audited yet, tread with caution.
 
-## Features
+## Overview
 
-<dl>
-  <dt>Sample contracts</dt>
-  <dd>Basic Greeter contract with an external interface.</dd>
-
-  <dt>Foundry setup</dt>
-  <dd>Foundry configuration with multiple custom profiles and remappings.</dd>
-
-  <dt>Deployment scripts</dt>
-  <dd>Sample scripts to deploy contracts on both mainnet and testnet.</dd>
-
-  <dt>Sample e2e & unit tests</dt>
-  <dd>Example tests showcasing mocking, assertions and configuration for mainnet forking. As well it includes everything needed in order to check code coverage.</dd>
-
-  <dt>Linter</dt>
-  <dd>Simple and fast solidity linting thanks to forge fmt</a>.</dd>
-
-  <dt>Github workflows CI</dt>
-  <dd>Run all tests and see the coverage as you push your changes.</dd>
-</dl>
+OpOO presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules. With its emphasis on complete control and modularity across all aspects of the system, OpOO is an open-source public good for the Optimism community.
 
 ## Setup
 
-1. Install Foundry by following the instructions from [their repository](https://github.com/foundry-rs/foundry#installation).
-2. Copy the `.env.example` file to `.env` and fill in the variables
-3. Install the dependencies by running : `yarn install && forge install`
+This project uses [Foundry](https://book.getfoundry.sh/). To build it locally, run:
 
-## Build
-
-The default way to build the code is suboptimal but fast, you can run it via:
-
-```bash
+```sh
+git clone git@github.com:defi-wonderland/opoo-core.git
+cd
+yarn install
 yarn build
 ```
 
-In order to build a more optimized code ([via IR](https://docs.soliditylang.org/en/v0.8.15/ir-breaking-changes.html#solidity-ir-based-codegen-changes)), run:
+### Available Commands
 
-```bash
-yarn build:optimized
-```
+Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end tests.
 
-## Running tests
+| Yarn Command      | Description                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `yarn build`      | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/opoo-core-interfaces). |
+| `yarn docs:build` | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).                           |
+| `yarn docs:run`   | Start the documentation server.                                                                                            |
+| `yarn test`       | Run all unit and e2e tests.                                                                                                |
+| `yarn test:unit`  | Run unit tests.                                                                                                            |
+| `yarn test:e2e`   | Run end-to-end tests.                                                                                                      |
+| `yarn test:gas`   | Run all unit and e2e tests, and make a gas report.                                                                         |
 
-Unit tests should be isolated from any externalities, while E2E usually run in a fork of the blockchain. In this boilerplate you will find example of both.
+## Licensing
 
-In order to run both unit and E2E tests, run:
+The primary license for OpOO contracts is the GNU Affero General Public License 3.0 (`AGPL-3.0`), see [`LICENSE`](./LICENSE).
 
-```bash
-yarn test
-```
+## Contributors
 
-In order to just run unit tests, run:
+Optimistic Oracle was built with ❤️ by [DeFi Wonderland](https://defi.sucks).
 
-```bash
-yarn test:unit
-```
+DeFi Wonderland is a team of top Web3 researchers, developers, and operators who believe that the future needs to be open-source, permissionless, and decentralized.
 
-In order to run unit tests and run way more fuzzing than usual (5x), run:
-
-```bash
-yarn test:unit:deep
-```
-
-In order to just run e2e tests, run:
-
-```bash
-yarn test:e2e
-```
-
-In order to check your current code coverage, run:
-
-```bash
-yarn coverage
-```
-
-> **⚠ WARNING: Forge coverage is having some issues...**  
-> As stated in this [github issue](https://github.com/foundry-rs/foundry/issues/2165), checking the code coverage with Forge when using abstract contract is not currently working.
-
-<br>
-
-## Deploy & verify
-
-### Setup
-
-Configure the `.env` variables.
-
-### Rinkeby
-
-```bash
-yarn deploy:rinkeby
-```
-
-### Mainnet
-
-```bash
-yarn deploy:mainnet
-```
-
-The deployments are stored in ./broadcast
-
-See the [Foundry Book for available options](https://book.getfoundry.sh/reference/forge/forge-create.html).
+[DeFi sucks](https://defi.sucks), but DeFi Wonderland is here to make it better.
