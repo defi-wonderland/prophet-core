@@ -8,11 +8,11 @@ number_underscore = 'thousands'
 multiline_func_header = 'params_first'
 
 [profile.default]
-solc_version = '0.8.16'
+solc_version = '0.8.19'
 src = 'solidity'
 test = 'solidity/test'
 out = 'out'
-libs = ['lib']
+libs = ['lib', 'node_modules']
 optimizer_runs = 10_000
 
 [profile.optimized]
@@ -31,4 +31,4 @@ src = 'solidity/interfaces/'
 runs = 1000
 
 [rpc_endpoints]
-mainnet = "${OPTIMISM_RPC}"
+optimism = "${OPTIMISM_RPC}"

@@ -1,5 +1,7 @@
 ds-test/=node_modules/ds-test/src
 forge-std/=node_modules/forge-std/src
+solidity-utils/=node_modules/@defi-wonderland/solidity-utils/solidity
+isolmate/=node_modules/@defi-wonderland/isolmate/src
 
 @contracts/=solidity/contracts
 @interfaces/=solidity/interfaces

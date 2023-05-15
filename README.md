@@ -23,15 +23,15 @@ yarn build
 
 Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end tests.
 
-| Yarn Command      | Description                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `yarn build`      | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/opoo-core-interfaces). |
-| `yarn docs:build` | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).                           |
-| `yarn docs:run`   | Start the documentation server.                                                                                            |
-| `yarn test`       | Run all unit and e2e tests.                                                                                                |
-| `yarn test:unit`  | Run unit tests.                                                                                                            |
-| `yarn test:e2e`   | Run end-to-end tests.                                                                                                      |
-| `yarn test:gas`   | Run all unit and e2e tests, and make a gas report.                                                                         |
+| Yarn Command              | Description                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `yarn build`              | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/opoo-core-interfaces). |
+| `yarn docs:build`         | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).                                |
+| `yarn docs:run`           | Start the documentation server.                                                                                                 |
+| `yarn test`               | Run all unit and integration tests.                                                                                             |
+| `yarn test:unit`          | Run unit tests.                                                                                                                 |
+| `yarn test:integration`   | Run integration tests.                                                                                                          |
+| `yarn test:gas`           | Run all unit and integration tests, and make a gas report.                                                                      |
 
 ## Licensing
 

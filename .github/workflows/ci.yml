@@ -39,8 +39,8 @@ jobs:
           echo FOUNDRY_FUZZ_RUNS=1000 >> .env
           cat .env
 
-      - name: Run E2E tests
-        run: yarn test:e2e
+      - name: Run Integration tests
+        run: yarn test:integration
 
   lint:
     name: Run Linters
