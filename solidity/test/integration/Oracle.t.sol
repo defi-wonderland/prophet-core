@@ -32,18 +32,20 @@ contract IntegrationOracle is IntegrationBase {
     _mockArbitrator = new MockArbitrator();
 
     vm.prank(governance);
-    _requestModule = new HttpRequestModule();
-    _responseModule = new BondedResponseModule();
-    _accountingExtension = new AccountingExtension(weth);
-    _disputeModule = new ArbitratorModule();
-    _callbackModule = new CallbackModule();
+    _requestModule = new HttpRequestModule(oracle);
+    _responseModule = new BondedResponseModule(oracle);
+    _accountingExtension = new AccountingExtension(oracle, weth);
+    _disputeModule = new ArbitratorModule(oracle);
+    _callbackModule = new CallbackModule(oracle);
 
     vm.startPrank(requester);
     usdc.approve(address(_accountingExtension), _expectedBondSize);
-    _accountingExtension.deposit(requester, oracle, usdc, _expectedBondSize);
+    _accountingExtension.deposit(usdc, _expectedBondSize);
 
     IOracle.Request memory _request = IOracle.Request({
-      requestModuleData: abi.encode(_expectedUrl, _expectedMethod, _expectedBody),
+      requestModuleData: abi.encode(
+        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedBondSize
+        ),
       responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
       disputeModuleData: abi.encode(
         _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _mockArbitrator
@@ -54,7 +56,9 @@ contract IntegrationOracle is IntegrationBase {
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,
-      finalityModule: IFinalityModule(_callbackModule)
+      finalityModule: IFinalityModule(_callbackModule),
+      requester: address(0),
+      nonce: 0
     });
 
     _requestId = oracle.createRequest(_request);
@@ -62,8 +66,7 @@ contract IntegrationOracle is IntegrationBase {
   }
 
   function testIntegrationRequestModule() public {
-    (string memory _url, string memory _method, string memory _body) =
-      _requestModule.decodeRequestData(oracle, _requestId);
+    (string memory _url, string memory _method, string memory _body,,,) = _requestModule.decodeRequestData(_requestId);
 
     assertEq(_expectedUrl, _url);
     assertEq(_expectedMethod, _method);
@@ -72,7 +75,7 @@ contract IntegrationOracle is IntegrationBase {
 
   function testIntegrationResponseModule() public {
     (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _responseModule.decodeRequestData(oracle, _requestId);
+      _responseModule.decodeRequestData(_requestId);
 
     // Making sure the parameters are correct
     assertEq(address(_accountingExtension), address(_accounting));
@@ -85,24 +88,17 @@ contract IntegrationOracle is IntegrationBase {
     assertEq(_responseIds.length, 0);
 
     // Can't propose a response without a bond
-    assertFalse(_responseModule.canPropose(oracle, _requestId, proposer));
+    assertFalse(_responseModule.canPropose(_requestId, proposer));
 
     // Deposit and bond
     vm.startPrank(proposer);
     uint256 bondSize = _expectedBondSize * 2;
     usdc.approve(address(_accounting), bondSize);
-    _accounting.deposit(proposer, oracle, usdc, bondSize);
-    vm.stopPrank();
-
-    // TODO: There should be a function on the Oracle for bonding
-    vm.startPrank(address(oracle));
-    _accounting.bond(proposer, usdc, _expectedBondSize);
-    vm.stopPrank();
+    _accounting.deposit(usdc, bondSize);
 
     // Propose a response
-    assertTrue(_responseModule.canPropose(oracle, _requestId, proposer));
+    assertTrue(_responseModule.canPropose(_requestId, proposer));
 
-    vm.startPrank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
     vm.stopPrank();
 
@@ -115,13 +111,12 @@ contract IntegrationOracle is IntegrationBase {
   }
 
   function testIntegrationDisputeResolutionModule() public {
-    // Deposit, bond and propose a response
+    // Deposit and propose a response
     vm.startPrank(proposer);
     uint256 bondSize = _expectedBondSize * 2;
     usdc.approve(address(_accountingExtension), bondSize);
-    _accountingExtension.deposit(proposer, oracle, usdc, bondSize);
-    changePrank(address(oracle));
-    _accountingExtension.bond(proposer, usdc, _expectedBondSize);
+    _accountingExtension.deposit(usdc, bondSize);
+
     changePrank(proposer);
     oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
@@ -131,10 +126,7 @@ contract IntegrationOracle is IntegrationBase {
 
     // Bond and try again
     usdc.approve(address(_accountingExtension), _expectedBondSize);
-    _accountingExtension.deposit(disputer, oracle, usdc, _expectedBondSize);
-
-    changePrank(address(oracle));
-    _accountingExtension.bond(disputer, usdc, _expectedBondSize);
+    _accountingExtension.deposit(usdc, _expectedBondSize);
 
     changePrank(disputer);
     assertTrue(oracle.canDispute(_requestId, disputer));
@@ -147,14 +139,25 @@ contract IntegrationOracle is IntegrationBase {
   }
 
   function testIntegrationCallbackResolutionModule() public {
-    // Deposit, bond and propose a response
-    vm.startPrank(keeper);
-    assertEq(_mockCallback.randomValue(), 0);
+    // Deposit and propose a response
+    vm.startPrank(proposer);
+    uint256 bondSize = _expectedBondSize * 2;
+    usdc.approve(address(_accountingExtension), bondSize);
+    _accountingExtension.deposit(usdc, bondSize);
 
-    // TODO: This probably lacks a check to ensure the deadline has passed prior for this to be call successfully
-    _callbackModule.finalize(oracle, _requestId);
-    assertEq(_mockCallback.randomValue(), _expectedCallbackValue);
+    changePrank(proposer);
+    oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
     vm.stopPrank();
+
+    // TODO: Expect revert if called before deadline
+    vm.warp(_expectedDeadline);
+    oracle.finalize(_requestId);
+
+    // TODO: Release all bonds for every proposer, pay the winning proposer
+    // assertEq(_accountingExtension.balanceOf(proposer, usdc), 0);
+    // assertEq(_accountingExtension.bondedAmountOf(proposer, usdc, _requestId), 0);
+    // assertEq(_accountingExtension.balanceOf(requester, usdc), 0);
+    // assertEq(_accountingExtension.bondedAmountOf(requester, usdc, _requestId), 0);
   }
 }

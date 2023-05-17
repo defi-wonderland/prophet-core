@@ -5,18 +5,15 @@ import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract MockArbitrator is IArbitrator {
-  function isValid(IOracle, /* _oracle */ bytes32 /* _dispute */ ) external pure returns (bool _isValid) {
+  function isValid(bytes32 /* _dispute */ ) external pure returns (bool _isValid) {
     _isValid = true;
   }
 
-  function getStatus(IOracle, /* _oracle */ bytes32 /* _dispute */ ) external pure returns (DisputeStatus _status) {
+  function getStatus(bytes32 /* _dispute */ ) external pure returns (DisputeStatus _status) {
     _status = DisputeStatus.Unknown;
   }
 
-  function resolve(
-    IOracle, /* _oracle */
-    bytes32 /* _dispute */
-  ) external pure returns (bool _isValid, bool _useArbitrator) {
+  function resolve(bytes32 /* _dispute */ ) external pure returns (bool _isValid, bool _useArbitrator) {
     _isValid = true;
     _useArbitrator = true;
   }

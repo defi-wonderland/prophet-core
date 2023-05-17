@@ -11,7 +11,7 @@ interface IArbitrator is IERC165 {
     Resolved
   }
 
-  function isValid(IOracle _oracle, bytes32 _dispute) external view returns (bool _isValid);
-  function getStatus(IOracle _oracle, bytes32 _dispute) external view returns (DisputeStatus _status);
-  function resolve(IOracle _oracle, bytes32 _dispute) external returns (bool _isValid, bool _useArbitrator);
+  function isValid(bytes32 _dispute) external view returns (bool _isValid);
+  function getStatus(bytes32 _dispute) external view returns (DisputeStatus _status);
+  function resolve(bytes32 _dispute) external returns (bool _isValid, bool _useArbitrator);
 }

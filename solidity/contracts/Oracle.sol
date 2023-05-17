@@ -14,24 +14,16 @@ contract Oracle is IOracle {
   uint256 internal _nonce;
 
   function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
-    _requestId = keccak256(abi.encodePacked(msg.sender, ++_nonce));
+    uint256 _requestNonce = ++_nonce;
+    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _request.nonce = _requestNonce;
+    _request.requester = msg.sender;
     _request.finalizedResponseId = bytes32('');
     _request.disputeId = bytes32('');
     _requests[_requestId] = _request;
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
-
-    if (address(_request.responseModule) != address(0)) {
-      _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
-
-      // TODO: the reward should be included somewhere in the data as bondSize != answering reward
-      (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-        _request.responseModule.getBondData(IOracle(address(this)), _requestId);
-      if (address(_accountingExtension) != address(0)) {
-        // Note: This assumes user has called approve and deposit beforehand on the AccountingExtension
-        _accountingExtension.bond(msg.sender, _bondToken, _bondSize);
-      }
-    }
+    _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
 
     if (address(_request.disputeModule) != address(0)) {
       _request.disputeModule.setupRequest(_requestId, _request.disputeModuleData);
@@ -55,21 +47,14 @@ contract Oracle is IOracle {
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
-    bool _canPropose = _request.responseModule.canPropose(IOracle(address(this)), _requestId, msg.sender);
-    if (_canPropose) {
-      _responseId = keccak256(abi.encodePacked(msg.sender, _requestId));
-      Response memory _response =
-        Response({requestId: _requestId, disputeId: bytes32(''), response: _responseData, finalized: false});
-      _responses[_responseId] = _response;
-      _responseIds[_requestId].push(_responseId);
-    } else {
-      revert Oracle_CannotPropose(_requestId, msg.sender);
-    }
+    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
+    _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
+    _responseIds[_requestId].push(_responseId);
   }
 
   function disputeResponse(bytes32 _requestId) external returns (bytes32 _disputeId) {
     Request memory _request = _requests[_requestId];
-    bool _canDispute = _request.disputeModule.canDispute(IOracle(address(this)), _requestId, msg.sender);
+    bool _canDispute = _request.disputeModule.canDispute(_requestId, msg.sender);
     if (_canDispute) {
       _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
       _request.disputeId = _disputeId;
@@ -79,40 +64,25 @@ contract Oracle is IOracle {
     }
   }
 
-  function deposit(bytes32 _requestId, IERC20 _token, uint256 _amount) external payable {
-    Request memory _request = _requests[_requestId];
-    IAccountingExtension _accountingExtension = _request.responseModule.getExtension(IOracle(address(this)), _requestId);
-    if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
-    _accountingExtension.deposit{value: msg.value}(msg.sender, IOracle(address(this)), _token, _amount);
-  }
-
-  function withdraw(bytes32 _requestId, IERC20 _token, uint256 _amount) external {
-    Request memory _request = _requests[_requestId];
-    IAccountingExtension _accountingExtension = _request.responseModule.getExtension(IOracle(address(this)), _requestId);
-    if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
-    _accountingExtension.withdraw(msg.sender, IOracle(address(this)), _token, _amount);
-  }
-
-  function pay(bytes32 _requestId, IERC20 _token, address _payee, address _payer, uint256 _amount) external {
-    Request memory _request = _requests[_requestId];
-    IAccountingExtension _accountingExtension = _request.responseModule.getExtension(IOracle(address(this)), _requestId);
-    if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
-    _accountingExtension.pay(_token, _payee, _payer, _amount);
+  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
+    IOracle.Request memory _request = _requests[_requestId];
+    _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
+      || address(_request.disputeModule) == _module || address(_request.finalityModule) == _module;
   }
 
   function slash(bytes32 _requestId, IERC20 _token, address _slashed, address _disputer, uint256 _amount) external {
-    Request memory _request = _requests[_requestId];
-    IAccountingExtension _accountingExtension = _request.responseModule.getExtension(IOracle(address(this)), _requestId);
-    if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
-    _accountingExtension.slash(_token, _slashed, _disputer, _amount);
+    // Request memory _request = _requests[_requestId];
+    // IAccountingExtension _accountingExtension = _request.responseModule.getExtension(_requestId);
+    // if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
+    // _accountingExtension.slash(_token, _slashed, _disputer, _amount);
   }
 
   function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
-    _canPropose = _requests[_requestId].responseModule.canPropose(IOracle(address(this)), _requestId, _proposer);
+    _canPropose = _requests[_requestId].responseModule.canPropose(_requestId, _proposer);
   }
 
   function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute) {
-    _canDispute = _requests[_requestId].disputeModule.canDispute(IOracle(address(this)), _requestId, _disputer);
+    _canDispute = _requests[_requestId].disputeModule.canDispute(_requestId, _disputer);
   }
 
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
@@ -121,5 +91,26 @@ contract Oracle is IOracle {
 
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
     _ids = _responseIds[_requestId];
+  }
+
+  function finalize(bytes32 _requestId) external {
+    // TODO: Save the finalizedResponseId
+    Request memory _request = _requests[_requestId];
+
+    if (address(_request.requestModule) != address(0)) {
+      _request.requestModule.finalizeRequest(_requestId);
+    }
+
+    if (address(_request.responseModule) != address(0)) {
+      _request.responseModule.finalizeRequest(_requestId);
+    }
+
+    if (address(_request.disputeModule) != address(0)) {
+      _request.disputeModule.finalizeRequest(_requestId);
+    }
+
+    if (address(_request.finalityModule) != address(0)) {
+      _request.finalityModule.finalizeRequest(_requestId);
+    }
   }
 }

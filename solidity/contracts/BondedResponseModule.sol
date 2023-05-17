@@ -5,36 +5,59 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@interfaces/IOracle.sol';
 import {IResponseModule} from '@interfaces/IResponseModule.sol';
 import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
-import {Module} from '@contracts/Module.sol';
+import {IModule, Module} from '@contracts/Module.sol';
 
 contract BondedResponseModule is Module, IResponseModule {
-  function decodeRequestData(
-    IOracle _oracle,
-    bytes32 _requestId
-  ) external view returns (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) {
-    (_accounting, _bondToken, _bondSize, _deadline) =
-      abi.decode(requestData[_oracle][_requestId], (IAccountingExtension, IERC20, uint256, uint256));
+  error BondedResponseModule_TooEarlyToFinalize();
+
+  constructor(IOracle _oracle) Module(_oracle) {}
+
+  function decodeRequestData(bytes32 _requestId)
+    external
+    view
+    returns (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
+  {
+    (_accounting, _bondToken, _bondSize, _deadline) = _decodeRequestData(requestData[_requestId]);
   }
 
-  function canPropose(IOracle _oracle, bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
-    (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      abi.decode(requestData[_oracle][_requestId], (IAccountingExtension, IERC20, uint256, uint256));
-    _canPropose = block.timestamp < _deadline && _accounting.bondedAmountOf(_proposer, _oracle, _bondToken) >= _bondSize;
+  function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
+      _decodeRequestData(requestData[_requestId]);
+    _canPropose = block.timestamp < _deadline && _accountingExtension.balanceOf(_proposer, _bondToken) >= _bondSize;
   }
 
-  function getExtension(
-    IOracle _oracle,
-    bytes32 _requestId
-  ) external view returns (IAccountingExtension _accountingExtension) {
-    (_accountingExtension) = abi.decode(requestData[_oracle][_requestId], (IAccountingExtension));
+  function _decodeRequestData(bytes memory _data)
+    internal
+    pure
+    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
+  {
+    (_accountingExtension, _bondToken, _bondSize, _deadline) =
+      abi.decode(_data, (IAccountingExtension, IERC20, uint256, uint256));
   }
 
-  function getBondData(
-    IOracle _oracle,
-    bytes32 _requestId
-  ) external view returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) {
-    (_accountingExtension, _bondToken, _bondSize) =
-      abi.decode(requestData[_oracle][_requestId], (IAccountingExtension, IERC20, uint256));
+  function propose(
+    bytes32 _requestId,
+    address _proposer,
+    bytes calldata _responseData
+  ) external onlyOracle returns (IOracle.Response memory _response) {
+    _response = IOracle.Response({
+      requestId: _requestId,
+      disputeId: bytes32(''),
+      proposer: _proposer,
+      response: _responseData,
+      finalized: false
+    });
+    _afterPropose(_requestId, _response);
+  }
+
+  function _afterPropose(bytes32 _requestId, IOracle.Response memory _response) internal {
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize,) =
+      _decodeRequestData(requestData[_requestId]);
+    _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
+  }
+
+  function getExtension(bytes32 _requestId) external view returns (IAccountingExtension _accountingExtension) {
+    (_accountingExtension) = abi.decode(requestData[_requestId], (IAccountingExtension));
   }
 
   function moduleName() public pure returns (string memory _moduleName) {

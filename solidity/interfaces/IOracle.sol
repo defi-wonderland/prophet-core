@@ -33,9 +33,12 @@ interface IOracle {
     IResponseModule responseModule;
     IDisputeModule disputeModule;
     IFinalityModule finalityModule;
+    address requester;
+    uint256 nonce;
   }
 
   struct Response {
+    address proposer;
     bytes32 requestId;
     bytes32 disputeId;
     bytes response;
@@ -57,13 +60,11 @@ interface IOracle {
    */
   function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestIds);
 
+  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule);
   function getResponse(bytes32 _responseId) external view returns (Response memory _response);
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
   function disputeResponse(bytes32 _requestId) external returns (bytes32 _disputeId);
-  function deposit(bytes32 _requestId, IERC20 _token, uint256 _amount) external payable;
-  function withdraw(bytes32 _requestId, IERC20 _token, uint256 _amount) external;
-  function pay(bytes32 _requestId, IERC20 _token, address _payee, address _payer, uint256 _amount) external;
   function slash(bytes32 _requestId, IERC20 _token, address _slashed, address _disputer, uint256 _amount) external;
   function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose);
   function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute);

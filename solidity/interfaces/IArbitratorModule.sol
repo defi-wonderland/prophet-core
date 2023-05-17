@@ -8,10 +8,7 @@ import {IDisputeModule} from './IDisputeModule.sol';
 interface IArbitratorModule is IDisputeModule {
   error ArbitratorModule_OnlyArbitrator();
 
-  function storeAnswer(IOracle _oracle, bytes32 _dispute, bool _valid) external;
-  function getStatus(
-    IOracle _oracle,
-    bytes32 _dispute
-  ) external view returns (IArbitrator.DisputeStatus _disputeStatus);
-  function isValid(IOracle _oracle, bytes32 _dispute) external view returns (bool _isValid);
+  function storeAnswer(bytes32 _dispute, bool _valid) external;
+  function getStatus(bytes32 _dispute) external view returns (IArbitrator.DisputeStatus _disputeStatus);
+  function isValid(bytes32 _dispute) external view returns (bool _isValid);
 }
