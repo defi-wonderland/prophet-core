@@ -7,7 +7,8 @@ contract IntegrationOracle is IntegrationBase {
   HttpRequestModule _requestModule;
   BondedResponseModule _responseModule;
   AccountingExtension _accountingExtension;
-  ArbitratorModule _disputeModule;
+  BondedDisputeModule _disputeModule;
+  ArbitratorModule _resolutionModule;
   CallbackModule _callbackModule;
   MockCallback _mockCallback;
   MockArbitrator _mockArbitrator;
@@ -34,9 +35,10 @@ contract IntegrationOracle is IntegrationBase {
     vm.prank(governance);
     _requestModule = new HttpRequestModule(oracle);
     _responseModule = new BondedResponseModule(oracle);
-    _accountingExtension = new AccountingExtension(oracle, weth);
-    _disputeModule = new ArbitratorModule(oracle);
+    _disputeModule = new BondedDisputeModule(oracle);
+    _resolutionModule = new ArbitratorModule(oracle);
     _callbackModule = new CallbackModule(oracle);
+    _accountingExtension = new AccountingExtension(oracle, weth);
 
     vm.startPrank(requester);
     usdc.approve(address(_accountingExtension), _expectedBondSize);
@@ -50,12 +52,13 @@ contract IntegrationOracle is IntegrationBase {
       disputeModuleData: abi.encode(
         _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _mockArbitrator
         ),
+      resolutionModuleData: abi.encode(_mockArbitrator),
       finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
       finalizedResponseId: bytes32(''),
-      disputeId: bytes32(''),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,
+      resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
       requester: address(0),
       nonce: 0
@@ -118,22 +121,22 @@ contract IntegrationOracle is IntegrationBase {
     _accountingExtension.deposit(usdc, bondSize);
 
     changePrank(proposer);
-    oracle.proposeResponse(_requestId, bytes(_expectedResponse));
+    bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
     // Dispute the response
     changePrank(disputer);
-    assertFalse(oracle.canDispute(_requestId, disputer));
+    assertFalse(oracle.canDispute(_responseId, disputer));
 
     // Bond and try again
     usdc.approve(address(_accountingExtension), _expectedBondSize);
     _accountingExtension.deposit(usdc, _expectedBondSize);
 
     changePrank(disputer);
-    assertTrue(oracle.canDispute(_requestId, disputer));
-    bytes32 _disputeId = oracle.disputeResponse(_requestId);
+    assertTrue(oracle.canDispute(_responseId, disputer));
+    bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
-    IOracle.Request memory _request = oracle.getRequest(_requestId);
-    assertEq(_request.disputeId, _disputeId);
+    bytes32 _disputeIdStored = oracle.disputeOf(_responseId);
+    assertEq(_disputeIdStored, _disputeId);
 
     vm.stopPrank();
   }

@@ -40,6 +40,7 @@ contract BondedResponseModule is Module, IResponseModule {
     address _proposer,
     bytes calldata _responseData
   ) external onlyOracle returns (IOracle.Response memory _response) {
+    // TODO: Check if can propose
     _response = IOracle.Response({
       requestId: _requestId,
       disputeId: bytes32(''),
@@ -47,17 +48,10 @@ contract BondedResponseModule is Module, IResponseModule {
       response: _responseData,
       finalized: false
     });
-    _afterPropose(_requestId, _response);
-  }
 
-  function _afterPropose(bytes32 _requestId, IOracle.Response memory _response) internal {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize,) =
       _decodeRequestData(requestData[_requestId]);
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
-  }
-
-  function getExtension(bytes32 _requestId) external view returns (IAccountingExtension _accountingExtension) {
-    (_accountingExtension) = abi.decode(requestData[_requestId], (IAccountingExtension));
   }
 
   function moduleName() public pure returns (string memory _moduleName) {

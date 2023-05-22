@@ -9,11 +9,13 @@ import {console} from 'forge-std/console.sol';
 import {IWETH9} from '@interfaces/external/IWETH9.sol';
 import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
 import {IDisputeModule} from '@interfaces/IDisputeModule.sol';
+import {IResolutionModule} from '@interfaces/IResolutionModule.sol';
 import {IFinalityModule} from '@interfaces/IFinalityModule.sol';
 import {IOracle} from '@interfaces/IOracle.sol';
 
 import {HttpRequestModule} from '@contracts/HttpRequestModule.sol';
 import {BondedResponseModule} from '@contracts/BondedResponseModule.sol';
+import {BondedDisputeModule} from '@contracts/BondedDisputeModule.sol';
 import {ArbitratorModule} from '@contracts/ArbitratorModule.sol';
 import {AccountingExtension} from '@contracts/AccountingExtension.sol';
 import {CallbackModule} from '@contracts/CallbackModule.sol';

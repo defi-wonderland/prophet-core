@@ -7,10 +7,17 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 contract Oracle is IOracle {
+  mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
+
   mapping(bytes32 _requestId => Request) internal _requests;
+
   mapping(bytes32 _responseId => Response) internal _responses;
   mapping(bytes32 _requestId => bytes32[] _responseId) internal _responseIds;
+
   mapping(bytes32 _requestId => Response) internal _finalizedResponses;
+
+  mapping(bytes32 _disputeId => Dispute) internal _disputes;
+
   uint256 internal _nonce;
 
   function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
@@ -19,7 +26,6 @@ contract Oracle is IOracle {
     _request.nonce = _requestNonce;
     _request.requester = msg.sender;
     _request.finalizedResponseId = bytes32('');
-    _request.disputeId = bytes32('');
     _requests[_requestId] = _request;
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
@@ -45,44 +51,60 @@ contract Oracle is IOracle {
     _request = _requests[_requestId];
   }
 
-  function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
-    Request memory _request = _requests[_requestId];
-    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
-    _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
-    _responseIds[_requestId].push(_responseId);
+  function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
+    _dispute = _disputes[_disputeId];
   }
 
-  function disputeResponse(bytes32 _requestId) external returns (bytes32 _disputeId) {
+  function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
+    bool _canPropose = _requests[_requestId].responseModule.canPropose(_requestId, msg.sender);
+    if (_canPropose) {
+      Request memory _request = _requests[_requestId];
+      _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
+      _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
+      _responseIds[_requestId].push(_responseId);
+    } else {
+      revert Oracle_CannotPropose(_requestId, msg.sender);
+    }
+  }
+
+  function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
+    if (disputeOf[_responseId] != bytes32('')) revert Oracle_ResponseAlreadyDisputed(_responseId);
+
     Request memory _request = _requests[_requestId];
     bool _canDispute = _request.disputeModule.canDispute(_requestId, msg.sender);
+
     if (_canDispute) {
       _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
-      _request.disputeId = _disputeId;
-      _requests[_requestId] = _request;
+      _disputes[_disputeId] =
+        _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
+      disputeOf[_responseId] = _disputeId;
     } else {
       revert Oracle_CannotDispute(_requestId, msg.sender);
     }
   }
 
-  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
-    IOracle.Request memory _request = _requests[_requestId];
-    _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
-      || address(_request.disputeModule) == _module || address(_request.finalityModule) == _module;
+  function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
+    Dispute storage _dispute = _disputes[_disputeId];
+    Request memory _request = _requests[_dispute.requestId];
+    if (msg.sender != address(_request.resolutionModule)) revert Oracle_NotResolutionModule(msg.sender);
+    _dispute.status = _status;
+    _request.disputeModule.updateDisputeStatus(_disputeId, _dispute);
   }
 
-  function slash(bytes32 _requestId, IERC20 _token, address _slashed, address _disputer, uint256 _amount) external {
-    // Request memory _request = _requests[_requestId];
-    // IAccountingExtension _accountingExtension = _request.responseModule.getExtension(_requestId);
-    // if (address(_accountingExtension) == address(0)) revert Oracle_NoExtensionSet(_requestId);
-    // _accountingExtension.slash(_token, _slashed, _disputer, _amount);
+  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
+    Request memory _request = _requests[_requestId];
+    _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
+      || address(_request.disputeModule) == _module || address(_request.finalityModule) == _module;
   }
 
   function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
     _canPropose = _requests[_requestId].responseModule.canPropose(_requestId, _proposer);
   }
 
-  function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute) {
-    _canDispute = _requests[_requestId].disputeModule.canDispute(_requestId, _disputer);
+  function canDispute(bytes32 _responseId, address _disputer) external returns (bool _canDispute) {
+    bytes32 _requestId = _responses[_responseId].requestId;
+    _canDispute =
+      disputeOf[_responseId] == bytes32('') && _requests[_requestId].disputeModule.canDispute(_requestId, _disputer);
   }
 
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
@@ -97,13 +119,8 @@ contract Oracle is IOracle {
     // TODO: Save the finalizedResponseId
     Request memory _request = _requests[_requestId];
 
-    if (address(_request.requestModule) != address(0)) {
-      _request.requestModule.finalizeRequest(_requestId);
-    }
-
-    if (address(_request.responseModule) != address(0)) {
-      _request.responseModule.finalizeRequest(_requestId);
-    }
+    _request.requestModule.finalizeRequest(_requestId);
+    _request.responseModule.finalizeRequest(_requestId);
 
     if (address(_request.disputeModule) != address(0)) {
       _request.disputeModule.finalizeRequest(_requestId);

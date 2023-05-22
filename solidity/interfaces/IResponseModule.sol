@@ -13,6 +13,4 @@ interface IResponseModule is IModule {
     address _proposer,
     bytes calldata _responseData
   ) external returns (IOracle.Response memory _response);
-  // TODO: If we can make extensions generic, this should be changed to IExtension
-  function getExtension(bytes32 _requestId) external view returns (IAccountingExtension _extension);
 }

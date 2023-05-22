@@ -17,48 +17,26 @@ import {ERC165Checker} from '@openzeppelin/contracts/utils/introspection/ERC165C
 contract ArbitratorModule is Module, IArbitratorModule {
   // Module mapping 1word now used as:
   // bit 0-160 arbitrator address
-  // bit 161 and 162 dispute status (0, 1, 2)
+  // bit 161 and 162 dispute status (0, 1, 2, 3)
   // bit 163 arbitration result (0/1)
   // bit 164 use arbitrator on each call (ie is the result in bit163 or locally in the arbitrator)
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  function canResolve(bytes32 _requestId, address _resolver) external view returns (bool _canResolve) {
+    _canResolve = _decodeRequestData(requestData[_requestId]) == _resolver;
+  }
+
   function moduleName() external pure returns (string memory _moduleName) {
     return 'ArbitratorModule';
   }
 
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize)
-  {
-    (_accountingExtension, _bondToken, _bondSize) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256));
+  function decodeRequestData(bytes32 _requestId) external view returns (address _arbitrator) {
+    _arbitrator = _decodeRequestData(requestData[_requestId]);
   }
 
-  function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute) {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256));
-    _canDispute = _accountingExtension.balanceOf(_disputer, _bondToken) >= _bondSize;
-  }
-
-  function canEscalate(bytes32 _requestId, address _disputer) external returns (bool _canEscalate) {
-    // TODO: This is probably wrong
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      _decodeRequestData(requestData[_requestId]);
-    _canEscalate = _accountingExtension.balanceOf(_disputer, _bondToken) >= _bondSize;
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize)
-  {
-    (_accountingExtension, _bondToken, _bondSize) = abi.decode(_data, (IAccountingExtension, IERC20, uint256));
-  }
-
-  function escalateDispute(bytes32 _disputeId) external {
-    // TODO: Start the real dispute process, involving the arbitrator
+  function _decodeRequestData(bytes memory _data) internal pure returns (address _arbitrator) {
+    _arbitrator = abi.decode(_data, (address));
   }
 
   // takes a request ID and return a bool indicating if the arbitrator has validated the observation or not.
@@ -93,24 +71,31 @@ contract ArbitratorModule is Module, IArbitratorModule {
   // arbitrator can either be an EOA (or contract) which sends dispute resolution to this contract (ie offchain vote later sent)
   // or a contract which implements IArbitrator which can store resolution there and expect to be queried (ie onchain voting)
   // or a contract which resolve as soon as being called (ie chainlink wrapper)
-  function resolveDispute(bytes32 _dispute) external {
-    uint256 _requestData = abi.decode(requestData[_dispute], (uint256));
+  function resolveDispute(bytes32 _disputeId) external {
+    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+
+    if (_dispute.status != IOracle.DisputeStatus.Active) revert ArbitratorModule_InvalidDisputeId();
+
+    bytes32 _requestId = _dispute.requestId;
+    uint256 _requestData = abi.decode(requestData[_requestId], (uint256));
 
     address _arbitrator = address(uint160(_requestData));
 
     // Avoid ghost calls
     if (_arbitrator != address(0) && ERC165Checker.supportsInterface(_arbitrator, type(IArbitrator).interfaceId)) {
       // Try to atomically resolve
-      try IArbitrator(_arbitrator).resolve(_dispute) returns (bool _valid, bool _useArbitrator) {
+      try IArbitrator(_arbitrator).resolve(_disputeId) returns (bool _won, bool _useArbitrator) {
         // Store the returned bool + the status as resolved + if the arbitrator should be called on each resolution
 
         // This should be upgraded to preserve arbitrary length bytes (ie append a slice (or equivalent) starting at bytes 33)
+        // pack: address (160) | dispute status (161-162) | arbitration status to true (163) | use arbitrator (164)
         bytes memory _requestDataUpdated =
-          abi.encodePacked(_requestData | 2 << 162 | (_valid ? 1 : 0) << 163 | (_useArbitrator ? 1 : 0) << 164);
+          abi.encodePacked(_requestData | (_won ? 1 : 0) << 161 | 1 << 163 | (_useArbitrator ? 1 : 0) << 164);
 
-        requestData[_dispute] = _requestDataUpdated;
+        requestData[_disputeId] = _requestDataUpdated;
+        IOracle.DisputeStatus _status = _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
 
-        return;
+        ORACLE.updateDisputeStatus(_disputeId, _status);
       } catch {}
     }
 
