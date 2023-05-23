@@ -4,14 +4,12 @@ pragma solidity ^0.8.19;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IOracle} from '../../interfaces/IOracle.sol';
-import {IResponseModule} from '../../interfaces/modules/IResponseModule.sol';
+import {IBondedResponseModule} from '../../interfaces/modules/IBondedResponseModule.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 import {IModule, Module} from '../Module.sol';
 
-contract BondedResponseModule is Module, IResponseModule {
-  error BondedResponseModule_TooEarlyToFinalize();
-
+contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function decodeRequestData(bytes32 _requestId)
