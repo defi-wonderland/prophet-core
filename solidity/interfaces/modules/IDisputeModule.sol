@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IModule} from './IModule.sol';
-import {IOracle} from './IOracle.sol';
+import {IModule} from '../IModule.sol';
+import {IOracle} from '../IOracle.sol';
 
 interface IDisputeModule is IModule {
   function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute);

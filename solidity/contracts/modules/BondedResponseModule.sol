@@ -2,10 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@interfaces/IOracle.sol';
-import {IResponseModule} from '@interfaces/IResponseModule.sol';
-import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
-import {IModule, Module} from '@contracts/Module.sol';
+
+import {IOracle} from '../../interfaces/IOracle.sol';
+import {IResponseModule} from '../../interfaces/modules/IResponseModule.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+
+import {IModule, Module} from '../Module.sol';
 
 contract BondedResponseModule is Module, IResponseModule {
   error BondedResponseModule_TooEarlyToFinalize();

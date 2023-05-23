@@ -3,12 +3,12 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import {IRequestModule} from '@interfaces/IRequestModule.sol';
-import {IResponseModule} from '@interfaces/IResponseModule.sol';
-import {IDisputeModule} from '@interfaces/IDisputeModule.sol';
-import {IResolutionModule} from '@interfaces/IResolutionModule.sol';
-import {IFinalityModule} from '@interfaces/IFinalityModule.sol';
-import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
+import {IRequestModule} from './modules/IRequestModule.sol';
+import {IResponseModule} from './modules/IResponseModule.sol';
+import {IDisputeModule} from './modules/IDisputeModule.sol';
+import {IResolutionModule} from './modules/IResolutionModule.sol';
+import {IFinalityModule} from './modules/IFinalityModule.sol';
+import {IAccountingExtension} from './extensions/IAccountingExtension.sol';
 
 interface IOracle {
   /// @notice Thrown when a proposer is not allowed to propose a response

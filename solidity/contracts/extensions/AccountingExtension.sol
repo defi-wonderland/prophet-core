@@ -4,10 +4,10 @@ pragma solidity ^0.8.19;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
-import {IWETH9} from '../interfaces/external/IWETH9.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 
-import {IAccountingExtension} from '../interfaces/IAccountingExtension.sol';
-import {IOracle} from '../interfaces/IOracle.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract AccountingExtension is IAccountingExtension {
   using SafeERC20 for IERC20;

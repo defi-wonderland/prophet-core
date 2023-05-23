@@ -2,29 +2,29 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {DSTestPlus} from 'solidity-utils/test/DSTestPlus.sol';
+import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
-import {IWETH9} from '@interfaces/external/IWETH9.sol';
-import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
-import {IDisputeModule} from '@interfaces/IDisputeModule.sol';
-import {IResolutionModule} from '@interfaces/IResolutionModule.sol';
-import {IFinalityModule} from '@interfaces/IFinalityModule.sol';
-import {IOracle} from '@interfaces/IOracle.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {IDisputeModule} from '../../interfaces/modules/IDisputeModule.sol';
+import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol';
+import {IFinalityModule} from '../../interfaces/modules/IFinalityModule.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
 
-import {HttpRequestModule} from '@contracts/HttpRequestModule.sol';
-import {BondedResponseModule} from '@contracts/BondedResponseModule.sol';
-import {BondedDisputeModule} from '@contracts/BondedDisputeModule.sol';
-import {ArbitratorModule} from '@contracts/ArbitratorModule.sol';
-import {AccountingExtension} from '@contracts/AccountingExtension.sol';
-import {CallbackModule} from '@contracts/CallbackModule.sol';
-import {Oracle} from '@contracts/Oracle.sol';
+import {HttpRequestModule} from '../../contracts/modules/HttpRequestModule.sol';
+import {BondedResponseModule} from '../../contracts/modules/BondedResponseModule.sol';
+import {BondedDisputeModule} from '../../contracts/modules/BondedDisputeModule.sol';
+import {ArbitratorModule} from '../../contracts/modules/ArbitratorModule.sol';
+import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
+import {CallbackModule} from '../../contracts/modules/CallbackModule.sol';
+import {Oracle} from '../../contracts/Oracle.sol';
 
-import {MockCallback} from '@test/mocks/MockCallback.sol';
-import {MockArbitrator} from '@test/mocks/MockArbitrator.sol';
+import {MockCallback} from '../mocks/MockCallback.sol';
+import {MockArbitrator} from '../mocks/MockArbitrator.sol';
 
-import {TestConstants} from '@test/utils/TestConstants.sol';
+import {TestConstants} from '../utils/TestConstants.sol';
 
 contract IntegrationBase is DSTestPlus, TestConstants {
   uint256 constant FORK_BLOCK = 756_611;

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IModule} from './IModule.sol';
-import {IOracle} from './IOracle.sol';
-import {IAccountingExtension} from './IAccountingExtension.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+import {IModule} from '../IModule.sol';
+import {IOracle} from '../IOracle.sol';
+import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
 
 interface IResponseModule is IModule {
   function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose);

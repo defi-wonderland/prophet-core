@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import {IBondedDisputeModule} from '../interfaces/IBondedDisputeModule.sol';
-import {IOracle} from '../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../interfaces/IAccountingExtension.sol';
+import {IBondedDisputeModule} from '../../interfaces/modules/IBondedDisputeModule.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
-import {Module} from './Module.sol';
+import {Module} from '../Module.sol';
 
 contract BondedDisputeModule is Module, IBondedDisputeModule {
   constructor(IOracle _oracle) Module(_oracle) {}

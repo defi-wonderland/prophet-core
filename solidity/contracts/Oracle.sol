@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IOracle} from '@interfaces/IOracle.sol';
-import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
+import {IOracle} from '../interfaces/IOracle.sol';
+import {IAccountingExtension} from '../interfaces/extensions/IAccountingExtension.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 contract Oracle is IOracle {

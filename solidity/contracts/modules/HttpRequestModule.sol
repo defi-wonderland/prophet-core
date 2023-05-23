@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import {IRequestModule} from '@interfaces/IRequestModule.sol';
-import {IAccountingExtension} from '@interfaces/IAccountingExtension.sol';
-import {IOracle} from '@interfaces/IOracle.sol';
-import {IModule, Module} from '@contracts/Module.sol';
+import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
+import {IModule, Module} from '../Module.sol';
 
 contract HttpRequestModule is Module, IRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}

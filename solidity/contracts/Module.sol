@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IOracle} from '@interfaces/IOracle.sol';
-import {IModule} from '@interfaces/IModule.sol';
+import {IOracle} from '../interfaces/IOracle.sol';
+import {IModule} from '../interfaces/IModule.sol';
 
 abstract contract Module is IModule {
   IOracle public immutable ORACLE;

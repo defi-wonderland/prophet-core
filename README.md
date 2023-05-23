@@ -39,8 +39,8 @@ The primary license for OpOO contracts is the GNU Affero General Public License 
 
 ## Contributors
 
-Optimistic Oracle was built with ❤️ by [DeFi Wonderland](https://defi.sucks).
+Optimistic Oracle was built with ❤️ by [Wonderland](https://defi.sucks).
 
-DeFi Wonderland is a team of top Web3 researchers, developers, and operators who believe that the future needs to be open-source, permissionless, and decentralized.
+Wonderland is a team of top Web3 researchers, developers, and operators who believe that the future needs to be open-source, permissionless, and decentralized.
 
-[DeFi sucks](https://defi.sucks), but DeFi Wonderland is here to make it better.
+[DeFi sucks](https://defi.sucks), but Wonderland is here to make it better.

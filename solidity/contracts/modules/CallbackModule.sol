@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../interfaces/IOracle.sol';
-import {ICallbackModule} from '../interfaces/ICallbackModule.sol';
-import {ICallback} from '../interfaces/ICallback.sol';
-import {IModule, Module} from '../contracts/Module.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
+import {ICallbackModule} from '../../interfaces/modules/ICallbackModule.sol';
+import {ICallback} from '../../interfaces/ICallback.sol';
+import {IModule, Module} from '../Module.sol';
 
 contract CallbackModule is Module, ICallbackModule {
   constructor(IOracle _oracle) Module(_oracle) {}
