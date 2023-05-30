@@ -46,7 +46,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       disputeId: bytes32(''),
       proposer: _proposer,
       response: _responseData,
-      finalized: false
+      finalized: false,
+      createdAt: block.timestamp
     });
 
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize,) =

@@ -19,13 +19,16 @@ contract Oracle is IOracle {
 
   mapping(bytes32 _disputeId => Dispute) internal _disputes;
 
+  mapping(uint256 _nonce => bytes32 _id) internal _requestIds;
   uint256 internal _nonce;
 
   function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
     uint256 _requestNonce = ++_nonce;
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _requestIds[_requestNonce] = _requestId;
     _request.nonce = _requestNonce;
     _request.requester = msg.sender;
+    _request.createdAt = block.timestamp;
     _request.finalizedResponseId = bytes32('');
     _requests[_requestId] = _request;
 
@@ -42,7 +45,27 @@ contract Oracle is IOracle {
   }
 
   // TODO: Same as `createRequest` but with multiple requests passed in as an array
-  function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestIds) {}
+  function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestsIds) {}
+
+  function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (Request[] memory _list) {
+    uint256 _totalRequestsCount = _nonce;
+    if (_batchSize > _totalRequestsCount - _startFrom) {
+      _batchSize = _totalRequestsCount - _startFrom;
+    }
+
+    _list = new Request[](_batchSize);
+
+    uint256 _index;
+    while (_index < _batchSize) {
+      _list[_index] = _requests[_requestIds[_startFrom + _index]];
+
+      unchecked {
+        ++_index;
+      }
+    }
+
+    return _list;
+  }
 
   function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
     _response = _responses[_responseId];

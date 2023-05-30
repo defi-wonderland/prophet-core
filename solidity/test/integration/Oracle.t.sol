@@ -61,7 +61,9 @@ contract IntegrationOracle is IntegrationBase {
       resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
       requester: address(0),
-      nonce: 0
+      nonce: 0,
+      createdAt: block.timestamp,
+      ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
     });
 
     _requestId = oracle.createRequest(_request);

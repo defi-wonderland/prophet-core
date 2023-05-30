@@ -32,6 +32,7 @@ interface IOracle {
     bytes resolutionModuleData;
     bytes finalityModuleData;
     bytes32 finalizedResponseId;
+    bytes32 ipfsHash;
     IRequestModule requestModule;
     IResponseModule responseModule;
     IDisputeModule disputeModule;
@@ -39,9 +40,11 @@ interface IOracle {
     IFinalityModule finalityModule;
     address requester;
     uint256 nonce;
+    uint256 createdAt;
   }
 
   struct Response {
+    uint256 createdAt;
     address proposer;
     bytes32 requestId;
     bytes32 disputeId;
@@ -50,6 +53,7 @@ interface IOracle {
   }
 
   struct Dispute {
+    uint256 createdAt;
     address disputer;
     address proposer;
     bytes32 responseId;
@@ -90,4 +94,6 @@ interface IOracle {
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
+
+  function listRequests(uint256 _startFrom, uint256 _amount) external view returns (Request[] memory _list);
 }

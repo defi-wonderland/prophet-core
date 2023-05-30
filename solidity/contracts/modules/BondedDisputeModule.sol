@@ -46,7 +46,8 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       responseId: _responseId,
       proposer: _proposer,
       requestId: _requestId,
-      status: IOracle.DisputeStatus.Active
+      status: IOracle.DisputeStatus.Active,
+      createdAt: block.timestamp
     });
 
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
