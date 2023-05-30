@@ -3,7 +3,7 @@ const fse = require('fs-extra');
 const glob = require('glob');
 const path = require('path');
 
-const packageName = `@opoo/interfaces`;
+const packageName = `opoo-core`;
 const packageDescription = `Optimistic Oracle Interfaces and needed integration files`;
 const outDir = './out';
 const exportDir = './npm';
@@ -39,9 +39,7 @@ fse.writeJsonSync(`${exportDir}/package.json`, package, { spaces: 4 });
 
 // copy README.md and LICENSE files to export directory
 fse.copySync('./interfaces-readme.md', `${exportDir}/README.md`);
-// fse.copySync('./LICENSE.AGPL-3.0', `${exportDir}/LICENSE.AGPL-3.0`);
-// fse.copySync('./LICENSE.BSL-1.1', `${exportDir}/LICENSE.BSL-1.1`);
-// fse.copySync('./LICENSE.MIT', `${exportDir}/LICENSE.MIT`);
+fse.copySync('./LICENSE', `${exportDir}/LICENSE`);
 
 // get remappings
 const remappings = fse
@@ -71,7 +69,7 @@ glob(interfacesGlob, (err, interfacePaths) => {
 
   console.log(`Copied ${interfacePaths.length} interfaces`);
 
-  const targets = ['web3-v1', 'ethers-v5'];
+  const targets = ['web3-v1', 'ethers-v6'];
 
   for (const target of targets) {
     console.log(`Generating types for ${target}`);

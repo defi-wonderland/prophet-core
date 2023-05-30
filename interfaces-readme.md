@@ -4,7 +4,7 @@ This package includes all of the needed resources in order to integrate OpOO int
 
 - Interfaces ABIs
 - Interfaces solidity code
-- Typesafe interfaces for Ethers generated with [@typechain/ethers-v5](https://www.npmjs.com/package/@typechain/ethers-v5)
+- Typesafe interfaces for Ethers generated with [@typechain/ethers-v6](https://www.npmjs.com/package/@typechain/ethers-v6)
 - Typesafe interfaces for Truffle generated with [@typechain/truffle-v5](https://www.npmjs.com/package/@typechain/truffle-v5)
 - Typesafe interfaces for Web3 generated with [@typechain/web3-v1](https://www.npmjs.com/package/@typechain/web3-v1)
 
@@ -13,16 +13,13 @@ This package includes all of the needed resources in order to integrate OpOO int
 You can install this package via npm or yarn:
 
 ```console
-yarn add @opoo/interfaces
+yarn add opoo-core
 ```
 
 ```console
-npm install @opoo/interfaces
+npm install opoo-core
 ```
 
 ## Licensing
 
-The primary license for Optimistic Oracle Interfaces is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE.BSL-1.1`](./LICENSE.BSL-1.1). However, some files are dual licensed under `AGPL-3.0-only`:
-
-- All files in `contracts` may also be licensed under `AGPL-3.0-only` (as indicated in their SPDX headers), see [`LICENSE.AGPL-3.0`](./LICENSE.AGPL-3.0)
-- All files in `abi`, `ethers-v5`, and `web3-v1` are licensed under `MIT`, see [`LICENSE.MIT`](./LICENSE.MIT)
+The primary license for Optimistic Oracle Interfaces is MIT, see [`LICENSE`](./LICENSE).

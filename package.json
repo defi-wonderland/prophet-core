@@ -1,22 +1,22 @@
 {
-  "name": "solidity-foundry-boilerplate",
+  "name": "opoo-core",
   "version": "1.0.0",
   "private": true,
-  "description": "Production ready Solidity boilerplate with Foundry",
-  "homepage": "https://github.com/defi-wonderland/solidity-foundry-boilerplate#readme",
+  "description": "OpOO presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
+  "homepage": "https://github.com/defi-wonderland/opoo-private",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defi-wonderland/solidity-foundry-boilerplate.git"
+    "url": "git+https://github.com/defi-wonderland/opoo-private.git"
   },
   "license": "MIT",
   "author": "Wonderland",
   "contributors": [
-    "0xGorilla (https://github.com/0xGorilla)",
+    "DrGorilla_md (https://github.com/drgorillamd)",
     "0xng (https://github.com/0xng)",
     "gas1cent (https://github.com/gas1cent)"
   ],
   "scripts": {
-    "build": "yarn compile",
+    "build": "yarn compile && node interfaces-exporter.js",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "compile": "forge build",
     "coverage": "forge coverage --match-contract Unit",
