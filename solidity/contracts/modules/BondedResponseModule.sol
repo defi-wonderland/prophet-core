@@ -20,12 +20,6 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     (_accounting, _bondToken, _bondSize, _deadline) = _decodeRequestData(requestData[_requestId]);
   }
 
-  function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _decodeRequestData(requestData[_requestId]);
-    _canPropose = block.timestamp < _deadline && _accountingExtension.balanceOf(_proposer, _bondToken) >= _bondSize;
-  }
-
   function _decodeRequestData(bytes memory _data)
     internal
     pure

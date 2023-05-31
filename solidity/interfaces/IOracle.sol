@@ -11,15 +11,6 @@ import {IFinalityModule} from './modules/IFinalityModule.sol';
 import {IAccountingExtension} from './extensions/IAccountingExtension.sol';
 
 interface IOracle {
-  /// @notice Thrown when a proposer is not allowed to propose a response
-  error Oracle_CannotPropose(bytes32 _requestId, address _proposer);
-
-  /// @notice Thrown when a disputer is not allowed to dispute a response
-  error Oracle_CannotDispute(bytes32 _requestId, address _proposer);
-
-  /// @notice Thrown when an extension is not set for the given request
-  error Oracle_NoExtensionSet(bytes32 _requestId);
-
   /// @notice Thrown when the caller of the slash() function is not the DisputeModule
   error Oracle_NotResolutionModule(address _caller);
 
@@ -89,8 +80,6 @@ interface IOracle {
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
-  function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose);
-  function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute);
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;

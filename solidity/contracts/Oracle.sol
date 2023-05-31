@@ -80,31 +80,20 @@ contract Oracle is IOracle {
   }
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
-    bool _canPropose = _requests[_requestId].responseModule.canPropose(_requestId, msg.sender);
-    if (_canPropose) {
-      Request memory _request = _requests[_requestId];
-      _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
-      _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
-      _responseIds[_requestId].push(_responseId);
-    } else {
-      revert Oracle_CannotPropose(_requestId, msg.sender);
-    }
+    Request memory _request = _requests[_requestId];
+    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
+    _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
+    _responseIds[_requestId].push(_responseId);
   }
 
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
     if (disputeOf[_responseId] != bytes32('')) revert Oracle_ResponseAlreadyDisputed(_responseId);
 
     Request memory _request = _requests[_requestId];
-    bool _canDispute = _request.disputeModule.canDispute(_requestId, msg.sender);
-
-    if (_canDispute) {
-      _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
-      _disputes[_disputeId] =
-        _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
-      disputeOf[_responseId] = _disputeId;
-    } else {
-      revert Oracle_CannotDispute(_requestId, msg.sender);
-    }
+    _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
+    _disputes[_disputeId] =
+      _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
+    disputeOf[_responseId] = _disputeId;
   }
 
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
@@ -119,16 +108,6 @@ contract Oracle is IOracle {
     Request memory _request = _requests[_requestId];
     _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
       || address(_request.disputeModule) == _module || address(_request.finalityModule) == _module;
-  }
-
-  function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose) {
-    _canPropose = _requests[_requestId].responseModule.canPropose(_requestId, _proposer);
-  }
-
-  function canDispute(bytes32 _responseId, address _disputer) external returns (bool _canDispute) {
-    bytes32 _requestId = _responses[_responseId].requestId;
-    _canDispute =
-      disputeOf[_responseId] == bytes32('') && _requests[_requestId].disputeModule.canDispute(_requestId, _disputer);
   }
 
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {

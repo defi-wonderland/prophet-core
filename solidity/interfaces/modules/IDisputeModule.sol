@@ -5,7 +5,6 @@ import {IModule} from '../IModule.sol';
 import {IOracle} from '../IOracle.sol';
 
 interface IDisputeModule is IModule {
-  function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute);
   function disputeResponse(
     bytes32 _requestId,
     bytes32 _responseId,

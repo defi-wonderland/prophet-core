@@ -1,6 +1,6 @@
 # Optimistic Oracle Core
 
-[![License: AGPL 3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://github.com/defi-wonderland/opoo-core/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/opoo-core/blob/main/LICENSE)
 
 ⚠️ The code has not been audited yet, tread with caution.
 

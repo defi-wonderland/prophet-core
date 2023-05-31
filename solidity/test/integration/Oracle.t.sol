@@ -93,16 +93,14 @@ contract IntegrationOracle is IntegrationBase {
     assertEq(_responseIds.length, 0);
 
     // Can't propose a response without a bond
-    assertFalse(_responseModule.canPropose(_requestId, proposer));
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
     // Deposit and bond
     vm.startPrank(proposer);
     uint256 bondSize = _expectedBondSize * 2;
     usdc.approve(address(_accounting), bondSize);
     _accounting.deposit(usdc, bondSize);
-
-    // Propose a response
-    assertTrue(_responseModule.canPropose(_requestId, proposer));
 
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
     vm.stopPrank();
@@ -127,14 +125,14 @@ contract IntegrationOracle is IntegrationBase {
 
     // Dispute the response
     changePrank(disputer);
-    assertFalse(oracle.canDispute(_responseId, disputer));
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    oracle.disputeResponse(_requestId, _responseId);
 
     // Bond and try again
     usdc.approve(address(_accountingExtension), _expectedBondSize);
     _accountingExtension.deposit(usdc, _expectedBondSize);
 
     changePrank(disputer);
-    assertTrue(oracle.canDispute(_responseId, disputer));
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
     bytes32 _disputeIdStored = oracle.disputeOf(_responseId);

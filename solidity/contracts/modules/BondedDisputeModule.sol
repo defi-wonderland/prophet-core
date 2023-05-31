@@ -24,12 +24,6 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     (_accountingExtension, _bondToken, _bondSize) = _decodeRequestData(requestData[_requestId]);
   }
 
-  function canDispute(bytes32 _requestId, address _disputer) external returns (bool _canDispute) {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      _decodeRequestData(requestData[_requestId]);
-    _canDispute = _accountingExtension.balanceOf(_disputer, _bondToken) >= _bondSize;
-  }
-
   function escalateDispute(bytes32 _disputeId) external {
     // TODO: Start the real dispute process, involving the arbitrator
   }

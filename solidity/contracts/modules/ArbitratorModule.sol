@@ -22,10 +22,6 @@ contract ArbitratorModule is Module, IArbitratorModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  function canResolve(bytes32 _requestId, address _resolver) external view returns (bool _canResolve) {
-    _canResolve = _decodeRequestData(requestData[_requestId]) == _resolver;
-  }
-
   function moduleName() external pure returns (string memory _moduleName) {
     return 'ArbitratorModule';
   }

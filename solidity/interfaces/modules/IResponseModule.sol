@@ -8,7 +8,6 @@ import {IOracle} from '../IOracle.sol';
 import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
 
 interface IResponseModule is IModule {
-  function canPropose(bytes32 _requestId, address _proposer) external returns (bool _canPropose);
   function propose(
     bytes32 _requestId,
     address _proposer,
