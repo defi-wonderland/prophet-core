@@ -24,6 +24,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     (_accountingExtension, _bondToken, _bondSize) = _decodeRequestData(requestData[_requestId]);
   }
 
+  // TODO: adding an Escalated status to the disputeStatus enum could work to avoid escalating two disputes twice
   function escalateDispute(bytes32 _disputeId) external {
     // TODO: Start the real dispute process, involving the arbitrator
   }
@@ -49,7 +50,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
   }
 
-  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external {
+  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
       _decodeRequestData(requestData[_dispute.requestId]);
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;

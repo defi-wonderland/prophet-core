@@ -81,6 +81,7 @@ contract Oracle is IOracle {
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
+    // TODO: this requires a nonce or something to avoid collision if the same user proposes twice
     _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
     _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
     _responseIds[_requestId].push(_responseId);
@@ -90,6 +91,7 @@ contract Oracle is IOracle {
     if (disputeOf[_responseId] != bytes32('')) revert Oracle_ResponseAlreadyDisputed(_responseId);
 
     Request memory _request = _requests[_requestId];
+    // TODO: this requires a nonce or something to avoid collision if the same user disputes twice
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
     _disputes[_disputeId] =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);

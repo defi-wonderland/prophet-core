@@ -29,5 +29,5 @@ interface IAccountingExtension {
   function bond(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount) external;
   function release(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount) external;
   function bondedAmountOf(address _user, IERC20 _bondToken, bytes32 _requestId) external returns (uint256 _amount);
-  function balanceOf(address _user, IERC20 _bondToken) external returns (uint256 _amount);
+  function balanceOf(address _user, IERC20 _bondToken) external view returns (uint256 _amount);
 }

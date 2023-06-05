@@ -77,6 +77,10 @@ contract ArbitratorModule is Module, IArbitratorModule {
     address _arbitrator = address(uint160(_requestData));
 
     // Avoid ghost calls
+    // TODO: If it's possible for the Arbitrator.resolve to exist but not have the answer, this could end in a wrong update of the dispute status
+    // TODO: assuming the arbitrator returns _won as 0 in case there's no response or something, then a possible abuse would be:
+    // TODO: proposer answers wrong, disputer disputes it, proposer calls this function, because there's no answer the arbitrator defaults to _won == 0
+    // TODO: and the status of the request is changed to Lost.
     if (_arbitrator != address(0) && ERC165Checker.supportsInterface(_arbitrator, type(IArbitrator).interfaceId)) {
       // Try to atomically resolve
       try IArbitrator(_arbitrator).resolve(_disputeId) returns (bool _won, bool _useArbitrator) {
