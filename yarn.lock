@@ -1415,12 +1415,13 @@ flatted@^2.0.0:
   integrity sha512-r5wGx7YeOwNWNlCA0wQ86zKyDLMQr+/RB8xy74M4hTphfmjlijTSSXGuH8rnvKZnfT9i+75zmd8jcKdMR4O6jA==
 
 "forge-std@https://github.com/foundry-rs/forge-std":
-  version "1.5.5"
-  resolved "https://github.com/foundry-rs/forge-std#73d44ec7d124e3831bc5f832267889ffb6f9bc3f"
+  version "1.5.6"
+  resolved "https://github.com/foundry-rs/forge-std#e8a047e3f40f13fa37af6fe14e6e06283d9a060e"
 
-"forge-std@https://github.com/foundry-rs/forge-std.git#06c5a8f760f7d2392697cb092eda80c864e4fc06":
-  version "1.5.3"
-  resolved "https://github.com/foundry-rs/forge-std.git#06c5a8f760f7d2392697cb092eda80c864e4fc06"
+"forge-std@https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e":
+  version "1.5.6"
+  uid e8a047e3f40f13fa37af6fe14e6e06283d9a060e
+  resolved "https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e"
 
 fs-extra@10.1.0, fs-extra@^10.0.0:
   version "10.1.0"

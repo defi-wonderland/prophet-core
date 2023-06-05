@@ -23,7 +23,7 @@ contract Oracle is IOracle {
   uint256 internal _nonce;
 
   function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
-    uint256 _requestNonce = ++_nonce;
+    uint256 _requestNonce = _nonce++;
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
     _requestIds[_requestNonce] = _requestId;
     _request.nonce = _requestNonce;
@@ -49,6 +49,12 @@ contract Oracle is IOracle {
 
   function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (Request[] memory _list) {
     uint256 _totalRequestsCount = _nonce;
+
+    // If trying to collect unexisting requests only, return empty array
+    if (_startFrom > _totalRequestsCount) {
+      return _list;
+    }
+
     if (_batchSize > _totalRequestsCount - _startFrom) {
       _batchSize = _totalRequestsCount - _startFrom;
     }
@@ -109,7 +115,8 @@ contract Oracle is IOracle {
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
     Request memory _request = _requests[_requestId];
     _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
-      || address(_request.disputeModule) == _module || address(_request.finalityModule) == _module;
+      || address(_request.disputeModule) == _module || address(_request.resolutionModule) == _module
+      || address(_request.finalityModule) == _module;
   }
 
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
@@ -126,6 +133,7 @@ contract Oracle is IOracle {
 
     _request.requestModule.finalizeRequest(_requestId);
     _request.responseModule.finalizeRequest(_requestId);
+    _request.resolutionModule.finalizeRequest(_requestId);
 
     if (address(_request.disputeModule) != address(0)) {
       _request.disputeModule.finalizeRequest(_requestId);
