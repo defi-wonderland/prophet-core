@@ -354,9 +354,8 @@ contract Oracle_UnitTest is Test {
     _storeDummyRequests(1)[0];
 
     // Store a mock dispute for this response
-    stdstore.target(address(oracle)).sig('disputeOf(bytes32)').with_key(_responseId).checked_write(_disputeId);
-
     // Check: revert?
+    stdstore.target(address(oracle)).sig('disputeOf(bytes32)').with_key(_responseId).checked_write(_disputeId);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
 
     // Test: try to dispute the response again

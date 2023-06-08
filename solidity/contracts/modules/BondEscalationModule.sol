@@ -12,9 +12,9 @@ import {Module} from '../Module.sol';
 // TODO: Design: define whether to include a challenging period to avoid cheap non-conclusive answer attack.
 // TODO: Optimizations
 contract BondEscalationModule is Module, IBondEscalationModule {
-  mapping(bytes32 _disputeId => BondEscalationData) public bondEscalationData;
+  mapping(bytes32 _disputeId => BondEscalationData) internal _bondEscalationData;
 
-  // Note: bondEscalationStatus can also be part of bondEscalationData if needed
+  // Note: bondEscalationStatus can also be part of _bondEscalationData if needed
   mapping(bytes32 _requestId => BondEscalationStatus _status) public bondEscalationStatus;
   mapping(bytes32 _requestId => bytes32 _disputeId) public escalatedDispute;
 
@@ -41,26 +41,27 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     (,,,, uint256 _bondEscalationDeadline, uint256 _tyingBuffer) = _decodeRequestData(requestData[_dispute.requestId]);
 
-    BondEscalationStatus _status = bondEscalationStatus[_dispute.requestId];
-    BondEscalationData storage _bondEscalationData = bondEscalationData[_disputeId];
-
     // If the bond escalation deadline is not over, no dispute can be escalated
     if (block.timestamp <= _bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
-    // If we are in the tying buffer period and the dispute is active, then no dispute can be escalated
+    BondEscalationStatus _status = bondEscalationStatus[_dispute.requestId];
+    BondEscalationData storage __bondEscalationData = _bondEscalationData[_disputeId];
+
+    // If we are in the tying buffer period, the dispute is active, and the dispute is not tied, then no dispute can be escalated
     if (
       block.timestamp > _bondEscalationDeadline && block.timestamp <= _bondEscalationDeadline + _tyingBuffer
         && _status == BondEscalationStatus.Active
-    ) revert BondEscalationModule_BondEscalationNotOver();
+        && __bondEscalationData.pledgersForDispute.length != __bondEscalationData.pledgersAgainstDispute.length
+    ) revert BondEscalationModule_TyingBufferNotOver();
 
     // if we are past the deadline, and this is the first dispute of the request
     if (_disputeId == escalatedDispute[_dispute.requestId]) {
       // revert if the dispute is not tied, or if it's not active
       if (
         _status != BondEscalationStatus.Active
-          || _bondEscalationData.pledgersForDispute.length != _bondEscalationData.pledgersAgainstDispute.length
+          || __bondEscalationData.pledgersForDispute.length != __bondEscalationData.pledgersAgainstDispute.length
       ) {
-        revert BondEscalationModule_NotEscalable();
+        revert BondEscalationModule_NotEscalatable();
       }
 
       bondEscalationStatus[_dispute.requestId] = BondEscalationStatus.Escalated;
@@ -94,6 +95,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       ,
       uint256 _bondEscalationDeadline,
     ) = _decodeRequestData(requestData[_requestId]);
+
+    // if the bond escalation is not over and there's an active dispute going through it, revert
+    if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.Active) {
+      revert BondEscalationModule_DisputeCurrentlyActive();
+    }
+
     // if the bond escalation is not over and this is the first dispute of the request
     if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.None) {
       // start the bond escalation process
@@ -101,9 +108,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       // TODO: this imitates the way _disputeId is calculated on the Oracle, it must always match
       bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId));
       escalatedDispute[_requestId] = _disputeId;
-    } else {
-      // else there's a escalation process on-going so no disputes will be accepted
-      revert BondEscalationModule_DisputeCurrentlyActive();
     }
 
     // TODO: Check if can dispute
@@ -140,9 +144,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _disputeId == escalatedDispute[_dispute.requestId]
         && bondEscalationStatus[_dispute.requestId] == BondEscalationStatus.Escalated
     ) {
-      BondEscalationData memory _bondEscalationData = bondEscalationData[_disputeId];
+      BondEscalationData memory __bondEscalationData = _bondEscalationData[_disputeId];
 
-      if (_bondEscalationData.pledgersAgainstDispute.length == 0) {
+      if (__bondEscalationData.pledgersAgainstDispute.length == 0) {
         return;
       }
 
@@ -153,7 +157,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _accountingExtension.payWinningPledgers(
         _dispute.requestId,
         _disputeId,
-        _won ? _bondEscalationData.pledgersForDispute : _bondEscalationData.pledgersAgainstDispute,
+        _won ? __bondEscalationData.pledgersForDispute : __bondEscalationData.pledgersAgainstDispute,
         _bondToken,
         _bondSize
       );
@@ -177,6 +181,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    */
 
   function pledgeForDispute(bytes32 _disputeId) external {
+    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
+
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
 
     if (_disputeId != escalatedDispute[_dispute.requestId]) {
@@ -196,8 +202,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     if (block.timestamp > _bondEscalationDeadline + _tyingBuffer) revert BondEscalationModule_BondEscalationOver();
 
-    uint256 _numPledgersForDispute = bondEscalationData[_disputeId].pledgersForDispute.length;
-    uint256 _numPledgersAgainstDispute = bondEscalationData[_disputeId].pledgersAgainstDispute.length;
+    uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
+    uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
+
+    // if the maximum number of escalations has been reached, no further pledges can be made
+    if (_numPledgersForDispute == _maxNumberOfEscalations) {
+      revert BondEscalationModule_MaxNumberOfEscalationsReached();
+    }
 
     // can only pledge if you are not surpassing the losing side by more than one pledge
     if (_numPledgersForDispute > _numPledgersAgainstDispute) {
@@ -209,17 +220,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
-    // if the maximum number of escalations has been reached, no further pledges can be made
-    if (_numPledgersForDispute == _maxNumberOfEscalations) {
-      revert BondEscalationModule_MaxNumberOfEscalationsReached();
-    }
-
     if (_accountingExtension.balanceOf(msg.sender, _bondToken) < _bondSize) {
       revert BondEscalationModule_NotEnoughDepositedCapital();
     }
 
     // TODO: this duplicates users -- see if this can be optimized with a different data structure
-    bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
+    _bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
 
     _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
     emit BondEscalatedForDisputer(msg.sender, _bondSize);
@@ -239,6 +245,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    */
 
   function pledgeAgainstDispute(bytes32 _disputeId) external {
+    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
+
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
 
     if (_disputeId != escalatedDispute[_dispute.requestId]) {
@@ -258,8 +266,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     if (block.timestamp > _bondEscalationDeadline + _tyingBuffer) revert BondEscalationModule_BondEscalationOver();
 
-    uint256 _numPledgersForDispute = bondEscalationData[_disputeId].pledgersForDispute.length;
-    uint256 _numPledgersAgainstDispute = bondEscalationData[_disputeId].pledgersAgainstDispute.length;
+    uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
+    uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
+
+    // if the maximum number of escalations has been reached, no further pledges can be made
+    if (_numPledgersAgainstDispute == _maxNumberOfEscalations) {
+      revert BondEscalationModule_MaxNumberOfEscalationsReached();
+    }
 
     // can only pledge if you are not surpassing the losing side by more than one pledge
     if (_numPledgersAgainstDispute > _numPledgersForDispute) {
@@ -271,17 +284,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
-    // if the maximum number of escalations has been reached, no further pledges can be made
-    if (_numPledgersAgainstDispute == _maxNumberOfEscalations) {
-      revert BondEscalationModule_MaxNumberOfEscalationsReached();
-    }
-
     if (_accountingExtension.balanceOf(msg.sender, _bondToken) < _bondSize) {
       revert BondEscalationModule_NotEnoughDepositedCapital();
     }
 
     // TODO: this duplicates users -- see if this can be optimized with a different data structure
-    bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
+    _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
 
     _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
     emit BondEscalatedForDisputer(msg.sender, _bondSize);
@@ -315,8 +323,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     bytes32 _disputeId = escalatedDispute[_requestId];
 
-    address[] memory _pledgersForDispute = bondEscalationData[_disputeId].pledgersForDispute;
-    address[] memory _pledgersAgainstDispute = bondEscalationData[_disputeId].pledgersAgainstDispute;
+    address[] memory _pledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute;
+    address[] memory _pledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute;
 
     if (_pledgersForDispute.length == _pledgersAgainstDispute.length) {
       revert BondEscalationModule_ShouldBeEscalated();
@@ -385,11 +393,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    * @return _pledgersForDispute Addresses that pledged in favor of the dispute during the bond escalation process
    */
   function fetchPledgersForDispute(bytes32 _disputeId) external view returns (address[] memory _pledgersForDispute) {
-    BondEscalationData memory _bondEscalationData = bondEscalationData[_disputeId];
-    uint256 _pledgersForDisputeLength = _bondEscalationData.pledgersForDispute.length;
+    BondEscalationData memory __bondEscalationData = _bondEscalationData[_disputeId];
+    uint256 _pledgersForDisputeLength = __bondEscalationData.pledgersForDispute.length;
     _pledgersForDispute = new address[](_pledgersForDisputeLength);
     for (uint256 i; i < _pledgersForDisputeLength;) {
-      _pledgersForDispute[i] = _bondEscalationData.pledgersForDispute[i];
+      _pledgersForDispute[i] = __bondEscalationData.pledgersForDispute[i];
       unchecked {
         ++i;
       }
@@ -410,11 +418,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     view
     returns (address[] memory _pledgersAgainstDispute)
   {
-    BondEscalationData memory _bondEscalationData = bondEscalationData[_disputeId];
-    uint256 _pledgersAgainstDisputeLength = _bondEscalationData.pledgersAgainstDispute.length;
+    BondEscalationData memory __bondEscalationData = _bondEscalationData[_disputeId];
+    uint256 _pledgersAgainstDisputeLength = __bondEscalationData.pledgersAgainstDispute.length;
     _pledgersAgainstDispute = new address[](_pledgersAgainstDisputeLength);
     for (uint256 i; i < _pledgersAgainstDisputeLength;) {
-      _pledgersAgainstDispute[i] = _bondEscalationData.pledgersAgainstDispute[i];
+      _pledgersAgainstDispute[i] = __bondEscalationData.pledgersAgainstDispute[i];
       unchecked {
         ++i;
       }

@@ -78,6 +78,7 @@ interface IOracle {
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute);
   function getResponse(bytes32 _responseId) external view returns (Response memory _response);
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
+  function disputeOf(bytes32 _requestId) external view returns (bytes32 _disputeId);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
