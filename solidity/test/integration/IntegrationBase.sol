@@ -6,20 +6,20 @@ import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPl
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
+import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IDisputeModule} from '../../interfaces/modules/IDisputeModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol';
 import {IFinalityModule} from '../../interfaces/modules/IFinalityModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
-import {HttpRequestModule} from '../../contracts/modules/HttpRequestModule.sol';
-import {BondedResponseModule} from '../../contracts/modules/BondedResponseModule.sol';
-import {BondedDisputeModule} from '../../contracts/modules/BondedDisputeModule.sol';
-import {ArbitratorModule} from '../../contracts/modules/ArbitratorModule.sol';
-import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
-import {CallbackModule} from '../../contracts/modules/CallbackModule.sol';
-import {Oracle} from '../../contracts/Oracle.sol';
+import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/HttpRequestModule.sol';
+import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/BondedResponseModule.sol';
+import {BondedDisputeModule, IBondedDisputeModule} from '../../contracts/modules/BondedDisputeModule.sol';
+import {ArbitratorModule, IArbitratorModule} from '../../contracts/modules/ArbitratorModule.sol';
+import {AccountingExtension, IAccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
+import {CallbackModule, ICallbackModule} from '../../contracts/modules/CallbackModule.sol';
+import {Oracle, IOracle} from '../../contracts/Oracle.sol';
 
 import {MockCallback} from '../mocks/MockCallback.sol';
 import {MockArbitrator} from '../mocks/MockArbitrator.sol';
@@ -40,7 +40,7 @@ contract IntegrationBase is DSTestPlus, TestConstants {
   Oracle public oracle;
 
   IERC20 usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
-  IWETH9 weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
+  IWeth9 weth = IWeth9(label(WETH_ADDRESS, 'WETH'));
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('optimism'), FORK_BLOCK);

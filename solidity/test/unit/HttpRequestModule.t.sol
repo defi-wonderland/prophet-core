@@ -124,10 +124,10 @@ contract HttpRequestModule_UnitTest is Test {
    *          - oracle get request
    *          - oracle get response
    *          - accounting extension pay
+   *          - accounting extension release
    */
   function test_finalizeRequestMakesCalls(
     bytes32 _requestId,
-    bytes32 _finalizedResponseId,
     address _requester,
     address _proposer,
     uint256 _amount
@@ -137,10 +137,10 @@ contract HttpRequestModule_UnitTest is Test {
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
-    _fullRequest.finalizedResponseId = _finalizedResponseId;
 
     IOracle.Response memory _fullResponse;
     _fullResponse.proposer = _proposer;
+    _fullResponse.createdAt = block.timestamp;
 
     // Set the request data
     httpRequestModule.forTest_setRequestData(_requestId, _requestData);
@@ -149,10 +149,11 @@ contract HttpRequestModule_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_finalizedResponseId)), abi.encode(_fullResponse));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_finalizedResponseId)));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)));
 
     vm.etch(address(accounting), hex'069420');
+
     vm.mockCall(
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, TOKEN, _amount)),
@@ -162,7 +163,26 @@ contract HttpRequestModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, TOKEN, _amount))
     );
 
-    vm.prank(address(oracle));
+    vm.startPrank(address(oracle));
+    httpRequestModule.finalizeRequest(_requestId);
+
+    // Test the release flow
+    _fullResponse.createdAt = 0;
+
+    // Update mock call to return the response with createdAt = 0
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount)),
+      abi.encode(true)
+    );
+
+    vm.expectCall(
+      address(accounting), abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount))
+    );
+
     httpRequestModule.finalizeRequest(_requestId);
   }
 

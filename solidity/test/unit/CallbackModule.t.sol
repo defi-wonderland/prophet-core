@@ -61,6 +61,8 @@ contract CallbackModule_UnitTest is Test {
    * @notice Test that finalizeRequest calls the _target.callback with the correct data
    */
   function test_finalizeRequestTriggersCallback(bytes32 _requestId, address _target, bytes calldata _data) public {
+    assumeNoPrecompiles(_target);
+
     // Create and set some mock request data
     bytes memory _requestData = abi.encode(_target, _data);
     callbackModule.forTest_setRequestData(_requestId, _requestData);

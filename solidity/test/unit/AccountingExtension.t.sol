@@ -9,7 +9,7 @@ import {
   IAccountingExtension,
   IERC20,
   IOracle,
-  IWETH9
+  IWeth9
 } from '../../contracts/extensions/AccountingExtension.sol';
 
 /**
@@ -33,7 +33,7 @@ contract AccountingExtension_UnitTest is Test {
   IOracle public oracle;
 
   // Mock Weth
-  IWETH9 public weth;
+  IWeth9 public weth;
 
   // Mock deposit token
   IERC20 public token;
@@ -45,7 +45,7 @@ contract AccountingExtension_UnitTest is Test {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    weth = IWETH9(makeAddr('WETH9'));
+    weth = IWeth9(makeAddr('WETH9'));
     vm.etch(address(weth), hex'069420');
 
     token = IERC20(makeAddr('Token'));
@@ -65,8 +65,8 @@ contract AccountingExtension_UnitTest is Test {
     vm.deal(_sender, _value);
 
     // Mock and expect the weth deposit
-    vm.mockCall(address(weth), abi.encodeCall(IWETH9.deposit, ()), abi.encode());
-    vm.expectCall(address(weth), abi.encodeCall(IWETH9.deposit, ()));
+    vm.mockCall(address(weth), abi.encodeCall(IWeth9.deposit, ()), abi.encode());
+    vm.expectCall(address(weth), abi.encodeCall(IWeth9.deposit, ()));
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));
@@ -121,8 +121,8 @@ contract AccountingExtension_UnitTest is Test {
       .checked_write(_initialBalance);
 
     // Mock and expect the weth withdraw
-    vm.mockCall(address(weth), abi.encodeCall(IWETH9.withdraw, (_value)), abi.encode());
-    vm.expectCall(address(weth), abi.encodeCall(IWETH9.withdraw, (_value)));
+    vm.mockCall(address(weth), abi.encodeCall(IWeth9.withdraw, (_value)), abi.encode());
+    vm.expectCall(address(weth), abi.encodeCall(IWeth9.withdraw, (_value)));
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));
@@ -268,80 +268,6 @@ contract AccountingExtension_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
     vm.prank(_sender);
     module.pay(_requestId, _payer, _receiver, token, _amount);
-  }
-
-  /**
-   * @notice Test if slashing update the balances (decrease slashed and increase disputer) and emit events
-   */
-  function test_slashUpdateBalance(
-    bytes32 _requestId,
-    uint256 _amount,
-    uint256 _initialBalance,
-    address _slashed,
-    address _disputer
-  ) public {
-    _amount = bound(_amount, 0, _initialBalance);
-
-    // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_slashed).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
-
-    // check: event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Slash(_slashed, _disputer, token, _amount);
-
-    vm.prank(address(oracle));
-    module.slash(token, _requestId, _slashed, _disputer, _amount);
-
-    // check: balance receiver
-    assertEq(module.balanceOf(_disputer, token), _amount);
-
-    // check: bonded balance payer
-    assertEq(module.bondedAmountOf(_slashed, token, _requestId), _initialBalance - _amount);
-  }
-
-  /**
-   * @notice Test if slashing reverts if bonded amount is not enough
-   */
-  function test_slashRevertIfBondTooSmall(
-    bytes32 _requestId,
-    uint256 _amount,
-    uint248 _initialBalance,
-    address _slashed,
-    address _disputer
-  ) public {
-    _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
-
-    // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_slashed).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
-
-    // Check: revert if balance too low?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
-
-    vm.prank(address(oracle));
-    module.slash(token, _requestId, _slashed, _disputer, _amount);
-  }
-
-  /**
-   * @notice Test if slashing reverts if bonded amount is not enough
-   */
-  function test_slashInvalidCaller(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _slashed,
-    address _disputer,
-    address _sender
-  ) public {
-    vm.assume(_sender != address(oracle));
-
-    // Check: revert if sender is not the oracle?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_OnlyOracle.selector));
-
-    vm.prank(address(_sender));
-    module.slash(token, _requestId, _slashed, _disputer, _amount);
   }
 
   /**

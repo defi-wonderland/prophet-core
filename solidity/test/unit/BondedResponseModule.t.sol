@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   BondedResponseModule,
+  IBondedResponseModule,
   Module,
   IModule,
   IOracle,
@@ -87,9 +88,13 @@ contract BondedResponseModule_UnitTest is Test {
    * @notice Test that the propose function works correctly and triggers _afterPropose (which bonds)
    */
   function test_propose(bytes32 _requestId, uint256 _bondSize, uint256 _deadline, bytes calldata _responseData) public {
+    vm.assume(_deadline > block.timestamp);
     // Create and set some mock request data
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    // Mock getting the request's responses to verify that the caller can propose
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
 
     // Mock and expect the call to the accounting extension to bond the bondSize
     vm.mockCall(
@@ -109,8 +114,7 @@ contract BondedResponseModule_UnitTest is Test {
       requestId: _requestId,
       disputeId: bytes32(''),
       proposer: proposer,
-      response: _responseData,
-      finalized: false
+      response: _responseData
     });
 
     // Check: correct response struct returned?
@@ -118,7 +122,6 @@ contract BondedResponseModule_UnitTest is Test {
     assertEq(_responseReturned.disputeId, _responseExpected.disputeId);
     assertEq(_responseReturned.proposer, _responseExpected.proposer);
     assertEq(_responseReturned.response, _responseExpected.response);
-    assertEq(_responseReturned.finalized, _responseExpected.finalized);
   }
 
   /**
@@ -131,6 +134,49 @@ contract BondedResponseModule_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
     vm.prank(address(_sender));
     bondedResponseModule.propose(_requestId, proposer, _responseData);
+  }
+
+  /**
+   * @notice Test that the propose function is only callable by the oracle
+   */
+  function test_finalizeRequestCalls(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+    vm.assume(_deadline > block.timestamp);
+    vm.startPrank(address(oracle));
+
+    // Check revert if deadline has not passed
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
+    bondedResponseModule.finalizeRequest(_requestId);
+
+    // Check correct calls are made if deadline has passed
+    _deadline = block.timestamp;
+
+    _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      requestId: _requestId,
+      disputeId: bytes32(''),
+      proposer: proposer,
+      response: bytes('bleh')
+    });
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId), abi.encode(_mockResponse));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
+    );
+
+    bondedResponseModule.finalizeRequest(_requestId);
   }
 
   /**

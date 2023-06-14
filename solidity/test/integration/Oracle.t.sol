@@ -19,6 +19,7 @@ contract IntegrationOracle is IntegrationBase {
   string _expectedResponse = '{"ethereum":{"usd":1000}}';
 
   uint256 _expectedBondSize = 100 ether;
+  uint256 _expectedReward = 30 ether;
   uint256 _expectedDeadline;
   uint256 _expectedCallbackValue;
 
@@ -41,12 +42,12 @@ contract IntegrationOracle is IntegrationBase {
     _accountingExtension = new AccountingExtension(oracle, weth);
 
     vm.startPrank(requester);
-    usdc.approve(address(_accountingExtension), _expectedBondSize);
-    _accountingExtension.deposit(usdc, _expectedBondSize);
+    usdc.approve(address(_accountingExtension), _expectedReward);
+    _accountingExtension.deposit(usdc, _expectedReward);
 
     IOracle.Request memory _request = IOracle.Request({
       requestModuleData: abi.encode(
-        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedBondSize
+        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedReward
         ),
       responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
       disputeModuleData: abi.encode(
@@ -54,7 +55,6 @@ contract IntegrationOracle is IntegrationBase {
         ),
       resolutionModuleData: abi.encode(_mockArbitrator),
       finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
-      finalizedResponseId: bytes32(''),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,
@@ -149,18 +149,31 @@ contract IntegrationOracle is IntegrationBase {
     _accountingExtension.deposit(usdc, bondSize);
 
     changePrank(proposer);
-    oracle.proposeResponse(_requestId, bytes(_expectedResponse));
+    bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
     vm.stopPrank();
 
-    // TODO: Expect revert if called before deadline
-    vm.warp(_expectedDeadline);
-    oracle.finalize(_requestId);
+    // Revert if tried to finalize the request before the deadline
+    vm.expectRevert(abi.encodeWithSelector(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector));
+    oracle.finalize(_requestId, _responseId);
 
-    // TODO: Release all bonds for every proposer, pay the winning proposer
-    // assertEq(_accountingExtension.balanceOf(proposer, usdc), 0);
-    // assertEq(_accountingExtension.bondedAmountOf(proposer, usdc, _requestId), 0);
-    // assertEq(_accountingExtension.balanceOf(requester, usdc), 0);
-    // assertEq(_accountingExtension.bondedAmountOf(requester, usdc, _requestId), 0);
+    // Warp to the deadline and finalize
+    vm.warp(_expectedDeadline);
+    oracle.finalize(_requestId, _responseId);
+
+    assertEq(
+      _accountingExtension.balanceOf(proposer, usdc), bondSize + _expectedReward, 'The proposer should be rewarded'
+    );
+    assertEq(
+      _accountingExtension.bondedAmountOf(proposer, usdc, _requestId),
+      0,
+      'The proposer funds should not be bonded anymore'
+    );
+    assertEq(_accountingExtension.balanceOf(requester, usdc), 0, 'The requester bond should be spent');
+    assertEq(
+      _accountingExtension.bondedAmountOf(requester, usdc, _requestId), 0, 'The requester should not have bonded funds'
+    );
   }
+
+  // TODO: Test disputes and slashing
 }

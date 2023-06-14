@@ -187,10 +187,27 @@
   version "6.2.0-beta2"
   resolved "https://github.com/defi-wonderland/isolmate.git#59e18043c2450fef550f1744b3705ce9ebcaf1c8"
 
+"@defi-wonderland/keep3r-v2@0.0.0-31de77ed":
+  version "0.0.0-31de77ed"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/keep3r-v2/-/keep3r-v2-0.0.0-31de77ed.tgz#e2bb680838af23bacf5034a89c37d1d56b91970c"
+  integrity sha512-8hYmy2TYCmea30oKfXiDxwh2UtKF85r5P1Y/HW7I9l6UvEeM+WBfmjXTMG2qnxGyRB9eBGCClwo8UmmQN3ZCBg==
+  dependencies:
+    "@defi-wonderland/solidity-utils" "0.0.0-6c86c0fc"
+    "@openzeppelin/contracts" "4.3.0"
+
 "@defi-wonderland/solidity-utils@0.0.0-4298c6c6":
   version "0.0.0-4298c6c6"
   resolved "https://registry.yarnpkg.com/@defi-wonderland/solidity-utils/-/solidity-utils-0.0.0-4298c6c6.tgz#4ac9e4bcc586f7434715357310a7a3c30e81f17f"
   integrity sha512-jpecgVx9hpnXXGnYnN8ayd1ONj4ljk0hI36ltNfkNwlDkLLzPt4/FY5YSyY/628Exfuy5X9Rl9gGv5UtYgAmtw==
+  dependencies:
+    "@openzeppelin/contracts" "4.8.1"
+    ds-test "https://github.com/dapphub/ds-test"
+    forge-std "https://github.com/foundry-rs/forge-std"
+
+"@defi-wonderland/solidity-utils@0.0.0-6c86c0fc":
+  version "0.0.0-6c86c0fc"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/solidity-utils/-/solidity-utils-0.0.0-6c86c0fc.tgz#36da2deab6e181299c4ec328a0719d044142cab3"
+  integrity sha512-JVRPMw06UiK0LRMi5wuIH9bkx33+3DSIUdN4QHhlqqGQa9rm9r6H/yVBWDOchACiJIfaShfLZZA0gAnL8tkkvA==
   dependencies:
     "@openzeppelin/contracts" "4.8.1"
     ds-test "https://github.com/dapphub/ds-test"
@@ -247,6 +264,11 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
+
+"@openzeppelin/contracts@4.3.0":
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.0.tgz#345236d4ec73ef381ab4907c6ef66fd55e5dedad"
+  integrity sha512-+uBDl/TrmR0Kch6mq3tuxMex/fK7huR6+fQMae+zJk1K5T+dp0pFl12Hbc+1L6oYMXoyDSBJ8zqhRIntrREDFA==
 
 "@openzeppelin/contracts@4.8.1":
   version "4.8.1"

@@ -588,6 +588,17 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize))
     );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize))
+    );
+
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
   }
@@ -610,6 +621,17 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize))
     );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
+    );
+
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
   }
@@ -650,6 +672,17 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize))
     );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
+    );
+
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
 
@@ -694,6 +727,13 @@ contract BondEscalationModule_UnitTest is Test {
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize)),
       abi.encode(true)
     );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
@@ -705,6 +745,11 @@ contract BondEscalationModule_UnitTest is Test {
     vm.expectCall(
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize))
+    );
+
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
     );
 
     vm.expectCall(
@@ -759,6 +804,13 @@ contract BondEscalationModule_UnitTest is Test {
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize)),
       abi.encode(true)
     );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
@@ -770,6 +822,11 @@ contract BondEscalationModule_UnitTest is Test {
     vm.expectCall(
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize))
+    );
+
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize))
     );
 
     vm.expectCall(

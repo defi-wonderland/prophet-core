@@ -137,6 +137,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _bondSize
     );
 
+    _accountingExtension.release(
+      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
+    );
+
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
     //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
     //                   Another approach is correct parameters (low number of escalations and higher amount bonded)

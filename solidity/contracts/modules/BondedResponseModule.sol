@@ -15,9 +15,9 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   function decodeRequestData(bytes32 _requestId)
     external
     view
-    returns (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
+    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
   {
-    (_accounting, _bondToken, _bondSize, _deadline) = _decodeRequestData(requestData[_requestId]);
+    (_accountingExtension, _bondToken, _bondSize, _deadline) = _decodeRequestData(requestData[_requestId]);
   }
 
   function _decodeRequestData(bytes memory _data)
@@ -34,19 +34,48 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     address _proposer,
     bytes calldata _responseData
   ) external onlyOracle returns (IOracle.Response memory _response) {
-    // TODO: Check if can propose
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
+      _decodeRequestData(requestData[_requestId]);
+
+    // Cannot propose after the deadline
+    if (block.timestamp >= _deadline) revert BondedResponseModule_TooLateToPropose();
+
+    // Cannot propose to a request with a response, unless the response is being disputed
+    bytes32[] memory _responseIds = ORACLE.getResponseIds(_requestId);
+    if (_responseIds.length > 0) {
+      bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responseIds.length - 1]).disputeId;
+
+      // Allowing one undisputed response at a time
+      if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
+      IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+      // TODO: leaving a note here to re-check this check if a new status is added
+      // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
+      if (_dispute.status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
+    }
+
+    // TODO: Allow only one response per proposer?
+    // NG: Due to the bonding aspect of the mechanism, I think it's okay to allow multiple responses per proposer
     _response = IOracle.Response({
       requestId: _requestId,
-      disputeId: bytes32(''),
+      disputeId: bytes32(0),
       proposer: _proposer,
       response: _responseData,
-      finalized: false,
       createdAt: block.timestamp
     });
 
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize,) =
-      _decodeRequestData(requestData[_requestId]);
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
+  }
+
+  function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
+      _decodeRequestData(requestData[_requestId]);
+
+    if (block.timestamp < _deadline) revert BondedResponseModule_TooEarlyToFinalize();
+
+    IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
+    if (_response.createdAt != 0) {
+      _accountingExtension.release(_response.proposer, _requestId, _bondToken, _bondSize);
+    }
   }
 
   function moduleName() public pure returns (string memory _moduleName) {

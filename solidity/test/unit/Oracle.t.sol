@@ -4,7 +4,9 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {Oracle, IAccountingExtension, IWETH9, IERC20} from '../../contracts/Oracle.sol';
+import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+
+import {Oracle, IAccountingExtension, IERC20} from '../../contracts/Oracle.sol';
 
 import {
   IOracle,
@@ -16,6 +18,23 @@ import {
 } from '../../interfaces/IOracle.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
+
+/**
+ * @dev Harness to deploy and test Oracle
+ */
+contract ForTest_Oracle is Oracle {
+  constructor() Oracle() {}
+
+  function forTest_setResponse(IOracle.Response calldata _response) external returns (bytes32 _responseId) {
+    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _response.requestId));
+    _responses[_responseId] = _response;
+    _responseIds[_response.requestId].push(_responseId);
+  }
+
+  function forTest_setDisputes(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {
+    _disputes[_disputeId] = _dispute;
+  }
+}
 
 /**
  * @title Oracle Unit tests
@@ -57,7 +76,7 @@ contract Oracle_UnitTest is Test {
    * @dev    The request might or might not use a dispute and a finality module, this is fuzzed
    */
   function test_createRequest(
-    bool useDisputeAndFinality,
+    bool useResolutionAndFinality,
     bytes calldata _requestData,
     bytes calldata _responseData,
     bytes calldata _disputeData,
@@ -65,7 +84,7 @@ contract Oracle_UnitTest is Test {
     bytes calldata _finalityData
   ) public {
     // If no dispute and finality module used, set them to address 0
-    if (!useDisputeAndFinality) {
+    if (!useResolutionAndFinality) {
       disputeModule = IDisputeModule(address(0));
       finalityModule = IFinalityModule(address(0));
     }
@@ -80,7 +99,6 @@ contract Oracle_UnitTest is Test {
       disputeModuleData: _disputeData,
       resolutionModuleData: _resolutionData,
       finalityModuleData: _finalityData,
-      finalizedResponseId: bytes32('63'),
       ipfsHash: bytes32('69'),
       requestModule: requestModule,
       responseModule: responseModule,
@@ -96,14 +114,15 @@ contract Oracle_UnitTest is Test {
     bytes32 _theoricRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce));
 
     // If dispute and finality module != 0, mock and expect their calls
-    if (useDisputeAndFinality) {
+    if (useResolutionAndFinality) {
       vm.mockCall(
         address(disputeModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
         abi.encode()
       );
       vm.expectCall(
-        address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData))
+        address(resolutionModule),
+        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData))
       );
 
       vm.mockCall(
@@ -115,6 +134,16 @@ contract Oracle_UnitTest is Test {
         address(finalityModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData))
       );
     }
+
+    // mock and expect disputeModule call
+    vm.mockCall(
+      address(disputeModule),
+      abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData)),
+      abi.encode()
+    );
+    vm.expectCall(
+      address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData))
+    );
 
     // mock and expect requestModule and responseModule calls
     vm.mockCall(
@@ -163,7 +192,6 @@ contract Oracle_UnitTest is Test {
     assertEq(address(_storedRequest.finalityModule), address(_request.finalityModule));
 
     // Check: request values correctly stored - ones set by the oracle
-    assertEq(_storedRequest.finalizedResponseId, ''); // should be zero'd
     assertEq(_storedRequest.requester, sender); // should be set
     assertEq(_storedRequest.nonce, _initialNonce);
     assertEq(_storedRequest.createdAt, block.timestamp); // should be set
@@ -244,8 +272,7 @@ contract Oracle_UnitTest is Test {
       proposer: sender,
       requestId: _requestId,
       disputeId: bytes32('69'),
-      response: _responseData,
-      finalized: false
+      response: _responseData
     });
 
     // Mock&expect the responseModule propose call:
@@ -271,7 +298,6 @@ contract Oracle_UnitTest is Test {
     assertEq(_storedResponse.requestId, _response.requestId);
     assertEq(_storedResponse.disputeId, _response.disputeId);
     assertEq(_storedResponse.response, _response.response);
-    assertEq(_storedResponse.finalized, _response.finalized);
 
     bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
 
@@ -287,8 +313,7 @@ contract Oracle_UnitTest is Test {
     // Create mock request and store it
     bytes32 _requestId = _storeDummyRequests(1)[0];
 
-    // Compute the response and dispute ID
-    bytes32 _responseId = keccak256(abi.encodePacked(sender, address(oracle), _requestId));
+    // Compute the dispute ID
     bytes32 _disputeId = keccak256(abi.encodePacked(sender, _requestId));
 
     address _proposer = makeAddr('proposer');
@@ -299,10 +324,10 @@ contract Oracle_UnitTest is Test {
       proposer: _proposer,
       requestId: _requestId,
       disputeId: bytes32('69'),
-      response: bytes('69'),
-      finalized: false
+      response: bytes('69')
     });
-    oracle.forTest_setResponse(_responseId, _response);
+
+    bytes32 _responseId = oracle.forTest_setResponse(_response);
 
     // Create mock dispute
     IOracle.Dispute memory _dispute = IOracle.Dispute({
@@ -465,10 +490,19 @@ contract Oracle_UnitTest is Test {
    *
    * @dev    The request might or might not use a dispute and a finality module, this is fuzzed
    */
-  function test_finalize(bool _useDisputeAndFinality, address _caller) public {
+  function test_finalize(bool _useResolutionAndFinality, address _caller) public {
     bytes32 _requestId = _storeDummyRequests(1)[0];
+    IOracle.Response memory _response = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: _caller,
+      requestId: _requestId,
+      disputeId: bytes32(0),
+      response: bytes('69')
+    });
 
-    if (!_useDisputeAndFinality) {
+    bytes32 _responseId = oracle.forTest_setResponse(_response);
+
+    if (!_useResolutionAndFinality) {
       disputeModule = IDisputeModule(address(0));
       finalityModule = IFinalityModule(address(0));
     }
@@ -485,7 +519,7 @@ contract Oracle_UnitTest is Test {
     vm.mockCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
     vm.expectCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
 
-    if (_useDisputeAndFinality) {
+    if (_useResolutionAndFinality) {
       // mock and expect the call to disputeModule
       vm.mockCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
       vm.expectCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
@@ -497,7 +531,7 @@ contract Oracle_UnitTest is Test {
 
     // Test: finalize the request
     vm.prank(_caller);
-    oracle.finalize(_requestId);
+    oracle.finalize(_requestId, _responseId);
   }
 
   /**
@@ -519,7 +553,6 @@ contract Oracle_UnitTest is Test {
         disputeModuleData: new bytes(69),
         resolutionModuleData: new bytes(69),
         finalityModuleData: new bytes(69),
-        finalizedResponseId: bytes32('63'),
         ipfsHash: bytes32(i),
         requestModule: requestModule,
         responseModule: responseModule,
@@ -533,20 +566,5 @@ contract Oracle_UnitTest is Test {
 
       _requestIds[i] = oracle.createRequest(_request);
     }
-  }
-}
-
-/**
- * @dev Harness to deploy and test Oracle
- */
-contract ForTest_Oracle is Oracle {
-  constructor() Oracle() {}
-
-  function forTest_setResponse(bytes32 _responseId, IOracle.Response calldata _response) external {
-    _responses[_responseId] = _response;
-  }
-
-  function forTest_setDisputes(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {
-    _disputes[_disputeId] = _dispute;
   }
 }

@@ -62,6 +62,10 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       _bondToken,
       _bondSize
     );
+
+    _accountingExtension.release(
+      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
+    );
   }
 
   function _decodeRequestData(bytes memory _data)

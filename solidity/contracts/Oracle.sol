@@ -5,7 +5,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IOracle} from '../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../interfaces/extensions/IAccountingExtension.sol';
-import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 contract Oracle is IOracle {
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -29,14 +28,14 @@ contract Oracle is IOracle {
     _request.nonce = _requestNonce;
     _request.requester = msg.sender;
     _request.createdAt = block.timestamp;
-    _request.finalizedResponseId = bytes32('');
     _requests[_requestId] = _request;
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
     _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
+    _request.disputeModule.setupRequest(_requestId, _request.disputeModuleData);
 
-    if (address(_request.disputeModule) != address(0)) {
-      _request.disputeModule.setupRequest(_requestId, _request.disputeModuleData);
+    if (address(_request.resolutionModule) != address(0)) {
+      _request.resolutionModule.setupRequest(_requestId, _request.resolutionModuleData);
     }
 
     if (address(_request.finalityModule) != address(0)) {
@@ -85,6 +84,20 @@ contract Oracle is IOracle {
     _dispute = _disputes[_disputeId];
   }
 
+  function getProposers(bytes32 _requestId) external view returns (address[] memory _proposers) {
+    bytes32[] memory _responsesIds = _responseIds[_requestId];
+    if (_responsesIds.length == 0) return _proposers;
+    _proposers = new address[](_responsesIds.length);
+
+    for (uint256 _i; _i < _responsesIds.length;) {
+      _proposers[_i] = _responses[_responsesIds[_i]].proposer;
+
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
     // TODO: this requires a nonce or something to avoid collision if the same user proposes twice
@@ -94,7 +107,7 @@ contract Oracle is IOracle {
   }
 
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
-    if (disputeOf[_responseId] != bytes32('')) revert Oracle_ResponseAlreadyDisputed(_responseId);
+    if (disputeOf[_responseId] != bytes32(0)) revert Oracle_ResponseAlreadyDisputed(_responseId);
 
     Request memory _request = _requests[_requestId];
     // TODO: this requires a nonce or something to avoid collision if the same user disputes twice
@@ -120,27 +133,41 @@ contract Oracle is IOracle {
   }
 
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
-    _response = _responses[_requests[_requestId].finalizedResponseId];
+    _response = _finalizedResponses[_requestId];
   }
 
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
     _ids = _responseIds[_requestId];
   }
 
-  function finalize(bytes32 _requestId) external {
-    // TODO: Save the finalizedResponseId
+  // TODO: discuss - should the Oracle have any reverts other than checking for empty values, or does this become too opinionated?
+  function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
+    if (_finalizedResponses[_requestId].createdAt != 0) revert Oracle_AlreadyFinalized(_requestId);
+
     Request memory _request = _requests[_requestId];
+    Response storage _response = _responses[_finalizedResponseId];
 
-    _request.requestModule.finalizeRequest(_requestId);
-    _request.responseModule.finalizeRequest(_requestId);
-    _request.resolutionModule.finalizeRequest(_requestId);
-
-    if (address(_request.disputeModule) != address(0)) {
-      _request.disputeModule.finalizeRequest(_requestId);
+    if (_response.requestId != _requestId || _response.createdAt == 0) {
+      revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
+
+    DisputeStatus _disputeStatus = _disputes[disputeOf[_finalizedResponseId]].status;
+    if (_disputeStatus == DisputeStatus.Active || _disputeStatus == DisputeStatus.Won) {
+      revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
+    }
+
+    _finalizedResponses[_requestId] = _response;
 
     if (address(_request.finalityModule) != address(0)) {
       _request.finalityModule.finalizeRequest(_requestId);
     }
+
+    if (address(_request.resolutionModule) != address(0)) {
+      _request.resolutionModule.finalizeRequest(_requestId);
+    }
+
+    _request.disputeModule.finalizeRequest(_requestId);
+    _request.responseModule.finalizeRequest(_requestId);
+    _request.requestModule.finalizeRequest(_requestId);
   }
 }

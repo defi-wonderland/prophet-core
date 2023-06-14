@@ -8,6 +8,8 @@ import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
 
 interface IBondedResponseModule is IResponseModule {
   error BondedResponseModule_TooEarlyToFinalize();
+  error BondedResponseModule_TooLateToPropose();
+  error BondedResponseModule_AlreadyResponded();
 
   function decodeRequestData(bytes32 _requestId)
     external

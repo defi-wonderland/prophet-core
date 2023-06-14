@@ -15,6 +15,8 @@ interface IOracle {
   error Oracle_NotResolutionModule(address _caller);
 
   error Oracle_ResponseAlreadyDisputed(bytes32 _responseId);
+  error Oracle_AlreadyFinalized(bytes32 _requestId);
+  error Oracle_InvalidFinalizedResponse(bytes32 _responseId);
 
   struct Request {
     bytes requestModuleData;
@@ -22,7 +24,6 @@ interface IOracle {
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-    bytes32 finalizedResponseId;
     bytes32 ipfsHash;
     IRequestModule requestModule;
     IResponseModule responseModule;
@@ -40,7 +41,6 @@ interface IOracle {
     bytes32 requestId;
     bytes32 disputeId;
     bytes response;
-    bool finalized;
   }
 
   struct Dispute {
@@ -84,6 +84,7 @@ interface IOracle {
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
-
+  function getProposers(bytes32 _requestId) external view returns (address[] memory _proposers);
   function listRequests(uint256 _startFrom, uint256 _amount) external view returns (Request[] memory _list);
+  function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
 }
