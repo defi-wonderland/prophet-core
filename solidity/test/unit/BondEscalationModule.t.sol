@@ -256,7 +256,7 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Expect the call to revert with NotEscalable
+    // Expect the call to revert with NotEscalatable
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
 
     // Call escalateDispute()
@@ -307,7 +307,7 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Expect the call to revert with NotEscalable
+    // Expect the call to revert with NotEscalatable
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
 
     // Call escalateDispute()
@@ -376,8 +376,9 @@ contract BondEscalationModule_UnitTest is Test {
    *             - The block.timestamp has to be > bond escalation deadline + tying buffer
    */
   function test_escalateDisputeEscalateNormalDispute(bytes32 _disputeId, bytes32 _requestId) public {
-    // Assume _requestId is not zero
+    // Assume _requestId and _disputeId are not zero
     vm.assume(_requestId > 0);
+    vm.assume(_disputeId > 0);
 
     // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
     _mockDispute(_disputeId, _requestId);
