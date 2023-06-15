@@ -55,6 +55,7 @@ interface IOracle {
   enum DisputeStatus {
     None,
     Active,
+    Escalated,
     Won,
     Lost
   }

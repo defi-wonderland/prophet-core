@@ -5,6 +5,7 @@ import {IOracle} from './IOracle.sol';
 
 interface IModule {
   error Module_OnlyOracle();
+  error Module_InvalidCaller();
 
   function requestData(bytes32 _requestId) external view returns (bytes memory _data);
   function setupRequest(bytes32 _requestId, bytes calldata _data) external;

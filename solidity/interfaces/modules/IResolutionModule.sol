@@ -6,4 +6,5 @@ import {IOracle} from '../IOracle.sol';
 
 interface IResolutionModule is IModule {
   function resolveDispute(bytes32 _disputeId) external;
+  function escalateDispute(bytes32 _disputeId) external;
 }
