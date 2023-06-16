@@ -263,8 +263,11 @@ contract Oracle_UnitTest is Test {
     // Create mock request and store it
     bytes32 _requestId = _storeDummyRequests(1)[0];
 
+    // Get the current response nonce (8th slot)
+    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
+
     // Compute the response ID
-    bytes32 _responseId = keccak256(abi.encodePacked(sender, address(oracle), _requestId));
+    bytes32 _responseId = keccak256(abi.encodePacked(sender, address(oracle), _requestId, _responseNonce));
 
     // Create mock response
     IOracle.Response memory _response = IOracle.Response({
@@ -287,8 +290,14 @@ contract Oracle_UnitTest is Test {
     vm.prank(sender);
     bytes32 _actualResponseId = oracle.proposeResponse(_requestId, _responseData);
 
+    vm.prank(sender);
+    bytes32 _secondResponseId = oracle.proposeResponse(_requestId, _responseData);
+
     // Check: correct response id returned?
     assertEq(_actualResponseId, _responseId);
+
+    // Check: responseId are unique?
+    assertNotEq(_secondResponseId, _responseId);
 
     IOracle.Response memory _storedResponse = oracle.getResponse(_responseId);
 
@@ -301,9 +310,10 @@ contract Oracle_UnitTest is Test {
 
     bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
 
-    // Check: correct response id stored in the id list?
-    assertEq(_responseIds.length, 1);
+    // Check: correct response id stored in the id list and unique?
+    assertEq(_responseIds.length, 2);
     assertEq(_responseIds[0], _responseId);
+    assertEq(_responseIds[1], _secondResponseId);
   }
 
   /**
@@ -312,9 +322,6 @@ contract Oracle_UnitTest is Test {
   function test_disputeResponse() public {
     // Create mock request and store it
     bytes32 _requestId = _storeDummyRequests(1)[0];
-
-    // Compute the dispute ID
-    bytes32 _disputeId = keccak256(abi.encodePacked(sender, _requestId));
 
     address _proposer = makeAddr('proposer');
 
@@ -328,6 +335,9 @@ contract Oracle_UnitTest is Test {
     });
 
     bytes32 _responseId = oracle.forTest_setResponse(_response);
+
+    // Compute the dispute ID
+    bytes32 _disputeId = keccak256(abi.encodePacked(sender, _requestId, _responseId));
 
     // Create mock dispute
     IOracle.Dispute memory _dispute = IOracle.Dispute({

@@ -19,7 +19,10 @@ contract Oracle is IOracle {
   mapping(bytes32 _disputeId => Dispute) internal _disputes;
 
   mapping(uint256 _nonce => bytes32 _id) internal _requestIds;
+
   uint256 internal _nonce;
+
+  uint256 internal _responseNonce;
 
   function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
     uint256 _requestNonce = _nonce++;
@@ -126,8 +129,8 @@ contract Oracle is IOracle {
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
-    // TODO: this requires a nonce or something to avoid collision if the same user proposes twice
-    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId));
+
+    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId, _responseNonce++));
     _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
     _responseIds[_requestId].push(_responseId);
   }
@@ -136,8 +139,10 @@ contract Oracle is IOracle {
     if (disputeOf[_responseId] != bytes32(0)) revert Oracle_ResponseAlreadyDisputed(_responseId);
 
     Request memory _request = _requests[_requestId];
-    // TODO: this requires a nonce or something to avoid collision if the same user disputes twice
-    _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId));
+
+    // Collision avoided -> this user disputes the _responseId from the _requestId
+    // -> if trying to redispute, disputeOf isn't empty anymore
+    _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
     _disputes[_disputeId] =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
     disputeOf[_responseId] = _disputeId;
