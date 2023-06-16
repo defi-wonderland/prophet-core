@@ -76,6 +76,7 @@ contract IntegrationOracle is IntegrationBase {
     assertEq(_expectedUrl, _url);
     assertEq(_expectedMethod, _method);
     assertEq(_expectedBody, _body);
+    assertEq(_requestId, oracle.listRequestIds(0, 1)[0]);
   }
 
   function testIntegrationResponseModule() public {

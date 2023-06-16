@@ -72,6 +72,32 @@ contract Oracle is IOracle {
     return _list;
   }
 
+  function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
+    uint256 _totalRequestsCount = _nonce;
+
+    // If trying to collect unexisting requests only, return empty array
+    if (_startFrom > _totalRequestsCount) {
+      return _list;
+    }
+
+    if (_batchSize > _totalRequestsCount - _startFrom) {
+      _batchSize = _totalRequestsCount - _startFrom;
+    }
+
+    _list = new bytes32[](_batchSize);
+
+    uint256 _index;
+    while (_index < _batchSize) {
+      _list[_index] = _requestIds[_startFrom + _index];
+
+      unchecked {
+        ++_index;
+      }
+    }
+
+    return _list;
+  }
+
   function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
     _response = _responses[_responseId];
   }

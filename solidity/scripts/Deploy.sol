@@ -77,7 +77,7 @@ contract Deploy is Script {
 
     // Deploy bond escalation accounting
     bondEscalationAccounting = new BondEscalationAccounting(oracle, WETH);
-    console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(accountingExtension));
+    console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
 
     // Deploy request finalizer job
     requestFinalizerJob = new RequestFinalizerJob(governance);

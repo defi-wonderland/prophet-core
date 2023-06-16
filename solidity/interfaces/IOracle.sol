@@ -87,5 +87,6 @@ interface IOracle {
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
   function getProposers(bytes32 _requestId) external view returns (address[] memory _proposers);
   function listRequests(uint256 _startFrom, uint256 _amount) external view returns (Request[] memory _list);
+  function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
 }
