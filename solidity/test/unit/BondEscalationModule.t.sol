@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+//TODO: improve natspec -- cursed
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
@@ -326,6 +327,7 @@ contract BondEscalationModule_UnitTest is Test {
   function test_escalateDisputeEscalateTiedDispute(bytes32 _disputeId, bytes32 _requestId) public {
     // Assume _requestId is not zero
     vm.assume(_requestId > 0);
+    vm.assume(_disputeId > 0);
 
     // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
     _mockDispute(_disputeId, _requestId);
@@ -415,6 +417,7 @@ contract BondEscalationModule_UnitTest is Test {
   function test_escalateDisputeEscalateNormalDisputeDuringTyingBuffer(bytes32 _disputeId, bytes32 _requestId) public {
     // Assume _requestId is not zero
     vm.assume(_requestId > 0);
+    vm.assume(_disputeId > 0);
 
     // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
     _mockDispute(_disputeId, _requestId);
@@ -430,9 +433,6 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Populate the requestData for the given requestId
     _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
-
-    // Set bond escalation status to None, meaning no proposed answer was disputed before the bond escalation deadline.
-    bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.None);
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
