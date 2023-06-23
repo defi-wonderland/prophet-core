@@ -62,6 +62,7 @@ contract CallbackModule_UnitTest is Test {
    */
   function test_finalizeRequestTriggersCallback(bytes32 _requestId, address _target, bytes calldata _data) public {
     assumeNoPrecompiles(_target);
+    vm.assume(_target != address(vm));
 
     // Create and set some mock request data
     bytes memory _requestData = abi.encode(_target, _data);

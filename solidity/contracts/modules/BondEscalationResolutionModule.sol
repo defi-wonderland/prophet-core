@@ -60,10 +60,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       abi.decode(_data, (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
   }
 
-  function escalateDispute(bytes32 _disputeId) external {
+  function startResolution(bytes32 _disputeId) external onlyOracle {
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
-    IDisputeModule _disputeModule = ORACLE.getRequest(_requestId).disputeModule;
-    if (msg.sender != address(_disputeModule)) revert BondEscalationResolutionModule_OnlyDisputeModule();
     escalationData[_disputeId].startTime = uint128(block.timestamp);
     emit DisputeEscalated(_disputeId, _requestId);
   }

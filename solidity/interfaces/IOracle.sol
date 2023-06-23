@@ -17,6 +17,8 @@ interface IOracle {
   error Oracle_ResponseAlreadyDisputed(bytes32 _responseId);
   error Oracle_AlreadyFinalized(bytes32 _requestId);
   error Oracle_InvalidFinalizedResponse(bytes32 _responseId);
+  error Oracle_InvalidDisputeId(bytes32 _disputeId);
+  error Oracle_CannotEscalate(bytes32 _disputeId);
 
   struct Request {
     bytes requestModuleData;
@@ -57,7 +59,8 @@ interface IOracle {
     Active,
     Escalated,
     Won,
-    Lost
+    Lost,
+    NoResolution
   }
 
   /**
@@ -82,6 +85,7 @@ interface IOracle {
   function disputeOf(bytes32 _requestId) external view returns (bytes32 _disputeId);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
+  function escalateDispute(bytes32 _disputeId) external;
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;

@@ -133,8 +133,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect the call to revert with DisputeDoesNotExist
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_DisputeDoesNotExist.selector);
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -162,8 +163,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect the call to revert with BondEscalationNotOver
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -210,8 +212,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect the call to revert with TyingBufferNotOver
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_TyingBufferNotOver.selector);
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -260,8 +263,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect the call to revert with NotEscalatable
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -311,8 +315,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect the call to revert with NotEscalatable
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -360,8 +365,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Call escalateDispute()
-    bondEscalationModule.escalateDispute(_disputeId);
+    // Call disputeEscalated()
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
 
     // Expect the bond escalation status to be changed from Active to Escalated
     assertEq(
@@ -400,10 +406,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Call escalateDispute() and expect this does not fail
-    bondEscalationModule.escalateDispute(_disputeId);
-
-    // TODO: add assertion when the arbitrator gets involved in the function
+    // Call disputeEscalated() and expect this does not fail
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   /**
@@ -437,10 +442,9 @@ contract BondEscalationModule_UnitTest is Test {
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Call escalateDispute() and expect this does not fail
-    bondEscalationModule.escalateDispute(_disputeId);
-
-    // TODO: add assertion when the arbitrator gets involved in the function
+    // Call disputeEscalated() and expect this does not fail
+    vm.prank(address(oracle));
+    bondEscalationModule.disputeEscalated(_disputeId);
   }
 
   ////////////////////////////////////////////////////////////////////

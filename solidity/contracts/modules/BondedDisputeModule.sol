@@ -24,10 +24,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     (_accountingExtension, _bondToken, _bondSize) = _decodeRequestData(requestData[_requestId]);
   }
 
-  // TODO: adding an Escalated status to the disputeStatus enum could work to avoid escalating two disputes twice
-  function escalateDispute(bytes32 _disputeId) external {
-    // TODO: Start the real dispute process, involving the arbitrator
-  }
+  function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
   function disputeResponse(
     bytes32 _requestId,

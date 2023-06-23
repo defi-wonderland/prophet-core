@@ -155,7 +155,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
   }
 
   ////////////////////////////////////////////////////////////////////
-  //                  Tests for escalateDispute
+  //                  Tests for startResolution
   ////////////////////////////////////////////////////////////////////
 
   /*
@@ -165,21 +165,17 @@ contract BondEscalationResolutionModule_UnitTest is Test {
       2. Should set escalationData.startTime to block.timestamp
   */
 
-  function test_escalateDispute(bytes32 _disputeId, bytes32 _requestId, address _disputeModule) public {
+  function test_startResolution(bytes32 _disputeId, bytes32 _requestId, address _disputeModule) public {
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
-    IOracle.Request memory _mockRequest = _getMockRequest(_disputeModule);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_mockRequest));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
+    module.startResolution(_disputeId);
 
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_OnlyDisputeModule.selector);
-    module.escalateDispute(_disputeId);
-
-    vm.prank(_disputeModule);
-    module.escalateDispute(_disputeId);
+    vm.prank(address(oracle));
+    module.startResolution(_disputeId);
 
     (, uint128 _startTime,,) = module.escalationData(_disputeId);
 

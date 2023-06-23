@@ -148,6 +148,27 @@ contract Oracle is IOracle {
     disputeOf[_responseId] = _disputeId;
   }
 
+  function escalateDispute(bytes32 _disputeId) external {
+    Dispute memory _dispute = _disputes[_disputeId];
+
+    if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
+    if (_dispute.status != DisputeStatus.Active) revert Oracle_CannotEscalate(_disputeId);
+
+    // Change the dispute status
+    _dispute.status = DisputeStatus.Escalated;
+    _disputes[_disputeId] = _dispute;
+
+    Request memory _request = _requests[_dispute.requestId];
+
+    // Notify the dispute module about the escalation
+    _request.disputeModule.disputeEscalated(_disputeId);
+
+    if (address(_request.resolutionModule) != address(0)) {
+      // Initiate the resolution
+      _request.resolutionModule.startResolution(_disputeId);
+    }
+  }
+
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
     Request memory _request = _requests[_dispute.requestId];

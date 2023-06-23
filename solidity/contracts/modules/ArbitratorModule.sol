@@ -45,29 +45,23 @@ contract ArbitratorModule is Module, IArbitratorModule {
   function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus) {
     uint256 _currentDisputeData = _disputeData[_disputeId];
 
-    _disputeStatus = IArbitratorModule.ArbitrationStatus(_currentDisputeData & 3);
+    _disputeStatus = ArbitrationStatus(_currentDisputeData & 3);
   }
 
   // Gets the dispute from the pre-dispute module and opens it for resolution
-
   // call the arbitrator with the dispute to arbitrate (it might or might not answer atomically -> eg queue a snapshot
   // vote vs a chainlink call) -> atomically should happen during a callback to storeAnswer
   //
   // arbitrator can either be an EOA (or contract) which sends dispute resolution to this contract (ie offchain vote later sent)
   // or a contract which implements IArbitrator
   // or a contract which resolve as soon as being called (ie chainlink wrapper), in a callback
-  function escalateDispute(bytes32 _disputeId) external {
+  function startResolution(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-    if (_dispute.status != IOracle.DisputeStatus.Active) revert ArbitratorModule_InvalidDisputeId();
-    if (!ORACLE.validModule(_dispute.requestId, msg.sender)) revert Module_InvalidCaller();
 
     address _arbitrator = abi.decode(requestData[_dispute.requestId], (address));
 
     // Prevent dead-lock if incorrect address
     if (_arbitrator == address(0)) revert ArbitratorModule_InvalidArbitrator();
-
-    // Change the dispute status
-    ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Escalated);
 
     // Mark the dispute as Active for the arbitrator
     _disputeData[_disputeId] = 1;
@@ -78,7 +72,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
   // Store the result of an Active dispute and flag it as Resolved
   function resolveDispute(bytes32 _disputeId) external {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-    if (_dispute.status != IOracle.DisputeStatus.Active) revert ArbitratorModule_InvalidDisputeId();
+    if (_dispute.status != IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidDisputeId();
 
     address _arbitrator = abi.decode(requestData[_dispute.requestId], (address));
 

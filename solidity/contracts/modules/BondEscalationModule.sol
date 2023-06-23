@@ -25,7 +25,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   /**
-   * @notice Escalates a dispute.
+   * @notice Verifies that the escalated dispute has reached a tie and updates its escalation status.
    *
    * @dev If the bond escalation window is over and the dispute is the first dispute of the request,
    *      It will check whether the dispute has been previously escalated, and if it hasn't, it will
@@ -34,7 +34,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    *
    * @param _disputeId The ID of the dispute to escalate.
    */
-  function escalateDispute(bytes32 _disputeId) external {
+  function disputeEscalated(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
 
     if (_dispute.requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
@@ -66,7 +66,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
       bondEscalationStatus[_dispute.requestId] = BondEscalationStatus.Escalated;
     }
-    // TODO: Start the real dispute process, involving the arbitrator
   }
 
   /**

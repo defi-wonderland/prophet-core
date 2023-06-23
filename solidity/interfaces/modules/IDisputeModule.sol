@@ -13,4 +13,5 @@ interface IDisputeModule is IModule {
   ) external returns (IOracle.Dispute memory _dispute);
 
   function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
+  function disputeEscalated(bytes32 _disputeId) external;
 }
