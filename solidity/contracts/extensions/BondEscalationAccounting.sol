@@ -39,6 +39,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       pledges[_requestId][_disputeId][_token] += _amount;
     }
 
+    // TODO: add _disputeId parameter
     emit Pledge(_pledger, _requestId, _token, _amount);
   }
 
