@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../IOracle.sol';
 import {IFinalityModule} from './IFinalityModule.sol';
 
 interface ICallbackModule is IFinalityModule {

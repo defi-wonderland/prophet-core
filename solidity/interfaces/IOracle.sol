@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {IRequestModule} from './modules/IRequestModule.sol';
 import {IResponseModule} from './modules/IResponseModule.sol';
 import {IDisputeModule} from './modules/IDisputeModule.sol';
 import {IResolutionModule} from './modules/IResolutionModule.sol';
 import {IFinalityModule} from './modules/IFinalityModule.sol';
-import {IAccountingExtension} from './extensions/IAccountingExtension.sol';
 
 interface IOracle {
   /// @notice Thrown when the caller of the slash() function is not the DisputeModule

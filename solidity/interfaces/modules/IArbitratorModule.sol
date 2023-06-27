@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.16 <0.9.0;
 
-import {IOracle} from '../IOracle.sol';
 import {IResolutionModule} from './IResolutionModule.sol';
 
 interface IArbitratorModule is IResolutionModule {

@@ -20,7 +20,6 @@ import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol'
 import {IFinalityModule} from '../../interfaces/modules/IFinalityModule.sol';
 
 import {IModule} from '../../contracts/Module.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 

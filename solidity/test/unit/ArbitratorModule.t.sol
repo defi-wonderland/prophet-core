@@ -9,9 +9,7 @@ import {
   Module,
   IArbitratorModule,
   IArbitrator,
-  IOracle,
-  IAccountingExtension,
-  IERC20
+  IOracle
 } from '../../contracts/modules/ArbitratorModule.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';

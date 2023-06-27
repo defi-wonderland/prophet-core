@@ -16,7 +16,6 @@ import {
   IBondEscalationAccounting, BondEscalationAccounting
 } from '../../contracts/extensions/BondEscalationAccounting.sol';
 
-import {IModule} from '../../contracts/Module.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
 

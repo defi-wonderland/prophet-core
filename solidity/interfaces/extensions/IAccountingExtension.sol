@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '../IOracle.sol';
 
 interface IAccountingExtension {
   event Deposit(address indexed _depositor, IERC20 indexed _token, uint256 _amount);

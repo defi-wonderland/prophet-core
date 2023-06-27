@@ -4,9 +4,7 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
-
-import {Oracle, IAccountingExtension, IERC20} from '../../contracts/Oracle.sol';
+import {Oracle} from '../../contracts/Oracle.sol';
 
 import {
   IOracle,

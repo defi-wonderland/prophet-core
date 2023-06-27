@@ -3,7 +3,6 @@ pragma solidity >=0.8.16 <0.9.0;
 
 //TODO: add getters
 
-import {IOracle} from '../IOracle.sol';
 import {IResolutionModule} from './IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
