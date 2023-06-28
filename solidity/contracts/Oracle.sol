@@ -2,8 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from '../interfaces/IOracle.sol';
+import {Subset} from './libraries/Subset.sol';
 
 contract Oracle is IOracle {
+  using Subset for mapping(uint256 => bytes32);
+
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
 
   mapping(bytes32 _requestId => Request) internal _requests;
@@ -73,29 +76,7 @@ contract Oracle is IOracle {
   }
 
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
-    uint256 _totalRequestsCount = _nonce;
-
-    // If trying to collect unexisting requests only, return empty array
-    if (_startFrom > _totalRequestsCount) {
-      return _list;
-    }
-
-    if (_batchSize > _totalRequestsCount - _startFrom) {
-      _batchSize = _totalRequestsCount - _startFrom;
-    }
-
-    _list = new bytes32[](_batchSize);
-
-    uint256 _index;
-    while (_index < _batchSize) {
-      _list[_index] = _requestIds[_startFrom + _index];
-
-      unchecked {
-        ++_index;
-      }
-    }
-
-    return _list;
+    return _requestIds.getSubset(_startFrom, _batchSize, _nonce);
   }
 
   function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
