@@ -176,5 +176,5 @@ contract IntegrationOracle is IntegrationBase {
     );
   }
 
-  // TODO: Test disputes and slashing
+  // TODO: [OPO-55] Test disputes and slashing
 }

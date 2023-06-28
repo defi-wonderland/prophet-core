@@ -180,7 +180,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
 
     assertEq(_startTime, uint128(block.timestamp));
 
-    // TODO: expect event emission
+    // TODO: [OPO-89] expect event emission
   }
 
   ////////////////////////////////////////////////////////////////////

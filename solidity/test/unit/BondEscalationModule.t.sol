@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-//TODO: improve natspec -- cursed
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 

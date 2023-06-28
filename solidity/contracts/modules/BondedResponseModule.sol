@@ -53,8 +53,6 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       if (_dispute.status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
     }
 
-    // TODO: Allow only one response per proposer?
-    // NG: Due to the bonding aspect of the mechanism, I think it's okay to allow multiple responses per proposer
     _response = IOracle.Response({
       requestId: _requestId,
       disputeId: bytes32(0),

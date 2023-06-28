@@ -65,7 +65,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     if (_disputerBondSize != 0) {
       // seize disputer bond until resolution - this allows for voters not having to call deposit in the accounting extension
-      // todo: should another event be emitted with disputerBond?
+      // TODO: should another event be emitted with disputerBond?
       _accounting.pay(_requestId, _dispute.disputer, address(this), _token, _disputerBondSize);
       _accounting.withdraw(_token, _disputerBondSize);
       escalationData[_disputeId].disputerBond = _disputerBondSize;
@@ -77,7 +77,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   // casts vote in favor of dispute
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     /*
-      1. Check that the disputeId is Escalated - todo
+      1. Check that the disputeId is Escalated - TODO
       2. Check that the voting deadline is not over
       3. Transfer tokens from msg.sender to this address and increase the mapping
       4. Emit VoteCast event
@@ -124,7 +124,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     uint256 _deadline = _escalationData.startTime + _timeUntilDeadline;
     if (block.timestamp < _deadline) revert ERC20ResolutionModule_OnGoingVotingPhase();
 
-    // 3. Check quorum - todo: check if this is precise- think if using totalSupply makes sense, perhaps minQuorum can be
+    // 3. Check quorum - TODO: check if this is precise- think if using totalSupply makes sense, perhaps minQuorum can be
     // min amount of tokens required instead of a percentage
     // not sure if safe but the actual formula is _token.totalSupply() * _minQuorum * BASE(100) / 100 so base disappears
     // i guess with a shit token someone could front run this call and increase totalSupply enough for this to fail
@@ -141,7 +141,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     // 5. Pay and Release
     if (_quorumReached == 1) {
       for (uint256 _i; _i < _voterData.length;) {
-        // todo: check math -- remember _numVotesForQuorum is escalated
+        // TODO: check math -- remember _numVotesForQuorum is escalated
         _amountToPay = _disputerBond == 0
           ? _voterData[_i].numOfVotes
           : _voterData[_i].numOfVotes + (_voterData[_i].numOfVotes * _numVotesForQuorum / _disputerBond * BASE);

@@ -38,7 +38,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
     uint256 pledgesAgainst;
   }
 
-  // TODO: should I add requestId as a param?
+  // TODO: [OPO-89] should I add requestId as a param?
   event DisputeResolved(bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
   event DisputeEscalated(bytes32 indexed _disputeId, bytes32 indexed requestId);
   event PledgedForDispute(

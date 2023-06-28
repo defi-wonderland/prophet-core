@@ -35,7 +35,7 @@ Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end t
 
 ## Licensing
 
-The primary license for OpOO contracts is the GNU Affero General Public License 3.0 (`AGPL-3.0`), see [`LICENSE`](./LICENSE).
+The primary license for OpOO contracts is MIT, see [`LICENSE`](./LICENSE).
 
 ## Contributors
 

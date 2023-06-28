@@ -43,7 +43,7 @@ contract Oracle is IOracle {
     }
   }
 
-  // TODO: Same as `createRequest` but with multiple requests passed in as an array
+  // TODO: [OPO-86] Same as `createRequest` but with multiple requests passed in as an array
   function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestsIds) {}
 
   function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (Request[] memory _list) {
@@ -189,7 +189,6 @@ contract Oracle is IOracle {
     _ids = _responseIds[_requestId];
   }
 
-  // TODO: discuss - should the Oracle have any reverts other than checking for empty values, or does this become too opinionated?
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
     if (_finalizedResponses[_requestId].createdAt != 0) revert Oracle_AlreadyFinalized(_requestId);
 

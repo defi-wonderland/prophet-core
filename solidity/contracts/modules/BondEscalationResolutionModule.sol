@@ -376,7 +376,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         }
       }
       _accountingExtension.payWinningPledgers(_requestId, _disputeId, _winningPledgers, _token, _amountPerPledger);
-      // TODO: emit event
+      // TODO: [OPO-89] emit event
       return;
     }
 
@@ -392,7 +392,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         }
       }
       _accountingExtension.payWinningPledgers(_requestId, _disputeId, _winningPledgers, _token, _amountPerPledger);
-      // TODO: emit event
+      // TODO: [OPO-89] emit event
       return;
     }
 

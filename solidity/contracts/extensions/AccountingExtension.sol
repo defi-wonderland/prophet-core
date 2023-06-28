@@ -68,7 +68,7 @@ contract AccountingExtension is IAccountingExtension {
 
     // If weth, unwrap
     if (_token == IERC20(address(WETH))) {
-      // TODO: should we just send back the WETH using a safeTransferFrom instead of unwrapping?
+      // TODO: [OPO-145] Replace plain value transfers with ERC20 transfers
       WETH.withdraw(_amount);
       payable(msg.sender).transfer(_amount);
     } else {
