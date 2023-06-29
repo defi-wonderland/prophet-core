@@ -23,14 +23,18 @@ import {IModule} from '../../interfaces/IModule.sol';
 contract ForTest_Oracle is Oracle {
   constructor() Oracle() {}
 
-  function forTest_setResponse(IOracle.Response calldata _response) external returns (bytes32 _responseId) {
+  function forTest_setResponse(Response calldata _response) external returns (bytes32 _responseId) {
     _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _response.requestId));
     _responses[_responseId] = _response;
     _responseIds[_response.requestId].push(_responseId);
   }
 
-  function forTest_setDisputes(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {
+  function forTest_setDispute(bytes32 _disputeId, Dispute calldata _dispute) external {
     _disputes[_disputeId] = _dispute;
+  }
+
+  function forTest_setRequest(bytes32 _requestId, Request calldata _request) external {
+    _requests[_requestId] = _request;
   }
 }
 
@@ -47,14 +51,16 @@ contract Oracle_UnitTest is Test {
   address public sender = makeAddr('sender');
 
   IRequestModule public requestModule = IRequestModule(makeAddr('requestModule'));
-
   IResponseModule public responseModule = IResponseModule(makeAddr('responseModule'));
-
   IDisputeModule public disputeModule = IDisputeModule(makeAddr('disputeModule'));
-
   IResolutionModule public resolutionModule = IResolutionModule(makeAddr('resolutionModule'));
-
   IFinalityModule public finalityModule = IFinalityModule(makeAddr('finalityModule'));
+
+  // Create a new dummy dispute
+  IOracle.Dispute public mockDispute;
+
+  // 100% random sequence of bytes representing request, response, or dispute id
+  bytes32 public mockId = bytes32('69');
 
   /**
    * @notice Deploy the target and mock oracle+modules
@@ -66,6 +72,15 @@ contract Oracle_UnitTest is Test {
     vm.etch(address(disputeModule), hex'69');
     vm.etch(address(resolutionModule), hex'69');
     vm.etch(address(finalityModule), hex'69');
+
+    mockDispute = IOracle.Dispute({
+      createdAt: block.timestamp,
+      disputer: sender,
+      proposer: sender,
+      responseId: mockId,
+      requestId: mockId,
+      status: IOracle.DisputeStatus.Active
+    });
   }
 
   /**
@@ -208,7 +223,7 @@ contract Oracle_UnitTest is Test {
     // Test: fetching the requests
     IOracle.Request[] memory _requests = oracle.listRequests(0, _howMany);
 
-    // Check: enought request returned?
+    // Check: enough request returned?
     assertEq(_requests.length, _howMany);
 
     // Check: correct requests returned (dummy are incremented)?
@@ -337,21 +352,11 @@ contract Oracle_UnitTest is Test {
     // Compute the dispute ID
     bytes32 _disputeId = keccak256(abi.encodePacked(sender, _requestId, _responseId));
 
-    // Create mock dispute
-    IOracle.Dispute memory _dispute = IOracle.Dispute({
-      createdAt: block.timestamp,
-      disputer: sender,
-      proposer: _proposer,
-      responseId: _responseId,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.Active
-    });
-
     // Mock&expect the disputeModule disputeResponse call
     vm.mockCall(
       address(disputeModule),
       abi.encodeCall(IDisputeModule.disputeResponse, (_requestId, _responseId, sender, _proposer)),
-      abi.encode(_dispute)
+      abi.encode(mockDispute)
     );
     vm.expectCall(
       address(disputeModule),
@@ -368,12 +373,12 @@ contract Oracle_UnitTest is Test {
     IOracle.Dispute memory _storedDispute = oracle.getDispute(_disputeId);
 
     // Check: correct dispute stored?
-    assertEq(_storedDispute.createdAt, _dispute.createdAt);
-    assertEq(_storedDispute.disputer, _dispute.disputer);
-    assertEq(_storedDispute.proposer, _dispute.proposer);
-    assertEq(_storedDispute.responseId, _dispute.responseId);
-    assertEq(_storedDispute.requestId, _dispute.requestId);
-    assertEq(uint256(_storedDispute.status), uint256(_dispute.status));
+    assertEq(_storedDispute.createdAt, mockDispute.createdAt);
+    assertEq(_storedDispute.disputer, mockDispute.disputer);
+    assertEq(_storedDispute.proposer, mockDispute.proposer);
+    assertEq(_storedDispute.responseId, mockDispute.responseId);
+    assertEq(_storedDispute.requestId, mockDispute.requestId);
+    assertEq(uint256(_storedDispute.status), uint256(mockDispute.status));
   }
 
   /**
@@ -409,33 +414,27 @@ contract Oracle_UnitTest is Test {
     bytes32 _disputeId = bytes32('69');
 
     // Try every initial status
-    for (uint256 _previousStatus; _previousStatus < 4; _previousStatus++) {
+    for (uint256 _previousStatus; _previousStatus < uint256(type(IOracle.DisputeStatus).max); _previousStatus++) {
       // Try every new status
-      for (uint256 _newStatus; _newStatus < 4; _newStatus++) {
-        // Create a new dummy dispute
-        IOracle.Dispute memory _dispute = IOracle.Dispute({
-          createdAt: block.timestamp,
-          disputer: sender,
-          proposer: sender,
-          responseId: bytes32('69'),
-          requestId: _requestId,
-          status: IOracle.DisputeStatus(_previousStatus)
-        });
+      for (uint256 _newStatus; _newStatus < uint256(type(IOracle.DisputeStatus).max); _newStatus++) {
+        // Set the dispute status
+        mockDispute.status = IOracle.DisputeStatus(_previousStatus);
+        mockDispute.requestId = _requestId;
 
         // Set this new dispute, overwriting the one from the previous iteration
-        oracle.forTest_setDisputes(_disputeId, _dispute);
+        oracle.forTest_setDispute(_disputeId, mockDispute);
 
         // The mocked call is done with the new status
-        _dispute.status = IOracle.DisputeStatus(_newStatus);
+        mockDispute.status = IOracle.DisputeStatus(_newStatus);
 
         // Mock&expect the disputeModule updateDisputeStatus call
         vm.mockCall(
           address(disputeModule),
-          abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, _dispute)),
+          abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, mockDispute)),
           abi.encode()
         );
         vm.expectCall(
-          address(disputeModule), abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, _dispute))
+          address(disputeModule), abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, mockDispute))
         );
 
         // Test: change the status
@@ -447,6 +446,85 @@ contract Oracle_UnitTest is Test {
         assertEq(uint256(_disputeStored.status), _newStatus);
       }
     }
+  }
+
+  /**
+   * @notice resolveDispute is expected to call resolution module
+   */
+  function test_resolveDispute() public {
+    // Create mock request and store it
+    bytes32 _requestId = _storeDummyRequests(1)[0];
+
+    // Create a dummy dispute
+    bytes32 _disputeId = bytes32('69');
+    mockDispute.requestId = _requestId;
+    oracle.forTest_setDispute(_disputeId, mockDispute);
+
+    // Mock and expect the resolution module call
+    vm.mockCall(address(resolutionModule), abi.encodeCall(IResolutionModule.resolveDispute, (_disputeId)), abi.encode());
+    vm.expectCall(address(resolutionModule), abi.encodeCall(IResolutionModule.resolveDispute, (_disputeId)));
+
+    // Test: resolve the dispute
+    oracle.resolveDispute(_disputeId);
+  }
+
+  /**
+   * @notice Test the revert when the function is called with an non-existent dispute id
+   */
+  function test_resolveDisputeRevertsIfInvalidDispute(bytes32 _disputeId) public {
+    // Check: revert?
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
+
+    // Test: try to resolve the dispute
+    oracle.resolveDispute(_disputeId);
+  }
+
+  /**
+   * @notice Test the revert when the function is called but no resolution module was configured
+   */
+  function test_resolveDisputeRevertsIfWrongDisputeStatus() public {
+    // Create a dummy dispute
+    bytes32 _disputeId = bytes32('69');
+
+    for (uint256 _status; _status < uint256(type(IOracle.DisputeStatus).max); _status++) {
+      if (
+        IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Active
+          || IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Escalated
+      ) continue;
+      // Set the dispute status
+      mockDispute.status = IOracle.DisputeStatus(_status);
+
+      // Set this new dispute, overwriting the one from the previous iteration
+      oracle.forTest_setDispute(_disputeId, mockDispute);
+
+      // Check: revert?
+      vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotResolve.selector, _disputeId));
+
+      // Test: try to resolve the dispute
+      oracle.resolveDispute(_disputeId);
+    }
+  }
+
+  /**
+   * @notice Test the revert when the function is called with a non-active and non-escalated dispute
+   */
+  function test_resolveDisputeRevertsIfNoResolutionModule() public {
+    // Create a dummy dispute
+    bytes32 _disputeId = bytes32('69');
+    oracle.forTest_setDispute(_disputeId, mockDispute);
+
+    // Change the request of this dispute so that it does not have a resolution module
+    bytes32 _requestId = _storeDummyRequests(1)[0];
+    IOracle.Request memory _request = oracle.getRequest(_requestId);
+    _request.resolutionModule = IResolutionModule(address(0));
+    oracle.forTest_setRequest(_requestId, _request);
+    mockDispute.requestId = _requestId;
+
+    // Check: revert?
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NoResolutionModule.selector, _disputeId));
+
+    // Test: try to resolve the dispute
+    oracle.resolveDispute(_disputeId);
   }
 
   /**

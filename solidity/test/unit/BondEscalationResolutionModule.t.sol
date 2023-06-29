@@ -356,12 +356,15 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     // Revert if dispute not escalated
     _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     // Revert if we have not yet reached the deadline and the timer has not passed
@@ -381,7 +384,9 @@ contract BondEscalationResolutionModule_UnitTest is Test {
 
     _startTime = uint128(block.timestamp);
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseNotOver.selector);
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
   }
 
@@ -403,6 +408,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     // START OF TEST THRESHOLD NOT REACHED
     uint256 _pledgeThreshold = 1000;
     _setRequestData(_requestId, percentageDiff, _pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
@@ -429,6 +435,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
 
     // START OF TIED PLEDGES
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
@@ -463,6 +470,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     );
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won)));
 
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
@@ -499,6 +507,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
       address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost))
     );
 
+    vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);

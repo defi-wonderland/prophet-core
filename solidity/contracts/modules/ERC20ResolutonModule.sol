@@ -104,11 +104,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
-  function resolveDispute(bytes32 _disputeId) external {
-    /*
-      TODO: check caller?
-    */
-
+  function resolveDispute(bytes32 _disputeId) external onlyOracle {
     // 0. Check that the disputeId actually exists
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();

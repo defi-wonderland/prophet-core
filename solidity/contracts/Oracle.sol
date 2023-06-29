@@ -147,6 +147,21 @@ contract Oracle is IOracle {
     }
   }
 
+  function resolveDispute(bytes32 _disputeId) external {
+    Dispute memory _dispute = _disputes[_disputeId];
+
+    if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
+    // Revert if the dispute is not active nor escalated
+    unchecked {
+      if (uint256(_dispute.status) - 1 > 1) revert Oracle_CannotResolve(_disputeId);
+    }
+
+    Request memory _request = _requests[_dispute.requestId];
+    if (address(_request.resolutionModule) == address(0)) revert Oracle_NoResolutionModule(_disputeId);
+
+    _request.resolutionModule.resolveDispute(_disputeId);
+  }
+
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
     Request memory _request = _requests[_dispute.requestId];

@@ -289,7 +289,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     }
   }
 
-  function resolveDispute(bytes32 _disputeId) external {
+  function resolveDispute(bytes32 _disputeId) external onlyOracle {
     // Cache reused struct
     EscalationData storage _escalationData = escalationData[_disputeId];
 

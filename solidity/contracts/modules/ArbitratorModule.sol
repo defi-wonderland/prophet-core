@@ -66,14 +66,11 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   // Store the result of an Active dispute and flag it as Resolved
-  function resolveDispute(bytes32 _disputeId) external {
+  function resolveDispute(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.status != IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidDisputeId();
 
     address _arbitrator = abi.decode(requestData[_dispute.requestId], (address));
-
-    if (msg.sender != _arbitrator) revert ArbitratorModule_OnlyArbitrator();
-
     bool _valid = IArbitrator(_arbitrator).getAnswer(_disputeId);
 
     // Store the answer and the status as resolved
