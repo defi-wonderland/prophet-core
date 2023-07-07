@@ -45,7 +45,7 @@ contract IntegrationOracle is IntegrationBase {
     usdc.approve(address(_accountingExtension), _expectedReward);
     _accountingExtension.deposit(usdc, _expectedReward);
 
-    IOracle.Request memory _request = IOracle.Request({
+    IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
         _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedReward
         ),
@@ -60,9 +60,6 @@ contract IntegrationOracle is IntegrationBase {
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
-      requester: address(0),
-      nonce: 0,
-      createdAt: block.timestamp,
       ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
     });
 

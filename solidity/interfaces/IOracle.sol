@@ -20,7 +20,36 @@ interface IOracle {
   error Oracle_CannotResolve(bytes32 _disputeId);
   error Oracle_NoResolutionModule(bytes32 _disputeId);
 
+  // stored request
   struct Request {
+    bytes32 ipfsHash;
+    IRequestModule requestModule;
+    IResponseModule responseModule;
+    IDisputeModule disputeModule;
+    IResolutionModule resolutionModule;
+    IFinalityModule finalityModule;
+    address requester;
+    uint256 nonce;
+    uint256 createdAt;
+  }
+
+  // Request as sent by users
+  struct NewRequest {
+    bytes requestModuleData;
+    bytes responseModuleData;
+    bytes disputeModuleData;
+    bytes resolutionModuleData;
+    bytes finalityModuleData;
+    bytes32 ipfsHash;
+    IRequestModule requestModule;
+    IResponseModule responseModule;
+    IDisputeModule disputeModule;
+    IResolutionModule resolutionModule;
+    IFinalityModule finalityModule;
+  }
+
+  // For offchain/getters
+  struct FullRequest {
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
@@ -35,6 +64,7 @@ interface IOracle {
     address requester;
     uint256 nonce;
     uint256 createdAt;
+    bytes32 requestId;
   }
 
   struct Response {
@@ -69,7 +99,7 @@ interface IOracle {
    * @param   _request    The request data
    * @return  _requestId  The ID of the request, can be used to propose a response or query results
    */
-  function createRequest(IOracle.Request memory _request) external payable returns (bytes32 _requestId);
+  function createRequest(IOracle.NewRequest memory _request) external payable returns (bytes32 _requestId);
 
   /**
    * @notice  Creates multiple requests, the same way as createRequest
@@ -82,6 +112,7 @@ interface IOracle {
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute);
   function getResponse(bytes32 _responseId) external view returns (Response memory _response);
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
+  function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request);
   function disputeOf(bytes32 _requestId) external view returns (bytes32 _disputeId);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
   function proposeResponse(
@@ -95,7 +126,7 @@ interface IOracle {
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function resolveDispute(bytes32 _disputeId) external;
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
-  function listRequests(uint256 _startFrom, uint256 _amount) external view returns (Request[] memory _list);
+  function listRequests(uint256 _startFrom, uint256 _amount) external view returns (FullRequest[] memory _list);
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
 }

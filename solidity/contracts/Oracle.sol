@@ -24,14 +24,24 @@ contract Oracle is IOracle {
 
   uint256 internal _responseNonce;
 
-  function createRequest(Request memory _request) external payable returns (bytes32 _requestId) {
+  function createRequest(NewRequest memory _request) external payable returns (bytes32 _requestId) {
     uint256 _requestNonce = _nonce++;
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
     _requestIds[_requestNonce] = _requestId;
-    _request.nonce = _requestNonce;
-    _request.requester = msg.sender;
-    _request.createdAt = block.timestamp;
-    _requests[_requestId] = _request;
+
+    Request memory _storedRequest = Request({
+      ipfsHash: _request.ipfsHash,
+      requestModule: _request.requestModule,
+      responseModule: _request.responseModule,
+      disputeModule: _request.disputeModule,
+      resolutionModule: _request.resolutionModule,
+      finalityModule: _request.finalityModule,
+      requester: msg.sender,
+      nonce: _requestNonce,
+      createdAt: block.timestamp
+    });
+
+    _requests[_requestId] = _storedRequest;
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
     _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
@@ -49,7 +59,7 @@ contract Oracle is IOracle {
   // TODO: [OPO-86] Same as `createRequest` but with multiple requests passed in as an array
   function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestsIds) {}
 
-  function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (Request[] memory _list) {
+  function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list) {
     uint256 _totalRequestsCount = _nonce;
 
     // If trying to collect unexisting requests only, return empty array
@@ -61,11 +71,35 @@ contract Oracle is IOracle {
       _batchSize = _totalRequestsCount - _startFrom;
     }
 
-    _list = new Request[](_batchSize);
+    _list = new FullRequest[](_batchSize);
 
     uint256 _index;
     while (_index < _batchSize) {
-      _list[_index] = _requests[_requestIds[_startFrom + _index]];
+      bytes32 _requestId = _requestIds[_startFrom + _index];
+
+      Request memory _storedRequest = _requests[_requestId];
+
+      _list[_index] = FullRequest({
+        requestModuleData: _storedRequest.requestModule.requestData(_requestId),
+        responseModuleData: _storedRequest.responseModule.requestData(_requestId),
+        disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
+        resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
+          ? bytes('')
+          : _storedRequest.resolutionModule.requestData(_requestId),
+        finalityModuleData: address(_storedRequest.finalityModule) == address(0)
+          ? bytes('')
+          : _storedRequest.finalityModule.requestData(_requestId),
+        ipfsHash: _storedRequest.ipfsHash,
+        requestModule: _storedRequest.requestModule,
+        responseModule: _storedRequest.responseModule,
+        disputeModule: _storedRequest.disputeModule,
+        resolutionModule: _storedRequest.resolutionModule,
+        finalityModule: _storedRequest.finalityModule,
+        requester: _storedRequest.requester,
+        nonce: _storedRequest.nonce,
+        createdAt: _storedRequest.createdAt,
+        requestId: _requestId
+      });
 
       unchecked {
         ++_index;
@@ -85,6 +119,32 @@ contract Oracle is IOracle {
 
   function getRequest(bytes32 _requestId) external view returns (Request memory _request) {
     _request = _requests[_requestId];
+  }
+
+  function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request) {
+    Request memory _storedRequest = _requests[_requestId];
+
+    _request = FullRequest({
+      requestModuleData: _storedRequest.requestModule.requestData(_requestId),
+      responseModuleData: _storedRequest.responseModule.requestData(_requestId),
+      disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
+      resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
+        ? bytes('')
+        : _storedRequest.resolutionModule.requestData(_requestId),
+      finalityModuleData: address(_storedRequest.finalityModule) == address(0)
+        ? bytes('')
+        : _storedRequest.finalityModule.requestData(_requestId),
+      ipfsHash: _storedRequest.ipfsHash,
+      requestModule: _storedRequest.requestModule,
+      responseModule: _storedRequest.responseModule,
+      disputeModule: _storedRequest.disputeModule,
+      resolutionModule: _storedRequest.resolutionModule,
+      finalityModule: _storedRequest.finalityModule,
+      requester: _storedRequest.requester,
+      nonce: _storedRequest.nonce,
+      createdAt: _storedRequest.createdAt,
+      requestId: _requestId
+    });
   }
 
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {

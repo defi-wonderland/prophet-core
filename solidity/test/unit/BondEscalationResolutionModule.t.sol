@@ -736,25 +736,6 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     });
   }
 
-  function _getMockRequest(address _disputeModule) internal pure returns (IOracle.Request memory _request) {
-    _request = IOracle.Request({
-      requestModuleData: abi.encode(0),
-      responseModuleData: abi.encode(0),
-      disputeModuleData: abi.encode(0),
-      resolutionModuleData: abi.encode(0),
-      finalityModuleData: abi.encode(0),
-      ipfsHash: 0,
-      requestModule: IRequestModule(address(100)),
-      responseModule: IResponseModule(address(200)),
-      disputeModule: IDisputeModule(_disputeModule),
-      resolutionModule: IResolutionModule(address(400)),
-      finalityModule: IFinalityModule(address(500)),
-      requester: address(600),
-      nonce: 0,
-      createdAt: 0
-    });
-  }
-
   function _createPledgers(
     uint256 _numOfPledgers,
     uint256 _amount

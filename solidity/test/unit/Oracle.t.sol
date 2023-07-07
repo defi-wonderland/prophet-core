@@ -106,7 +106,7 @@ contract Oracle_UnitTest is Test {
     uint256 _initialNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
 
     // Create the request
-    IOracle.Request memory _request = IOracle.Request({
+    IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: _requestData,
       responseModuleData: _responseData,
       disputeModuleData: _disputeData,
@@ -117,10 +117,7 @@ contract Oracle_UnitTest is Test {
       responseModule: responseModule,
       disputeModule: disputeModule,
       resolutionModule: resolutionModule,
-      finalityModule: finalityModule,
-      requester: address(0),
-      nonce: 0,
-      createdAt: 0
+      finalityModule: finalityModule
     });
 
     // Compute the associated request id
@@ -193,11 +190,6 @@ contract Oracle_UnitTest is Test {
     IOracle.Request memory _storedRequest = oracle.getRequest(_requestId);
 
     // Check: request values correctly stored - unchanged ones
-    assertEq(_storedRequest.requestModuleData, _request.requestModuleData);
-    assertEq(_storedRequest.responseModuleData, _request.responseModuleData);
-    assertEq(_storedRequest.disputeModuleData, _request.disputeModuleData);
-    assertEq(_storedRequest.resolutionModuleData, _request.resolutionModuleData);
-    assertEq(_storedRequest.finalityModuleData, _request.finalityModuleData);
     assertEq(_storedRequest.ipfsHash, _request.ipfsHash);
     assertEq(address(_storedRequest.requestModule), address(_request.requestModule));
     assertEq(address(_storedRequest.disputeModule), address(_request.disputeModule));
@@ -217,19 +209,38 @@ contract Oracle_UnitTest is Test {
     // 0 to 10 request to list, fuzzed
     _howMany = bound(_howMany, 0, 10);
 
-    // Store mock requests
-    _storeDummyRequests(_howMany);
+    // Store mock requests and mock the associated requestData calls
+    (bytes32[] memory _dummyRequestIds, IOracle.NewRequest[] memory _dummyRequests) = _storeDummyRequests(_howMany);
 
     // Test: fetching the requests
-    IOracle.Request[] memory _requests = oracle.listRequests(0, _howMany);
+    IOracle.FullRequest[] memory _requests = oracle.listRequests(0, _howMany);
 
     // Check: enough request returned?
     assertEq(_requests.length, _howMany);
 
     // Check: correct requests returned (dummy are incremented)?
     for (uint256 i; i < _howMany; i++) {
-      assertEq(_requests[i].ipfsHash, bytes32(i));
+      // Params copied:
+      assertEq(_requests[i].ipfsHash, _dummyRequests[i].ipfsHash);
+      assertEq(address(_requests[i].requestModule), address(_dummyRequests[i].requestModule));
+      assertEq(address(_requests[i].responseModule), address(_dummyRequests[i].responseModule));
+      assertEq(address(_requests[i].disputeModule), address(_dummyRequests[i].disputeModule));
+      assertEq(address(_requests[i].resolutionModule), address(_dummyRequests[i].resolutionModule));
+      assertEq(address(_requests[i].finalityModule), address(_dummyRequests[i].finalityModule));
+
+      // Params created in createRequest:
       assertEq(_requests[i].nonce, i);
+      assertEq(_requests[i].requester, sender);
+      assertEq(_requests[i].createdAt, block.timestamp);
+
+      assertEq(_requests[i].requestId, _dummyRequestIds[i]);
+
+      // Params gathered from external modules:
+      assertEq(_requests[i].requestModuleData, bytes('requestModuleData'));
+      assertEq(_requests[i].responseModuleData, bytes('responseModuleData'));
+      assertEq(_requests[i].disputeModuleData, bytes('disputeModuleData'));
+      assertEq(_requests[i].resolutionModuleData, bytes('resolutionModuleData'));
+      assertEq(_requests[i].finalityModuleData, bytes('finalityModuleData'));
     }
   }
 
@@ -246,7 +257,7 @@ contract Oracle_UnitTest is Test {
     _storeDummyRequests(_howMany);
 
     // Test: fetching 1 extra request
-    IOracle.Request[] memory _requests = oracle.listRequests(0, _howMany + 1);
+    IOracle.FullRequest[] memory _requests = oracle.listRequests(0, _howMany + 1);
 
     // Check: correct number of request returned?
     assertEq(_requests.length, _howMany);
@@ -263,7 +274,7 @@ contract Oracle_UnitTest is Test {
    */
   function test_listRequestsZeroToReturn(uint256 _howMany) public {
     // Test: fetch any number of requests
-    IOracle.Request[] memory _requests = oracle.listRequests(0, _howMany);
+    IOracle.FullRequest[] memory _requests = oracle.listRequests(0, _howMany);
 
     // Check; 0 returned?
     assertEq(_requests.length, 0);
@@ -274,7 +285,8 @@ contract Oracle_UnitTest is Test {
    */
   function test_proposeResponse(bytes calldata _responseData) public {
     // Create mock request and store it
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     // Get the current response nonce (8th slot)
     uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
@@ -336,7 +348,8 @@ contract Oracle_UnitTest is Test {
     vm.assume(_proposer != address(0));
 
     // Create mock request and store it
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     // Get the current response nonce (8th slot)
     uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
@@ -403,7 +416,8 @@ contract Oracle_UnitTest is Test {
    */
   function test_disputeResponse() public {
     // Create mock request and store it
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     address _proposer = makeAddr('proposer');
 
@@ -457,9 +471,6 @@ contract Oracle_UnitTest is Test {
     // Insure the disputeId is not empty
     vm.assume(_disputeId != bytes32(''));
 
-    // Store mock request
-    _storeDummyRequests(1)[0];
-
     // Store a mock dispute for this response
     // Check: revert?
     stdstore.target(address(oracle)).sig('disputeOf(bytes32)').with_key(_responseId).checked_write(_disputeId);
@@ -477,7 +488,8 @@ contract Oracle_UnitTest is Test {
    */
   function test_updateDisputeStatus() public {
     // Create mock request and store it
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     // Create a dummy dispute
     bytes32 _disputeId = bytes32('69');
@@ -522,7 +534,8 @@ contract Oracle_UnitTest is Test {
    */
   function test_resolveDispute() public {
     // Create mock request and store it
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     // Create a dummy dispute
     bytes32 _disputeId = bytes32('69');
@@ -583,7 +596,9 @@ contract Oracle_UnitTest is Test {
     oracle.forTest_setDispute(_disputeId, mockDispute);
 
     // Change the request of this dispute so that it does not have a resolution module
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
+
     IOracle.Request memory _request = oracle.getRequest(_requestId);
     _request.resolutionModule = IResolutionModule(address(0));
     oracle.forTest_setRequest(_requestId, _request);
@@ -627,7 +642,8 @@ contract Oracle_UnitTest is Test {
     );
 
     // Create mock request and store it - this uses the 5 modules globally defined
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
 
     // Check: the correct modules are recognized as valid
     assertTrue(oracle.validModule(_requestId, address(requestModule)));
@@ -646,7 +662,10 @@ contract Oracle_UnitTest is Test {
    * @dev    The request might or might not use a dispute and a finality module, this is fuzzed
    */
   function test_finalize(bool _useResolutionAndFinality, address _caller) public {
-    bytes32 _requestId = _storeDummyRequests(1)[0];
+    // Create mock request and store it
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+
+    bytes32 _requestId = _dummyRequestIds[0];
     IOracle.Response memory _response = IOracle.Response({
       createdAt: block.timestamp,
       proposer: _caller,
@@ -698,28 +717,61 @@ contract Oracle_UnitTest is Test {
    *
    * @return _requestIds bytes32[] the request ids
    */
-  function _storeDummyRequests(uint256 _howMany) internal returns (bytes32[] memory _requestIds) {
+  function _storeDummyRequests(uint256 _howMany)
+    internal
+    returns (bytes32[] memory _requestIds, IOracle.NewRequest[] memory _requests)
+  {
     _requestIds = new bytes32[](_howMany);
+    _requests = new IOracle.NewRequest[](_howMany);
 
     for (uint256 i; i < _howMany; i++) {
-      IOracle.Request memory _request = IOracle.Request({
-        requestModuleData: new bytes(69),
-        responseModuleData: new bytes(69),
-        disputeModuleData: new bytes(69),
-        resolutionModuleData: new bytes(69),
-        finalityModuleData: new bytes(69),
+      IOracle.NewRequest memory _request = IOracle.NewRequest({
+        requestModuleData: bytes('requestModuleData'),
+        responseModuleData: bytes('responseModuleData'),
+        disputeModuleData: bytes('disputeModuleData'),
+        resolutionModuleData: bytes('resolutionModuleData'),
+        finalityModuleData: bytes('finalityModuleData'),
         ipfsHash: bytes32(i),
         requestModule: requestModule,
         responseModule: responseModule,
         disputeModule: disputeModule,
         resolutionModule: resolutionModule,
-        finalityModule: finalityModule,
-        requester: address(0),
-        nonce: 0,
-        createdAt: 0
+        finalityModule: finalityModule
       });
 
+      vm.prank(sender);
       _requestIds[i] = oracle.createRequest(_request);
+      _requests[i] = _request;
+
+      vm.mockCall(
+        address(requestModule),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encode(_request.requestModuleData)
+      );
+
+      vm.mockCall(
+        address(responseModule),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encode(_request.responseModuleData)
+      );
+
+      vm.mockCall(
+        address(disputeModule),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encode(_request.disputeModuleData)
+      );
+
+      vm.mockCall(
+        address(resolutionModule),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encode(_request.resolutionModuleData)
+      );
+
+      vm.mockCall(
+        address(finalityModule),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encode(_request.finalityModuleData)
+      );
     }
   }
 }
