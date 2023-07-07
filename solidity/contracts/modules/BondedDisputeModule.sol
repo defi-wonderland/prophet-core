@@ -32,7 +32,6 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     address _disputer,
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
-    // TODO: Check if can dispute
     _dispute = IOracle.Dispute({
       disputer: _disputer,
       responseId: _responseId,

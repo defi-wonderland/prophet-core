@@ -91,25 +91,29 @@ contract Oracle is IOracle {
     _dispute = _disputes[_disputeId];
   }
 
-  function getProposers(bytes32 _requestId) external view returns (address[] memory _proposers) {
-    bytes32[] memory _responsesIds = _responseIds[_requestId];
-    if (_responsesIds.length == 0) return _proposers;
-    _proposers = new address[](_responsesIds.length);
-
-    for (uint256 _i; _i < _responsesIds.length;) {
-      _proposers[_i] = _responses[_responsesIds[_i]].proposer;
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
+    _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData);
+  }
 
-    _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _requestId, _responseNonce++));
-    _responses[_responseId] = _request.responseModule.propose(_requestId, msg.sender, _responseData);
+  function proposeResponse(
+    address _proposer,
+    bytes32 _requestId,
+    bytes calldata _responseData
+  ) external returns (bytes32 _responseId) {
+    Request memory _request = _requests[_requestId];
+    if (msg.sender != address(_request.disputeModule)) revert Oracle_NotDisputeModule(msg.sender);
+    _responseId = _proposeResponse(_proposer, _requestId, _request, _responseData);
+  }
+
+  function _proposeResponse(
+    address _proposer,
+    bytes32 _requestId,
+    Request memory _request,
+    bytes calldata _responseData
+  ) internal returns (bytes32 _responseId) {
+    _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
+    _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
     _responseIds[_requestId].push(_responseId);
   }
 

@@ -109,7 +109,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       escalatedDispute[_requestId] = _disputeId;
     }
 
-    // TODO: Check if can dispute
     _dispute = IOracle.Dispute({
       disputer: _disputer,
       responseId: _responseId,

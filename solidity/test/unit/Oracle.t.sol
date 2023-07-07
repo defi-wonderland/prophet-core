@@ -330,6 +330,75 @@ contract Oracle_UnitTest is Test {
   }
 
   /**
+   * @notice Test dispute module proposes a response as somebody else: check _responses, _responseIds and _responseId
+   */
+  function test_proposeResponseWithProposer(address _proposer, bytes calldata _responseData) public {
+    vm.assume(_proposer != address(0));
+
+    // Create mock request and store it
+    bytes32 _requestId = _storeDummyRequests(1)[0];
+
+    // Get the current response nonce (8th slot)
+    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
+
+    // Compute the response ID
+    bytes32 _responseId = keccak256(abi.encodePacked(_proposer, address(oracle), _requestId, _responseNonce));
+
+    // Create mock response
+    IOracle.Response memory _response = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: _proposer,
+      requestId: _requestId,
+      disputeId: bytes32('69'),
+      response: _responseData
+    });
+
+    // Test: revert if called by a random dude (not dispute module)
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeModule.selector, sender));
+    vm.prank(sender);
+    oracle.proposeResponse(_proposer, _requestId, _responseData);
+
+    // Mock&expect the responseModule propose call:
+    vm.mockCall(
+      address(responseModule),
+      abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData)),
+      abi.encode(_response)
+    );
+    vm.expectCall(
+      address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData))
+    );
+
+    // Test: propose the response
+    vm.prank(address(disputeModule));
+    bytes32 _actualResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
+
+    vm.prank(address(disputeModule));
+    bytes32 _secondResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
+
+    // Check: correct response id returned?
+    assertEq(_actualResponseId, _responseId);
+
+    // Check: responseId are unique?
+    assertNotEq(_secondResponseId, _responseId);
+
+    IOracle.Response memory _storedResponse = oracle.getResponse(_responseId);
+
+    // Check: correct response stored?
+    assertEq(_storedResponse.createdAt, _response.createdAt);
+    assertEq(_storedResponse.proposer, _response.proposer);
+    assertEq(_storedResponse.requestId, _response.requestId);
+    assertEq(_storedResponse.disputeId, _response.disputeId);
+    assertEq(_storedResponse.response, _response.response);
+
+    bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
+
+    // Check: correct response id stored in the id list and unique?
+    assertEq(_responseIds.length, 2);
+    assertEq(_responseIds[0], _responseId);
+    assertEq(_responseIds[1], _secondResponseId);
+  }
+
+  /**
    * @notice Test dispute response: check _responses, _responseIds and _responseId
    */
   function test_disputeResponse() public {

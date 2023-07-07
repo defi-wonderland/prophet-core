@@ -10,6 +10,7 @@ import {IFinalityModule} from './modules/IFinalityModule.sol';
 interface IOracle {
   /// @notice Thrown when the caller of the slash() function is not the DisputeModule
   error Oracle_NotResolutionModule(address _caller);
+  error Oracle_NotDisputeModule(address _caller);
 
   error Oracle_ResponseAlreadyDisputed(bytes32 _responseId);
   error Oracle_AlreadyFinalized(bytes32 _requestId);
@@ -83,13 +84,17 @@ interface IOracle {
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
   function disputeOf(bytes32 _requestId) external view returns (bytes32 _disputeId);
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
+  function proposeResponse(
+    address _proposer,
+    bytes32 _requestId,
+    bytes calldata _responseData
+  ) external returns (bytes32 _responseId);
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
   function escalateDispute(bytes32 _disputeId) external;
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
   function resolveDispute(bytes32 _disputeId) external;
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
-  function getProposers(bytes32 _requestId) external view returns (address[] memory _proposers);
   function listRequests(uint256 _startFrom, uint256 _amount) external view returns (Request[] memory _list);
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
