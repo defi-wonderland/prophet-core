@@ -12,6 +12,9 @@ import {BondedResponseModule} from '../contracts/modules/BondedResponseModule.so
 import {BondEscalationModule} from '../contracts/modules/BondEscalationModule.sol';
 import {CallbackModule} from '../contracts/modules/CallbackModule.sol';
 import {HttpRequestModule} from '../contracts/modules/HttpRequestModule.sol';
+import {ContractCallRequestModule} from '../contracts/modules/ContractCallRequestModule.sol';
+import {ERC20ResolutionModule} from '../contracts/modules/ERC20ResolutionModule.sol';
+import {MultipleCallbacksModule} from '../contracts/modules/MultipleCallbacksModule.sol';
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
@@ -31,6 +34,9 @@ contract Deploy is Script {
   BondEscalationModule bondEscalationModule;
   CallbackModule callbackModule;
   HttpRequestModule httpRequestModule;
+  ContractCallRequestModule contractCallRequestModule;
+  ERC20ResolutionModule erc20ResolutionModule;
+  MultipleCallbacksModule multipleCallbacksModule;
 
   AccountingExtension accountingExtension;
   BondEscalationAccounting bondEscalationAccounting;
@@ -70,6 +76,18 @@ contract Deploy is Script {
     // Deploy http request module
     httpRequestModule = new HttpRequestModule(oracle);
     console.log('HTTP_REQUEST_MODULE:', address(httpRequestModule));
+
+    // Deploy contract call module
+    contractCallRequestModule = new ContractCallRequestModule(oracle);
+    console.log('CONTRACT_CALL_MODULE:', address(contractCallRequestModule));
+
+    // Deploy ERC20 resolution module
+    erc20ResolutionModule = new ERC20ResolutionModule(oracle);
+    console.log('ERC20_RESOLUTION_MODULE:', address(erc20ResolutionModule));
+
+    // Deploy multiple callbacks module
+    multipleCallbacksModule = new MultipleCallbacksModule(oracle);
+    console.log('MULTIPLE_CALLBACKS_MODULE:', address(multipleCallbacksModule));
 
     // Deploy accounting extension
     accountingExtension = new AccountingExtension(oracle, WETH);
