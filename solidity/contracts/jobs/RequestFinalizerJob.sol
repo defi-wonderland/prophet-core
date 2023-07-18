@@ -9,5 +9,6 @@ contract RequestFinalizerJob is Keep3rJob, IRequestFinalizerJob {
 
   function work(IOracle _oracle, bytes32 _requestId, bytes32 _finalizedResponseId) external upkeep {
     _oracle.finalize(_requestId, _finalizedResponseId);
+    emit Worked(_oracle, _requestId, _finalizedResponseId);
   }
 }
