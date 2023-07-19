@@ -19,12 +19,11 @@ contract AccountingExtension_UnitTest is Test {
   using stdStorage for StdStorage;
 
   // Events tested
-  event Deposit(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Withdraw(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Pay(address indexed _beneficiary, address indexed _payer, IERC20 indexed token, uint256 _amount);
-  event Slash(address indexed _slashedUser, address indexed _beneficiary, IERC20 indexed token, uint256 _amount);
-  event Bond(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Release(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Deposited(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Withdrew(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Paid(address indexed _beneficiary, address indexed _payer, IERC20 indexed token, uint256 _amount);
+  event Bonded(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Released(address indexed _depositor, IERC20 indexed token, uint256 _amount);
 
   // The target contract
   AccountingExtension public module;
@@ -70,7 +69,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Deposit(_sender, IERC20(address(weth)), _value);
+    emit Deposited(_sender, IERC20(address(weth)), _value);
 
     vm.prank(_sender);
     module.deposit{value: _value}(token, _amount);
@@ -96,7 +95,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Deposit(_sender, token, _amount);
+    emit Deposited(_sender, token, _amount);
 
     vm.prank(_sender);
     module.deposit(token, _amount);
@@ -125,7 +124,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Withdraw(_sender, token, _amount);
+    emit Withdrew(_sender, token, _amount);
 
     vm.prank(_sender);
     module.withdraw(token, _amount);
@@ -178,7 +177,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Pay(_receiver, _payer, token, _amount);
+    emit Paid(_receiver, _payer, token, _amount);
 
     vm.prank(_sender);
     module.pay(_requestId, _payer, _receiver, token, _amount);
@@ -261,7 +260,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Bond(_bonder, token, _amount);
+    emit Bonded(_bonder, token, _amount);
 
     vm.prank(_sender);
     module.bond(_bonder, _requestId, token, _amount);
@@ -338,7 +337,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Release(_bonder, token, _amount);
+    emit Released(_bonder, token, _amount);
 
     vm.prank(_sender);
     module.release(_bonder, _requestId, token, _amount);

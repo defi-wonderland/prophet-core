@@ -52,7 +52,7 @@ contract AccountingExtension is IAccountingExtension {
       _token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
-    emit Deposit(msg.sender, _token, _amount);
+    emit Deposited(msg.sender, _token, _amount);
   }
 
   // withdraw returns the user’s funds, adding any payments for provided responses and subtracting the slashed amounts.
@@ -68,7 +68,7 @@ contract AccountingExtension is IAccountingExtension {
 
     _token.safeTransfer(msg.sender, _amount);
 
-    emit Withdraw(msg.sender, _token, _amount);
+    emit Withdrew(msg.sender, _token, _amount);
   }
 
   // pay is the function by which the user's virtual balance amount is increased, often as a result of submitting correct responses, winning disputes, etc
@@ -88,7 +88,7 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_payer][_token][_requestId] -= _amount;
     }
 
-    emit Pay(_receiver, _payer, _token, _amount);
+    emit Paid(_receiver, _payer, _token, _amount);
   }
 
   // Bond an amount for a request or a dispute
@@ -105,7 +105,7 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_bonder][_token][_requestId] += _amount;
     }
 
-    emit Bond(_bonder, _token, _amount);
+    emit Bonded(_bonder, _token, _amount);
   }
 
   // Unbond an amount after a request is finalised/dispute is resolved
@@ -122,7 +122,7 @@ contract AccountingExtension is IAccountingExtension {
       balanceOf[_bonder][_token] += _amount;
     }
 
-    emit Release(_bonder, _token, _amount);
+    emit Released(_bonder, _token, _amount);
   }
 
   receive() external payable {}
