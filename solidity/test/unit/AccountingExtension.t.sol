@@ -106,41 +106,10 @@ contract AccountingExtension_UnitTest is Test {
   }
 
   /**
-   * @notice Test withdrawing weth. Should update balance, unwrap and emit event
-   */
-  function test_withdrawWeth(uint256 _value, uint256 _initialBalance) public {
-    vm.assume(_value > 0);
-    vm.deal(address(module), _value);
-
-    _initialBalance = bound(_initialBalance, _value, type(uint256).max);
-
-    address _sender = makeAddr('sender');
-
-    // Set the initial balance
-    stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_sender).with_key(address(weth))
-      .checked_write(_initialBalance);
-
-    // Mock and expect the weth withdraw
-    vm.mockCall(address(weth), abi.encodeCall(IWeth9.withdraw, (_value)), abi.encode());
-    vm.expectCall(address(weth), abi.encodeCall(IWeth9.withdraw, (_value)));
-
-    // Expect the event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Withdraw(_sender, IERC20(address(weth)), _value);
-
-    vm.prank(_sender);
-    module.withdraw(IERC20(address(weth)), _value);
-
-    // Check: balance of weth deposit decreased?
-    assertEq(module.balanceOf(_sender, IERC20(address(weth))), _initialBalance - _value);
-  }
-
-  /**
    * @notice Test withdrawing erc20. Should update balance and emit event
    */
   function test_withdrawErc20(uint256 _amount, uint256 _initialBalance) public {
     vm.assume(_amount > 0);
-    vm.assume(address(token) != address(weth));
 
     _initialBalance = bound(_initialBalance, _amount, type(uint256).max);
 

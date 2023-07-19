@@ -43,14 +43,14 @@ contract AccountingExtension is IAccountingExtension {
   function deposit(IERC20 _token, uint256 _amount) external payable {
     // If ETH, wrap:
     if (msg.value != 0) {
-      WETH.deposit{value: msg.value}();
       _token = IERC20(address(WETH));
       _amount = msg.value;
+      balanceOf[msg.sender][_token] += _amount;
+      WETH.deposit{value: msg.value}();
     } else {
+      balanceOf[msg.sender][_token] += _amount;
       _token.safeTransferFrom(msg.sender, address(this), _amount);
     }
-
-    balanceOf[msg.sender][_token] += _amount;
 
     emit Deposit(msg.sender, _token, _amount);
   }
@@ -66,14 +66,7 @@ contract AccountingExtension is IAccountingExtension {
       balanceOf[msg.sender][_token] -= _amount;
     }
 
-    // If weth, unwrap
-    if (_token == IERC20(address(WETH))) {
-      // TODO: [OPO-145] Replace plain value transfers with ERC20 transfers
-      WETH.withdraw(_amount);
-      payable(msg.sender).transfer(_amount);
-    } else {
-      _token.safeTransfer(msg.sender, _amount);
-    }
+    _token.safeTransfer(msg.sender, _amount);
 
     emit Withdraw(msg.sender, _token, _amount);
   }
