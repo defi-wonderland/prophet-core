@@ -16,7 +16,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     view
     returns (
       string memory _url,
-      string memory _method,
+      HttpMethod _method,
       string memory _body,
       IAccountingExtension _accountingExtension,
       IERC20 _paymentToken,
@@ -39,7 +39,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     pure
     returns (
       string memory _url,
-      string memory _method,
+      HttpMethod _method,
       string memory _body,
       IAccountingExtension _accountingExtension,
       IERC20 _paymentToken,
@@ -47,7 +47,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     )
   {
     (_url, _method, _body, _accountingExtension, _paymentToken, _paymentAmount) =
-      abi.decode(_data, (string, string, string, IAccountingExtension, IERC20, uint256));
+      abi.decode(_data, (string, HttpMethod, string, IAccountingExtension, IERC20, uint256));
   }
 
   function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {

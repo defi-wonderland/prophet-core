@@ -14,7 +14,7 @@ contract IntegrationOracle is IntegrationBase {
   MockArbitrator _mockArbitrator;
 
   string _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
-  string _expectedMethod = 'GET';
+  IHttpRequestModule.HttpMethod _expectedMethod = IHttpRequestModule.HttpMethod.GET;
   string _expectedBody = 'ids=ethereum&vs_currencies=usd';
   string _expectedResponse = '{"ethereum":{"usd":1000}}';
 
@@ -68,10 +68,11 @@ contract IntegrationOracle is IntegrationBase {
   }
 
   function testIntegrationRequestModule() public {
-    (string memory _url, string memory _method, string memory _body,,,) = _requestModule.decodeRequestData(_requestId);
+    (string memory _url, IHttpRequestModule.HttpMethod _method, string memory _body,,,) =
+      _requestModule.decodeRequestData(_requestId);
 
     assertEq(_expectedUrl, _url);
-    assertEq(_expectedMethod, _method);
+    assertEq(uint256(_expectedMethod), uint256(_method));
     assertEq(_expectedBody, _body);
     assertEq(_requestId, oracle.listRequestIds(0, 1)[0]);
   }

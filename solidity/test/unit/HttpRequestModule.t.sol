@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   HttpRequestModule,
+  IHttpRequestModule,
   IModule,
   IOracle,
   IAccountingExtension,
@@ -38,7 +39,7 @@ contract HttpRequestModule_UnitTest is Test {
 
   // Mock data
   string constant URL = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
-  string constant METHOD = 'GET';
+  IHttpRequestModule.HttpMethod constant METHOD = IHttpRequestModule.HttpMethod.GET;
   string constant BODY = '69420';
 
   IERC20 immutable TOKEN;
@@ -72,7 +73,7 @@ contract HttpRequestModule_UnitTest is Test {
     // Decode the given request data
     (
       string memory _decodedUrl,
-      string memory _decodedMethod,
+      IHttpRequestModule.HttpMethod _decodedMethod,
       string memory _decodedBody,
       IAccountingExtension _decodedAccountingExtension,
       IERC20 _decodedPaymentToken,
@@ -81,7 +82,7 @@ contract HttpRequestModule_UnitTest is Test {
 
     // Check: decoded values match original values?
     assertEq(_decodedUrl, URL);
-    assertEq(_decodedMethod, METHOD);
+    assertEq(uint256(_decodedMethod), uint256(METHOD));
     assertEq(_decodedBody, BODY);
     assertEq(address(_decodedAccountingExtension), address(accounting));
     assertEq(address(_decodedPaymentToken), address(TOKEN));
