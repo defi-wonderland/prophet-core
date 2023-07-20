@@ -11,11 +11,15 @@ their votes
 
 - `_timeUntilDeadline` could be renamed to have both `commitmentTimeWindow` and `revealingTimeWindow`
 
+### Create commitment?
+
+`function createCommitment(bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt) pure view returns (bytes32 _commitment)`
+
 ### Commiting
 
 `function commitVote(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment)`
 
-- where `_commitment` is the keccak256 hash of `abiEncodePacked(address msg.sender, uint256 numberOfVotes, bytes32 salt)`
+- where `_commitment` is the keccak256 hash of `abiEncodePacked(address msg.sender, bytes32 _disputeId, uint256 numberOfVotes, bytes32 salt)`
 
 - all checks done in the public `ERC20ResolutionModule` but checking for `commitmentTimeWindow`
 
@@ -33,7 +37,7 @@ their votes
 
 - check if user has commited and/or revealed a vote
 
-- check that `hash(encode(msg.sender, _numberOfVotes, _salt)) == userVoteData.commitment`
+- check that `hash(encode(msg.sender, _disputeId, _numberOfVotes, _salt)) == userVoteData.commitment`
 
 - `totalNumberOfVotes += _numberOfVotes`
 
