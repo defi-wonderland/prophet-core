@@ -57,3 +57,15 @@ The dispute resolution remains the same just checking that `revealingTimeWindow`
 
 - users must approve the resolution contract in order to transfer voting tokens. since the amount is not known, how much must the voter approve and when4?
 
+### Example execution flow
+
+1. commitment time window opens.
+2. user generates a commitment hash.
+3. user approves the module for an X amount of tokens TBD
+4. user calls `commitVote` and the commitment is stored.
+5. revealing time window opens.
+6. user calls `revealVote` and the tokens are transferred to the contract. if the contract is not able to transfer the tokens from the user, it reverts, allowing the user to correctly approve the tokens.
+7. revealing time window closes and `resolveDispute` is called. works the same as the public module.
+
+If the user did not approve the tokens or approved the incorrect amount, they still can correct their mistake. Otherwise, the tokens are not transferred and the votes not tallied. Just a reveal-less commitment remains stored.
+
