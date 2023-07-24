@@ -27,21 +27,23 @@ contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
     escalationData[_disputeId] = __escalationData;
   }
 
-  function forTest_setCommitment(bytes32 _disputeId, address _voter, bytes32 _commitment) public {
-    commitments[_disputeId][_voter] = _commitment;
+  function forTest_setVoterData(
+    bytes32 _disputeId,
+    address _voter,
+    IPrivateERC20ResolutionModule.VoterData memory _data
+  ) public {
+    _votersData[_disputeId][_voter] = _data;
+  }
+
+  function forTest_getVoterData(
+    bytes32 _disputeId,
+    address _voter
+  ) public view returns (IPrivateERC20ResolutionModule.VoterData memory _data) {
+    _data = _votersData[_disputeId][_voter];
   }
 }
 
 contract PrivateERC20ResolutionModule_UnitTest is Test {
-  struct FakeDispute {
-    bytes32 requestId;
-    bytes32 test;
-  }
-
-  struct FakeRequest {
-    address disputeModule;
-  }
-
   // The target contract
   ForTest_PrivateERC20ResolutionModule public module;
 
@@ -59,24 +61,6 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
 
   // Mock EOA disputer
   address public disputer;
-
-  // Mock EOA pledgerFor
-  address public pledgerFor;
-
-  // Mock EOA pledgerAgainst
-  address public pledgerAgainst;
-
-  // Mock percentageDiff
-  uint256 percentageDiff;
-
-  // Mock pledge threshold
-  uint256 pledgeThreshold;
-
-  // Mock time until main deadline
-  uint256 timeUntilDeadline;
-
-  // Mock time to break inequality
-  uint256 timeToBreakInequality;
 
   event CommitingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
@@ -97,8 +81,6 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
 
     proposer = makeAddr('proposer');
     disputer = makeAddr('disputer');
-    pledgerFor = makeAddr('pledgerFor');
-    pledgerAgainst = makeAddr('pledgerAgainst');
 
     // Avoid starting at 0 for time sensitive tests
     vm.warp(123_456);
@@ -116,17 +98,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   /**
    * @notice Test that the startResolution is correctly called and the commiting phase is started
    */
-  function test_startResolution(bytes32 _disputeId, bytes32 _requestId, uint256 _disputerBondSize) public {
-    // Mock the dispute
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
-
-    // Mock the oracle response for looking up a dispute
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-
-    // Store the request for decoding data
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _disputerBondSize, uint256(1), uint256(1), uint256(1))
+  function test_startResolution(bytes32 _disputeId) public {
+    module.forTest_setEscalationData(
+      _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 0, totalVotes: 0})
     );
 
     // Check: does revert if called by address != oracle?
@@ -137,36 +111,18 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     vm.expectEmit(true, true, true, true);
     emit CommitingPhaseStarted(uint128(block.timestamp), _disputeId);
 
-    // Mock calls if disputerBondSize != 0
-    if (_disputerBondSize != 0) {
-      vm.mockCall(
-        address(accounting),
-        abi.encodeCall(IAccountingExtension.pay, (_requestId, disputer, address(module), token, _disputerBondSize)),
-        abi.encode()
-      );
-      vm.expectCall(
-        address(accounting),
-        abi.encodeCall(IAccountingExtension.pay, (_requestId, disputer, address(module), token, _disputerBondSize))
-      );
-
-      vm.mockCall(
-        address(accounting), abi.encodeCall(IAccountingExtension.withdraw, (token, _disputerBondSize)), abi.encode()
-      );
-      vm.expectCall(address(accounting), abi.encodeCall(IAccountingExtension.withdraw, (token, _disputerBondSize)));
-    }
-
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
 
-    (uint128 _startTime,, uint256 _disputerBond,) = module.escalationData(_disputeId);
+    (uint256 _startTime,) = module.escalationData(_disputeId);
 
     // Check: startTime is set to block.timestamp?
-    assertEq(_startTime, uint128(block.timestamp));
-
-    // Check: disputerBond is set to _disputerBondSize?
-    assertEq(_disputerBond, _disputerBondSize);
+    assertEq(_startTime, block.timestamp);
   }
 
+  /**
+   * @notice Test that a user can store a vote commitment for a dispute
+   */
   function test_commitVote(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -182,15 +138,13 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       _disputeId,
       IPrivateERC20ResolutionModule.EscalationData({
         startTime: 100_000,
-        results: 0, // Escalated
-        disputerBond: uint256(0), // Set as zero for testing
         totalVotes: 0 // Initial amount of votes
       })
     );
 
     // Store mock request data with 40_000 commiting time window
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, uint256(0), uint256(1), uint256(40_000), uint256(40_000))
+      _requestId, abi.encode(address(accounting), token, uint256(1), uint256(40_000), uint256(40_000))
     );
 
     // Mock the oracle response for looking up a dispute
@@ -216,7 +170,8 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.commitVote(_requestId, _disputeId, _commitment);
 
     // Check: commitment is stored?
-    assertEq(module.commitments(_disputeId, _voter), _commitment);
+    IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
+    assertEq(_voterData.commitment, _commitment);
 
     bytes32 _newComitment = module.computeCommitment(_disputeId, uint256(_salt), bytes32(_amountOfVotes));
     module.commitVote(_requestId, _disputeId, _newComitment);
@@ -235,21 +190,21 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       _disputeId,
       IPrivateERC20ResolutionModule.EscalationData({
         startTime: 100_000,
-        results: 0, // Escalated
-        disputerBond: uint256(0), // Set as zero for testing
         totalVotes: 0 // Initial amount of votes
       })
     );
 
     // Store mock request data with 40_000 commiting time window
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, uint256(0), uint256(1), uint256(40_000), uint256(40_000))
+      _requestId, abi.encode(address(accounting), token, uint256(1), uint256(40_000), uint256(40_000))
     );
 
     // Store commitment
     vm.prank(_voter);
     bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, _salt);
-    module.forTest_setCommitment(_disputeId, _voter, _commitment);
+    module.forTest_setVoterData(
+      _disputeId, _voter, IPrivateERC20ResolutionModule.VoterData({numOfVotes: 0, commitment: _commitment})
+    );
 
     // Mock token transfer (user must have approved token spending)
     vm.mockCall(
@@ -267,16 +222,13 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     vm.prank(_voter);
     module.revealVote(_requestId, _disputeId, _amountOfVotes, _salt);
 
-    (,,, uint256 _totalVotes) = module.escalationData(_disputeId);
+    (, uint256 _totalVotes) = module.escalationData(_disputeId);
     // Check: totalVotes is updated?
     assertEq(_totalVotes, _amountOfVotes);
 
-    (address _userAddress, uint256 _userVotes) = module.votes(_disputeId, 0);
-
-    // Check: user address is stored?
-    assertEq(_userAddress, _voter);
-    // Check: user votes is stored?
-    assertEq(_userVotes, _amountOfVotes);
+    // Check: voter data is updated?
+    IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
+    assertEq(_voterData.numOfVotes, _amountOfVotes);
   }
 
   function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
@@ -285,7 +237,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       responseId: bytes32('response'),
       proposer: proposer,
       requestId: _requestId,
-      status: IOracle.DisputeStatus.Active,
+      status: IOracle.DisputeStatus.None,
       createdAt: block.timestamp
     });
   }
