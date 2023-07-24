@@ -6,12 +6,11 @@ pragma solidity >=0.8.16 <0.9.0;
 import {IResolutionModule} from './IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
+import {IOracle} from '../IOracle.sol';
 
 interface IPrivateERC20ResolutionModule is IResolutionModule {
   struct EscalationData {
     uint128 startTime;
-    uint128 results; // 0 = Escalated, 1 = Disputer Won, 2 = Disputer Lost
-    uint256 disputerBond;
     uint256 totalVotes;
   }
 
@@ -24,7 +23,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event CommitingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
   event RevealingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
-  event DisputeResolved(bytes32 _disputeId);
+  event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
 
   error PrivateERC20ResolutionModule_OnlyDisputeModule();
   error PrivateERC20ResolutionModule_DisputeNotEscalated();
@@ -38,11 +37,9 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   error PrivateERC20ResolutionModule_AlreadyCommited();
   error PrivateERC20ResolutionModule_NeverCommited();
   error PrivateERC20ResolutionModule_WrongRevealData();
+  error PrivateERC20ResolutionModule_AlreadyResolved();
 
-  function escalationData(bytes32 _disputeId)
-    external
-    view
-    returns (uint128 _startTime, uint128 _results, uint256 _disputerBond, uint256 _totalVotes);
+  function escalationData(bytes32 _disputeId) external view returns (uint128 _startTime, uint256 _totalVotes);
   // TODO: create getter -- see if its possible to declare this
   // function votes(bytes32 _disputeId) external view returns (VoterData memory _voterData);
   function totalNumberOfVotes(bytes32 _disputeId) external view returns (uint256 _numOfVotes);
@@ -55,8 +52,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
     returns (
       IAccountingExtension _accountingExtension,
       IERC20 _token,
-      uint256 _disputerBondSize,
-      uint256 _minQuorum,
+      uint256 _minVotesForQuorum,
       uint256 _commitingTimeWindow,
       uint256 _revealingTimeWindow
     );
