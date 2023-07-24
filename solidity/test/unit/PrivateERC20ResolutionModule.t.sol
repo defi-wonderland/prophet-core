@@ -75,6 +75,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   uint256 timeToBreakInequality;
 
   event CommitingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
+  event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -156,6 +157,55 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
 
     // Check: startTime is set to block.timestamp?
     assertEq(_startTime, uint128(block.timestamp));
+  }
+
+  function test_commitVote(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _amountOfVotes,
+    bytes32 _salt,
+    address _voter
+  ) public {
+    // Mock the dispute
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+
+    // Store mock escalation data with startTime 100_000
+    module.forTest_setEscalationData(
+      _disputeId,
+      IPrivateERC20ResolutionModule.EscalationData({
+        startTime: 100_000,
+        results: 0, // Escalated
+        disputerBond: uint256(0), // Set as zero for testing
+        totalVotes: 0 // Initial amount of votes
+      })
+    );
+
+    // Store mock request data with 40_000 commiting time window
+    module.forTest_setRequestData(
+      _requestId, abi.encode(address(accounting), token, uint256(0), uint256(1), uint256(40_000), uint256(40_000))
+    );
+
+    // Mock the oracle response for looking up a dispute
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    // Set timestamp for valid commitingTimeWindow
+    vm.warp(123_456);
+
+    // Compute commitment
+    vm.prank(_voter);
+    bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, _salt);
+
+    // Check: is event emitted?
+    vm.expectEmit(true, true, true, true);
+    emit VoteCommited(_voter, _disputeId, _commitment);
+
+    // Compute and store commitment
+    vm.prank(_voter);
+    module.commitVote(_requestId, _disputeId, _commitment);
+
+    // Check: commitment is stored?
+    assertEq(module.commitments(_disputeId, _voter), _commitment);
   }
 
   function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
