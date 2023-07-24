@@ -7,6 +7,7 @@ import {IERC20ResolutionModule} from '../../interfaces/modules/IERC20ResolutionM
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 import {Module} from '../Module.sol';
 
@@ -16,10 +17,12 @@ import {Module} from '../Module.sol';
 
 contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   using SafeERC20 for IERC20;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
-  mapping(bytes32 _disputeId => VoterData[]) public votes;
+  mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) private votes;
   mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
+  EnumerableSet.AddressSet private _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -59,10 +62,12 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     uint256 _deadline = _escalationData.startTime + _timeUntilDeadline;
     if (block.timestamp >= _deadline) revert ERC20ResolutionModule_VotingPhaseOver();
 
-    // TODO: create an enumerable set-like structure where the index is the address
-    //       otherwise if new members are pushed, they can vote with 1 wei for example
-    //       and DoS the loading of the array
-    votes[_disputeId].push(VoterData({voter: msg.sender, numOfVotes: _numberOfVotes}));
+    votes[_disputeId][msg.sender] += _numberOfVotes;
+
+    // TODO: .add returns a boolean, checks if there's any other way for it to return false that's not the voter not being in the array
+    if (!_voters.contains(msg.sender)) {
+      _voters.add(msg.sender);
+    }
 
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
@@ -87,7 +92,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
 
-    VoterData[] memory _voterData = votes[_disputeId];
+    address[] memory __voters = _voters.values();
 
     // 5. Update status
     if (_quorumReached == 1) {
@@ -99,8 +104,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     }
 
     // 6. Return tokens
-    for (uint256 _i; _i < _voterData.length;) {
-      _token.safeTransfer(_voterData[_i].voter, _voterData[_i].numOfVotes);
+    for (uint256 _i; _i < __voters.length;) {
+      _token.safeTransfer(__voters[_i], votes[_disputeId][__voters[_i]]);
       unchecked {
         ++_i;
       }
