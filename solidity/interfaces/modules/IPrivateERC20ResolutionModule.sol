@@ -10,13 +10,13 @@ import {IOracle} from '../IOracle.sol';
 
 interface IPrivateERC20ResolutionModule is IResolutionModule {
   struct EscalationData {
-    uint128 startTime;
+    uint256 startTime;
     uint256 totalVotes;
   }
 
   struct VoterData {
-    address voter;
     uint256 numOfVotes;
+    bytes32 commitment;
   }
 
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
@@ -39,7 +39,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   error PrivateERC20ResolutionModule_WrongRevealData();
   error PrivateERC20ResolutionModule_AlreadyResolved();
 
-  function escalationData(bytes32 _disputeId) external view returns (uint128 _startTime, uint256 _totalVotes);
+  function escalationData(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
   // TODO: create getter -- see if its possible to declare this
   // function votes(bytes32 _disputeId) external view returns (VoterData memory _voterData);
   function totalNumberOfVotes(bytes32 _disputeId) external view returns (uint256 _numOfVotes);

@@ -7,18 +7,20 @@ import {IPrivateERC20ResolutionModule} from '../../interfaces/modules/IPrivateER
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {Module} from '../Module.sol';
 
 contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   uint256 public constant BASE = 100;
 
+  // todo: this storage layout must be super optimizable. many disputeId mappings
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
-  mapping(bytes32 _disputeId => VoterData[]) public votes;
+  mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) private _votersData;
   mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
-  mapping(bytes32 _disputeId => mapping(address _voter => bytes32 _commitment)) public commitments;
+  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -68,7 +70,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (block.timestamp >= _deadline) revert PrivateERC20ResolutionModule_CommitingPhaseOver();
 
     if (_commitment == bytes32('')) revert PrivateERC20ResolutionModule_EmptyCommitment();
-    commitments[_disputeId][msg.sender] = _commitment;
+    _votersData[_disputeId][msg.sender] = VoterData({numOfVotes: 0, commitment: _commitment});
 
     emit VoteCommited(msg.sender, _disputeId, _commitment);
   }
@@ -92,12 +94,14 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (block.timestamp < _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
     if (block.timestamp >= _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
 
-    if (commitments[_disputeId][msg.sender] != keccak256(abi.encode(msg.sender, _disputeId, _numberOfVotes, _salt))) {
+    VoterData storage _voterData = _votersData[_disputeId][msg.sender];
+
+    if (_voterData.commitment != keccak256(abi.encode(msg.sender, _disputeId, _numberOfVotes, _salt))) {
       revert PrivateERC20ResolutionModule_WrongRevealData();
     }
-    delete commitments[_disputeId][msg.sender];
 
-    votes[_disputeId].push(VoterData({voter: msg.sender, numOfVotes: _numberOfVotes}));
+    _voterData.numOfVotes = _numberOfVotes;
+    _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
     _token.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
@@ -127,7 +131,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
 
-    VoterData[] memory _voterData = votes[_disputeId];
+    address[] memory __voters = _voters[_disputeId].values();
 
     // 5. Update status
     if (_quorumReached == 1) {
@@ -139,8 +143,9 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     }
 
     // 6. Return tokens
-    for (uint256 _i; _i < _voterData.length;) {
-      _token.safeTransfer(_voterData[_i].voter, _voterData[_i].numOfVotes);
+    uint256 _length = __voters.length;
+    for (uint256 _i; _i < _length;) {
+      _token.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
       unchecked {
         ++_i;
       }
