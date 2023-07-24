@@ -22,7 +22,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
   mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) private votes;
   mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
-  EnumerableSet.AddressSet private _voters;
+  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -65,8 +65,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     votes[_disputeId][msg.sender] += _numberOfVotes;
 
     // TODO: .add returns a boolean, checks if there's any other way for it to return false that's not the voter not being in the array
-    if (!_voters.contains(msg.sender)) {
-      _voters.add(msg.sender);
+    if (!_voters[_disputeId].contains(msg.sender)) {
+      _voters[_disputeId].add(msg.sender);
     }
 
     escalationData[_disputeId].totalVotes += _numberOfVotes;
@@ -92,7 +92,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
 
-    address[] memory __voters = _voters.values();
+    address[] memory __voters = _voters[_disputeId].values();
 
     // 5. Update status
     if (_quorumReached == 1) {
