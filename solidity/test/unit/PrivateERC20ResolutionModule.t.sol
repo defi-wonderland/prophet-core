@@ -193,20 +193,29 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     vm.warp(123_456);
 
     // Compute commitment
-    vm.prank(_voter);
+    vm.startPrank(_voter);
     bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, _salt);
 
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
     emit VoteCommited(_voter, _disputeId, _commitment);
 
+    // Revert if no commitment is given
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_EmptyCommitment.selector);
+    module.commitVote(_requestId, _disputeId, bytes32(''));
+
     // Compute and store commitment
-    vm.prank(_voter);
     module.commitVote(_requestId, _disputeId, _commitment);
 
     // Check: commitment is stored?
     assertEq(module.commitments(_disputeId, _voter), _commitment);
+
+    bytes32 _newComitment = module.computeCommitment(_disputeId, uint256(_salt), bytes32(_amountOfVotes));
+    module.commitVote(_requestId, _disputeId, _newComitment);
+    vm.stopPrank();
   }
+
+  function test_revealVote() public {}
 
   function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
     _dispute = IOracle.Dispute({
