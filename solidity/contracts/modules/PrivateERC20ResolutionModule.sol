@@ -32,48 +32,17 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     returns (
       IAccountingExtension _accountingExtension,
       IERC20 _token,
-      uint256 _disputerBondSize,
-      uint256 _minQuorum,
+      uint256 _minVotesForQuorum,
       uint256 _commitingTimeWindow,
       uint256 _revealingTimeWindow
     )
   {
-    (_accountingExtension, _token, _disputerBondSize, _minQuorum, _commitingTimeWindow, _revealingTimeWindow) =
-      _decodeRequestData(requestData[_requestId]);
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (
-      IAccountingExtension _accountingExtension,
-      IERC20 _token,
-      uint256 _disputerBondSize,
-      uint256 _minQuorum,
-      uint256 _commitingTimeWindow,
-      uint256 _revealingTimeWindow
-    )
-  {
-    (_accountingExtension, _token, _disputerBondSize, _minQuorum, _commitingTimeWindow, _revealingTimeWindow) =
-      abi.decode(_data, (IAccountingExtension, IERC20, uint256, uint256, uint256, uint256));
+    (_accountingExtension, _token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimeWindow) =
+      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256, uint256));
   }
 
   function startResolution(bytes32 _disputeId) external onlyOracle {
-    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-
-    (IAccountingExtension _accounting, IERC20 _token, uint256 _disputerBondSize,,,) =
-      decodeRequestData(_dispute.requestId);
-
     escalationData[_disputeId].startTime = uint128(block.timestamp);
-
-    if (_disputerBondSize != 0) {
-      // seize disputer bond until resolution - this allows for voters not having to call deposit in the accounting extension
-      // TODO: should another event be emitted with disputerBond?
-      _accounting.pay(_dispute.requestId, _dispute.disputer, address(this), _token, _disputerBondSize);
-      _accounting.withdraw(_token, _disputerBondSize);
-      escalationData[_disputeId].disputerBond = _disputerBondSize;
-    }
-
     emit CommitingPhaseStarted(uint128(block.timestamp), _disputeId);
   }
 
@@ -89,12 +58,12 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     */
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
+    if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
 
     EscalationData memory _escalationData = escalationData[_disputeId];
-
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (,,,, uint256 _commitingTimeWindow,) = decodeRequestData(_requestId);
+    (,,, uint256 _commitingTimeWindow,) = decodeRequestData(_requestId);
     uint256 _deadline = _escalationData.startTime + _commitingTimeWindow;
     if (block.timestamp >= _deadline) revert PrivateERC20ResolutionModule_CommitingPhaseOver();
 
@@ -115,7 +84,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token,,, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) = decodeRequestData(_requestId);
+    (, IERC20 _token,, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) = decodeRequestData(_requestId);
     (uint256 _revealStartTime, uint256 _revealEndTime) = (
       _escalationData.startTime + _commitingTimeWindow,
       _escalationData.startTime + _commitingTimeWindow + _revealingTimeWindow
@@ -140,21 +109,15 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     // 0. Check that the disputeId actually exists
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
+    if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
 
     EscalationData memory _escalationData = escalationData[_disputeId];
-
     // Check that the dispute is actually escalated
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
     // 2. Check that voting deadline is over
-    (
-      IAccountingExtension _accounting,
-      IERC20 _token,
-      ,
-      uint256 _minQuorum,
-      uint256 _commitingTimeWindow,
-      uint256 _revealingTimeWindow
-    ) = decodeRequestData(_dispute.requestId);
+    (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) =
+      decodeRequestData(_dispute.requestId);
     if (block.timestamp < _escalationData.startTime + _commitingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
     }
@@ -162,50 +125,26 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
-    // 3. Check quorum - TODO: check if this is precise- think if using totalSupply makes sense, perhaps minQuorum can be
-    // min amount of tokens required instead of a percentage
-    // not sure if safe but the actual formula is _token.totalSupply() * _minQuorum * BASE(100) / 100 so base disappears
-    // i guess with a shit token someone could front run this call and increase totalSupply enough for this to fail
-    uint256 _numVotesForQuorum = _token.totalSupply() * _minQuorum;
-    uint256 _quorumReached = _escalationData.totalVotes * BASE >= _numVotesForQuorum ? 1 : 0;
-
-    // 4. Store result
-    escalationData[_disputeId].results = _quorumReached == 1 ? 1 : 2;
+    uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
 
     VoterData[] memory _voterData = votes[_disputeId];
 
-    uint256 _disputerBond = _escalationData.disputerBond;
-    uint256 _amountToPay;
-    // 5. Pay and Release
+    // 5. Update status
     if (_quorumReached == 1) {
-      for (uint256 _i; _i < _voterData.length;) {
-        // TODO: check math -- remember _numVotesForQuorum is escalated
-        _amountToPay = _disputerBond == 0
-          ? _voterData[_i].numOfVotes
-          : _voterData[_i].numOfVotes + (_voterData[_i].numOfVotes * _numVotesForQuorum / _disputerBond * BASE);
-        _token.safeTransfer(_voterData[_i].voter, _amountToPay);
-        unchecked {
-          ++_i;
-        }
-      }
+      ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
     } else {
-      // This also releases the disputer's bond
-      if (_disputerBond != 0) {
-        _accounting.pay(_dispute.requestId, address(this), _dispute.disputer, _token, _disputerBond);
-      }
-      for (uint256 _i; _i < _voterData.length;) {
-        _token.safeTransfer(_voterData[_i].voter, _voterData[_i].numOfVotes);
-        unchecked {
-          ++_i;
-        }
-      }
+      ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
     }
 
-    if (_disputerBond != 0) {
-      escalationData[_disputeId].disputerBond = 0;
+    // 6. Return tokens
+    for (uint256 _i; _i < _voterData.length;) {
+      _token.safeTransfer(_voterData[_i].voter, _voterData[_i].numOfVotes);
+      unchecked {
+        ++_i;
+      }
     }
-
-    emit DisputeResolved(_disputeId);
   }
 
   function computeCommitment(
