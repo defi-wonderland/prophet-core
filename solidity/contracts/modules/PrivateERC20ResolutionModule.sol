@@ -59,17 +59,17 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   function startResolution(bytes32 _disputeId) external onlyOracle {
-    bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
-    (IAccountingExtension _accounting, IERC20 _token, uint256 _disputerBondSize,,,) = decodeRequestData(_requestId);
+    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+
+    (IAccountingExtension _accounting, IERC20 _token, uint256 _disputerBondSize,,,) =
+      decodeRequestData(_dispute.requestId);
 
     escalationData[_disputeId].startTime = uint128(block.timestamp);
-
-    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
 
     if (_disputerBondSize != 0) {
       // seize disputer bond until resolution - this allows for voters not having to call deposit in the accounting extension
       // TODO: should another event be emitted with disputerBond?
-      _accounting.pay(_requestId, _dispute.disputer, address(this), _token, _disputerBondSize);
+      _accounting.pay(_dispute.requestId, _dispute.disputer, address(this), _token, _disputerBondSize);
       _accounting.withdraw(_token, _disputerBondSize);
       escalationData[_disputeId].disputerBond = _disputerBondSize;
     }
