@@ -26,6 +26,10 @@ contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
   ) public {
     escalationData[_disputeId] = __escalationData;
   }
+
+  function forTest_setCommitment(bytes32 _disputeId, address _voter, bytes32 _commitment) public {
+    commitments[_disputeId][_voter] = _commitment;
+  }
 }
 
 contract PrivateERC20ResolutionModule_UnitTest is Test {
@@ -76,6 +80,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
 
   event CommitingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
+  event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -153,10 +158,13 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
 
-    (uint128 _startTime,,,) = module.escalationData(_disputeId);
+    (uint128 _startTime,, uint256 _disputerBond,) = module.escalationData(_disputeId);
 
     // Check: startTime is set to block.timestamp?
     assertEq(_startTime, uint128(block.timestamp));
+
+    // Check: disputerBond is set to _disputerBondSize?
+    assertEq(_disputerBond, _disputerBondSize);
   }
 
   function test_commitVote(
@@ -215,7 +223,61 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     vm.stopPrank();
   }
 
-  function test_revealVote() public {}
+  function test_revealVote(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _amountOfVotes,
+    bytes32 _salt,
+    address _voter
+  ) public {
+    // Store mock escalation data with startTime 100_000
+    module.forTest_setEscalationData(
+      _disputeId,
+      IPrivateERC20ResolutionModule.EscalationData({
+        startTime: 100_000,
+        results: 0, // Escalated
+        disputerBond: uint256(0), // Set as zero for testing
+        totalVotes: 0 // Initial amount of votes
+      })
+    );
+
+    // Store mock request data with 40_000 commiting time window
+    module.forTest_setRequestData(
+      _requestId, abi.encode(address(accounting), token, uint256(0), uint256(1), uint256(40_000), uint256(40_000))
+    );
+
+    // Store commitment
+    vm.prank(_voter);
+    bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, _salt);
+    module.forTest_setCommitment(_disputeId, _voter, _commitment);
+
+    // Mock token transfer (user must have approved token spending)
+    vm.mockCall(
+      address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)), abi.encode()
+    );
+    vm.expectCall(address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)));
+
+    // Warp to revealing phase
+    vm.warp(150_000);
+
+    // Check: is event emmited?
+    vm.expectEmit(true, true, true, true);
+    emit VoteRevealed(_voter, _disputeId, _amountOfVotes);
+
+    vm.prank(_voter);
+    module.revealVote(_requestId, _disputeId, _amountOfVotes, _salt);
+
+    (,,, uint256 _totalVotes) = module.escalationData(_disputeId);
+    // Check: totalVotes is updated?
+    assertEq(_totalVotes, _amountOfVotes);
+
+    (address _userAddress, uint256 _userVotes) = module.votes(_disputeId, 0);
+
+    // Check: user address is stored?
+    assertEq(_userAddress, _voter);
+    // Check: user votes is stored?
+    assertEq(_userVotes, _amountOfVotes);
+  }
 
   function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
     _dispute = IOracle.Dispute({
