@@ -7,12 +7,17 @@ import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 interface IHttpRequestModule is IRequestModule {
+  enum HttpMethod {
+    GET,
+    POST
+  }
+
   function decodeRequestData(bytes32 _requestId)
     external
     view
     returns (
       string memory _url,
-      string memory _method,
+      HttpMethod _method,
       string memory _body,
       IAccountingExtension _accountingExtension,
       IERC20 _paymentToken,

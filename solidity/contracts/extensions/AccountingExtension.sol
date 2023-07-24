@@ -43,16 +43,16 @@ contract AccountingExtension is IAccountingExtension {
   function deposit(IERC20 _token, uint256 _amount) external payable {
     // If ETH, wrap:
     if (msg.value != 0) {
-      WETH.deposit{value: msg.value}();
       _token = IERC20(address(WETH));
       _amount = msg.value;
+      balanceOf[msg.sender][_token] += _amount;
+      WETH.deposit{value: msg.value}();
     } else {
+      balanceOf[msg.sender][_token] += _amount;
       _token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
-    balanceOf[msg.sender][_token] += _amount;
-
-    emit Deposit(msg.sender, _token, _amount);
+    emit Deposited(msg.sender, _token, _amount);
   }
 
   // withdraw returns the user’s funds, adding any payments for provided responses and subtracting the slashed amounts.
@@ -66,16 +66,9 @@ contract AccountingExtension is IAccountingExtension {
       balanceOf[msg.sender][_token] -= _amount;
     }
 
-    // If weth, unwrap
-    if (_token == IERC20(address(WETH))) {
-      // TODO: [OPO-145] Replace plain value transfers with ERC20 transfers
-      WETH.withdraw(_amount);
-      payable(msg.sender).transfer(_amount);
-    } else {
-      _token.safeTransfer(msg.sender, _amount);
-    }
+    _token.safeTransfer(msg.sender, _amount);
 
-    emit Withdraw(msg.sender, _token, _amount);
+    emit Withdrew(msg.sender, _token, _amount);
   }
 
   // pay is the function by which the user's virtual balance amount is increased, often as a result of submitting correct responses, winning disputes, etc
@@ -95,7 +88,7 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_payer][_token][_requestId] -= _amount;
     }
 
-    emit Pay(_receiver, _payer, _token, _amount);
+    emit Paid(_receiver, _payer, _token, _amount);
   }
 
   // Bond an amount for a request or a dispute
@@ -112,7 +105,7 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_bonder][_token][_requestId] += _amount;
     }
 
-    emit Bond(_bonder, _token, _amount);
+    emit Bonded(_bonder, _token, _amount);
   }
 
   // Unbond an amount after a request is finalised/dispute is resolved
@@ -129,7 +122,7 @@ contract AccountingExtension is IAccountingExtension {
       balanceOf[_bonder][_token] += _amount;
     }
 
-    emit Release(_bonder, _token, _amount);
+    emit Released(_bonder, _token, _amount);
   }
 
   receive() external payable {}

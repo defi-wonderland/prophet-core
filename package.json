@@ -44,7 +44,6 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/isolmate": "https://github.com/defi-wonderland/isolmate.git#59e18043c2450fef550f1744b3705ce9ebcaf1c8",
     "@defi-wonderland/keep3r-v2": "0.0.0-31de77ed",
     "@defi-wonderland/solidity-utils": "0.0.0-4298c6c6",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",

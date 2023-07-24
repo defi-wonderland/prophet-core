@@ -4,15 +4,15 @@ pragma solidity ^0.8.19;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 interface IAccountingExtension {
-  event Deposit(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Deposited(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
 
-  event Withdraw(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Withdrew(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
 
-  event Pay(address indexed _beneficiary, address indexed _payer, IERC20 indexed _token, uint256 _amount);
+  event Paid(address indexed _beneficiary, address indexed _payer, IERC20 indexed _token, uint256 _amount);
 
-  event Bond(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Bonded(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
 
-  event Release(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Released(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
 
   // Throw if trying to withdraw too much
   error AccountingExtension_InsufficientFunds();
