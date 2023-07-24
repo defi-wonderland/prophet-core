@@ -50,6 +50,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
+    if (_dispute.status != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
 
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
