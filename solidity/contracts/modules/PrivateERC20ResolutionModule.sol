@@ -14,8 +14,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  uint256 public constant BASE = 100;
-
   // todo: this storage layout must be super optimizable. many disputeId mappings
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
   mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) private _votersData;
@@ -44,20 +42,11 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   function startResolution(bytes32 _disputeId) external onlyOracle {
-    escalationData[_disputeId].startTime = uint128(block.timestamp);
-    emit CommitingPhaseStarted(uint128(block.timestamp), _disputeId);
+    escalationData[_disputeId].startTime = block.timestamp;
+    emit CommitingPhaseStarted(block.timestamp, _disputeId);
   }
 
-  // commit vote in favor of dispute
   function commitVote(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
-    /*
-      1. Check that the disputeId is Escalated - TODO
-      2. Check that the commiting deadline is not over
-      3. Check that the user did not provide an empty commitment
-      4. Emit VoteCommited event
-
-      @dev we are allowing users to commit multiple times, changing the amount of votes being commited
-    */
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
@@ -76,13 +65,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   function revealVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt) public {
-    /*
-      1. Check that the commiting deadline is not over
-      2. Check that the user did not provide an empty commitment
-      3. Emit VoteCommited event
-
-      @dev we are allowing users to commit multiple times, changing the amount of votes being commited
-    */
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
@@ -110,16 +92,13 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
-    // 0. Check that the disputeId actually exists
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
 
     EscalationData memory _escalationData = escalationData[_disputeId];
-    // Check that the dispute is actually escalated
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    // 2. Check that voting deadline is over
     (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) =
       decodeRequestData(_dispute.requestId);
     if (block.timestamp < _escalationData.startTime + _commitingTimeWindow) {
@@ -133,7 +112,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     address[] memory __voters = _voters[_disputeId].values();
 
-    // 5. Update status
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Won);
       emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
@@ -142,7 +120,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
     }
 
-    // 6. Return tokens
     uint256 _length = __voters.length;
     for (uint256 _i; _i < _length;) {
       _token.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
