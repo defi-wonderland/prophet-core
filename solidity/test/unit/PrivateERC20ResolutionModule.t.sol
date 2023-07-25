@@ -269,29 +269,13 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     }
 
     // If quorum reached, check for dispute status update and event emission
-    if (_totalVotesCast >= _minVotesForQuorum) {
-      vm.mockCall(
-        address(oracle),
-        abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won)),
-        abi.encode()
-      );
-      vm.expectCall(
-        address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won))
-      );
-      vm.expectEmit(true, true, true, true);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
-    } else {
-      vm.mockCall(
-        address(oracle),
-        abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost)),
-        abi.encode()
-      );
-      vm.expectCall(
-        address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost))
-      );
-      vm.expectEmit(true, true, true, true);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
-    }
+
+    IOracle.DisputeStatus _newStatus =
+      _totalVotesCast >= _minVotesForQuorum ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)), abi.encode());
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)));
+    vm.expectEmit(true, true, true, true);
+    emit DisputeResolved(_disputeId, _newStatus);
 
     // Check: does revert if called by address != oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
