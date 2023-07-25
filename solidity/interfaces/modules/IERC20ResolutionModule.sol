@@ -14,11 +14,6 @@ interface IERC20ResolutionModule is IResolutionModule {
     uint256 totalVotes;
   }
 
-  struct VoterData {
-    address voter;
-    uint256 numOfVotes;
-  }
-
   event VoteCast(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event VotingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
@@ -32,11 +27,11 @@ interface IERC20ResolutionModule is IResolutionModule {
   error ERC20ResolutionModule_AlreadyResolved();
 
   function escalationData(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
-  // TODO: create getter -- see if its possible to declare this
-  // function votes(bytes32 _disputeId) external view returns (VoterData memory _voterData);
   function totalNumberOfVotes(bytes32 _disputeId) external view returns (uint256 _numOfVotes);
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) external;
+  function votes(bytes32 _disputeId, address _voter) external view returns (uint256 _votes);
   function resolveDispute(bytes32 _disputeId) external;
+  function getVoters(bytes32 _disputeId) external view returns (address[] memory _voters);
   function decodeRequestData(bytes32 _requestId)
     external
     view

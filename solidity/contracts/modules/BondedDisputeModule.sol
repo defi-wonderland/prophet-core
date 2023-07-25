@@ -46,6 +46,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
   }
 
+  // TODO: This doesn't handle the cases of unconclusive statuses
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
       _decodeRequestData(requestData[_dispute.requestId]);

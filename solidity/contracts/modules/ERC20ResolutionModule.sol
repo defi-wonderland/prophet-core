@@ -14,13 +14,12 @@ import {Module} from '../Module.sol';
 // TODO: Discuss about this module's incentives for voters. Right now there are no incentives for them to vote. There's the possibility of adding the bonded amount of the disputer/proposer as rewards
 //       but that would get highly diluted - and due to the nature of how updateDisputeStatus work, this would need a custom dispute module that doesn't settle payment between proposer and disputer
 //       as this would all get handled in this module.
-
 contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
-  mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) private votes;
+  mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) public votes;
   mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
 
@@ -50,6 +49,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   }
 
   // Casts vote in favor of dispute
+  // TODO: Discuss whether to change this to vote against disputes/for disputes
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
@@ -64,11 +64,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     votes[_disputeId][msg.sender] += _numberOfVotes;
 
-    // TODO: .add returns a boolean, checks if there's any other way for it to return false that's not the voter not being in the array
-    if (!_voters[_disputeId].contains(msg.sender)) {
-      _voters[_disputeId].add(msg.sender);
-    }
-
+    _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
     _token.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
@@ -110,5 +106,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
         ++_i;
       }
     }
+  }
+
+  function getVoters(bytes32 _disputeId) external view returns (address[] memory __voters) {
+    __voters = _voters[_disputeId].values();
   }
 }
