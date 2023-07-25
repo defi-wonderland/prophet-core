@@ -233,31 +233,34 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     assertEq(_voterData.numOfVotes, _amountOfVotes);
   }
 
-  function test_resolveDispute(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _minVotesForQuorum,
-    uint8 _votersAmount
-  ) public {
+  /**
+   * @notice Test that a dispute is resolved and the tokens are transferred back
+   */
+  function test_resolveDispute(bytes32 _requestId, bytes32 _disputeId, uint16 _minVotesForQuorum) public {
+    // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
+    // Store request data
     module.forTest_setRequestData(
       _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, uint256(40_000), uint256(40_000))
     );
 
+    // Store escalation data with starttime 100_000 and votes 0
     module.forTest_setEscalationData(
       _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
     );
 
-    uint256 _totalVotesCast = _populateVoters(_requestId, _disputeId, _votersAmount, 100);
+    // Make 100 addresses cast 20 votes each
+    uint256 _totalVotesCast = _populateVoters(_requestId, _disputeId, 20, 100);
 
     // Warp to resolving phase
     vm.warp(190_000);
 
-    for (uint256 i = 1; i < _votersAmount;) {
+    // Mock and expect token transfers (should happen always)
+    for (uint256 i = 1; i < 20;) {
       vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)), abi.encode());
       vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)));
       unchecked {
@@ -265,6 +268,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       }
     }
 
+    // If quorum reached, check for dispute status update and event emission
     if (_totalVotesCast >= _minVotesForQuorum) {
       vm.mockCall(
         address(oracle),
@@ -288,6 +292,10 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       vm.expectEmit(true, true, true, true);
       emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
     }
+
+    // Check: does revert if called by address != oracle?
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
+    module.resolveDispute(_disputeId);
 
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
