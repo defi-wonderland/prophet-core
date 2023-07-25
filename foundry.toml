@@ -29,7 +29,6 @@ src = 'solidity/interfaces/'
 
 [fuzz]
 runs = 1000
-max_test_rejects = 200000
 
 [rpc_endpoints]
 optimism = "${OPTIMISM_RPC}"

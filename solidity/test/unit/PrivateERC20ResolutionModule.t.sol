@@ -189,6 +189,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     assertEq(_newVoterData.commitment, _newCommitment);
   }
 
+  function test_revertCommitVote_Underflow(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
+    vm.expectRevert();
+    module.commitVote(_requestId, _disputeId, _commitment);
+  }
+
   function test_revertCommitVote_AlreadyResolved(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock dispute already resolved => DisputeStatus.Lost
     IOracle.Dispute memory _mockDispute = IOracle.Dispute({
@@ -464,7 +469,8 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   }
 
   function test_revertResolveDispute_WrongPhase(bytes32 _requestId, bytes32 _disputeId, uint32 _timestamp) public {
-    vm.assume(_timestamp >= 100_000 && _timestamp < 180_000);
+    vm.assume(_timestamp > 1);
+    vm.assume(_timestamp < 1_000_000);
 
     // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
@@ -475,24 +481,24 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.forTest_setEscalationData(
       _disputeId,
       IPrivateERC20ResolutionModule.EscalationData({
-        startTime: 100_000,
+        startTime: 1,
         totalVotes: 0 // Initial amount of votes
       })
     );
 
     // Store request data
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _commitingTimeWindow = 500_000;
+    uint256 _revealingTimeWindow = 1_000_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimeWindow)
     );
 
     // Jump to timestamp
     vm.warp(_timestamp);
 
-    if (_timestamp < 140_000) {
+    if (_timestamp < 500_000) {
       // Check: reverts if trying to resolve during commiting phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommitingPhase.selector);
       vm.prank(address(oracle));
