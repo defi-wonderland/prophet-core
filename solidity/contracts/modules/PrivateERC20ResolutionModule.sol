@@ -20,7 +20,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
   mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) internal _votersData;
   mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
-  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
+  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 

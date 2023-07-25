@@ -12,6 +12,7 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IModule} from '../../interfaces/IModule.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
   constructor(IOracle _oracle) PrivateERC20ResolutionModule(_oracle) {}
@@ -65,6 +66,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   event CommitingPhaseStarted(uint128 _startTime, bytes32 _disputeId);
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
+  event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -229,6 +231,90 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     // Check: voter data is updated?
     IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
     assertEq(_voterData.numOfVotes, _amountOfVotes);
+  }
+
+  function test_resolveDispute(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _minVotesForQuorum,
+    uint8 _votersAmount
+  ) public {
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    module.forTest_setRequestData(
+      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, uint256(40_000), uint256(40_000))
+    );
+
+    module.forTest_setEscalationData(
+      _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
+    );
+
+    uint256 _totalVotesCast = _populateVoters(_requestId, _disputeId, _votersAmount, 100);
+
+    // Warp to resolving phase
+    vm.warp(190_000);
+
+    for (uint256 i = 1; i < _votersAmount;) {
+      vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)), abi.encode());
+      vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)));
+      unchecked {
+        ++i;
+      }
+    }
+
+    if (_totalVotesCast >= _minVotesForQuorum) {
+      vm.mockCall(
+        address(oracle),
+        abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won))
+      );
+      vm.expectEmit(true, true, true, true);
+      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
+    } else {
+      vm.mockCall(
+        address(oracle),
+        abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost))
+      );
+      vm.expectEmit(true, true, true, true);
+      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
+    }
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId);
+  }
+
+  function _populateVoters(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint8 _size,
+    uint8 _votes
+  ) internal returns (uint256 _totalVotesCast) {
+    for (uint256 i = 1; i < _size;) {
+      vm.warp(120_000);
+      vm.startPrank(vm.addr(i));
+      bytes32 _commitment = module.computeCommitment(_disputeId, _votes, bytes32(i)); // index as salt
+      module.commitVote(_requestId, _disputeId, _commitment);
+      vm.warp(140_000);
+      vm.mockCall(
+        address(token), abi.encodeCall(IERC20.transferFrom, (vm.addr(i), address(module), _votes)), abi.encode()
+      );
+      module.revealVote(_requestId, _disputeId, _votes, bytes32(i));
+      vm.stopPrank();
+      _totalVotesCast += _votes;
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
