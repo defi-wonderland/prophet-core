@@ -51,12 +51,12 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
 
-    EscalationData memory _escalationData = escalationData[_disputeId];
-    if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
+    uint256 _startTime = escalationData[_disputeId].startTime;
+    if (_startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
     (,,, uint256 _commitingTimeWindow,) = decodeRequestData(_requestId);
-    uint256 _deadline = _escalationData.startTime + _commitingTimeWindow;
-    if (block.timestamp >= _deadline) revert PrivateERC20ResolutionModule_CommitingPhaseOver();
+    uint256 _commitingDeadline = _startTime + _commitingTimeWindow;
+    if (block.timestamp >= _commitingDeadline) revert PrivateERC20ResolutionModule_CommitingPhaseOver();
 
     if (_commitment == bytes32('')) revert PrivateERC20ResolutionModule_EmptyCommitment();
     _votersData[_disputeId][msg.sender] = VoterData({numOfVotes: 0, commitment: _commitment});
