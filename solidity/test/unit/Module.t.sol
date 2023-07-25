@@ -42,10 +42,20 @@ contract Module_UnitTest is Test {
    */
   function test_decodeRequestData(bytes32 _requestId, bytes calldata _data) public {
     // Set the request data
+    vm.prank(address(oracle));
     module.setupRequest(_requestId, _data);
 
     // Check: decoded values match original values?
     assertEq(module.requestData(_requestId), _data);
+  }
+
+  /**
+   * @notice Test that setupRequestData reverts if the oracle is not the caller
+   */
+  function test_setupRequestRevertsWhenCalledByNonOracle(bytes32 _requestId, bytes calldata _data) public {
+    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    // Set the request data
+    module.setupRequest(_requestId, _data);
   }
 
   /**

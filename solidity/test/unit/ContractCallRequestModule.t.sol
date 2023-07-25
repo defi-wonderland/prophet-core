@@ -133,6 +133,7 @@ contract ContractCallRequestModule_UnitTest is Test {
       abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, _paymentToken, _paymentAmount))
     );
 
+    vm.prank(address(oracle));
     contractCallRequestModule.setupRequest(_requestId, _requestData);
 
     // Check: request data was set?
