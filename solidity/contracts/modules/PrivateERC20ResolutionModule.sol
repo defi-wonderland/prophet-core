@@ -83,6 +83,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     }
 
     _voterData.numOfVotes = _numberOfVotes;
+    _voterData.commitment = bytes32('');
     _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
