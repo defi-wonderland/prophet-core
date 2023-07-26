@@ -63,6 +63,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   // Mock EOA disputer
   address public disputer;
 
+  // Mocking module events
   event CommitingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
@@ -189,11 +190,30 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     assertEq(_newVoterData.commitment, _newCommitment);
   }
 
-  function test_revertCommitVote_Underflow(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
-    vm.expectRevert();
+  /**
+   * @notice Test that `commitVote` reverts if there is no dispute with the given`_disputeId`
+   */
+  function test_revertCommitVote_NonExistentDispute(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
+    IOracle.Dispute memory _mockDispute = IOracle.Dispute({
+      disputer: address(0),
+      responseId: bytes32(0),
+      proposer: address(0),
+      requestId: bytes32(0),
+      status: IOracle.DisputeStatus.None,
+      createdAt: 0
+    });
+
+    // Mock the oracle response for looking up a dispute
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_NonExistentDispute.selector);
     module.commitVote(_requestId, _disputeId, _commitment);
   }
 
+  /**
+   * @notice Test that `commitVote` reverts if called with `_disputeId` of an already resolved dispute.
+   */
   function test_revertCommitVote_AlreadyResolved(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock dispute already resolved => DisputeStatus.Lost
     IOracle.Dispute memory _mockDispute = IOracle.Dispute({
@@ -214,6 +234,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.commitVote(_requestId, _disputeId, _commitment);
   }
 
+  /**
+   * @notice Test that `commitVote` reverts if called with `_disputeId` of a non-escalated dispute.
+   */
   function test_revertCommitVote_NotEscalated(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock the oracle response for looking up a dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
@@ -225,6 +248,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.commitVote(_requestId, _disputeId, _commitment);
   }
 
+  /**
+   * @notice Test that `commitVote` reverts if called outside of the commiting time window.
+   */
   function test_revertCommitVote_CommitingPhaseOver(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock the oracle response for looking up a dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
@@ -255,6 +281,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.commitVote(_requestId, _disputeId, _commitment);
   }
 
+  /**
+   * @notice Test revealing votes with proper timestamp, dispute status and commitment data.
+   */
   function test_revealVote(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -309,7 +338,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   }
 
   /**
-   * @notice Call should revert if a dispute has not been escalated
+   * @notice Test that `revealVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
   function test_revertRevealVote_NotEscalated(
     bytes32 _requestId,
@@ -321,6 +350,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.revealVote(_requestId, _disputeId, _numberOfVotes, _salt);
   }
 
+  /**
+   * @notice Test that `revealVote` reverts if called outside the revealing time window.
+   */
   function test_revertRevealVote_InvalidPhase(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -361,6 +393,10 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     }
   }
 
+  /**
+   * @notice Test that `revealVote` reverts if called with revealing parameters (`_disputeId`, `_numberOfVotes`, `_salt`)
+   * that do not compute to the stored commitment.
+   */
   function test_revertRevealVote_FalseCommitment(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -415,7 +451,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test that a dispute is resolved and the tokens are transferred back
+   * @notice Test that a dispute is resolved, the tokens are transferred back to the voters and the dispute status updated.
    */
   function test_resolveDispute(bytes32 _requestId, bytes32 _disputeId, uint16 _minVotesForQuorum) public {
     // Store mock dispute and mock calls
@@ -437,14 +473,16 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
       _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
     );
 
+    uint256 _votersAmount = 5;
+
     // Make 5 addresses cast 100 votes each
-    uint256 _totalVotesCast = _populateVoters(_requestId, _disputeId, 6, 100);
+    uint256 _totalVotesCast = _populateVoters(_requestId, _disputeId, _votersAmount, 100);
 
     // Warp to resolving phase
     vm.warp(190_000);
 
     // Mock and expect token transfers (should happen always)
-    for (uint256 i = 1; i < 6;) {
+    for (uint256 i = 1; i <= _votersAmount;) {
       vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)), abi.encode());
       vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)));
       unchecked {
@@ -468,9 +506,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     module.resolveDispute(_disputeId);
   }
 
-  function test_revertResolveDispute_WrongPhase(bytes32 _requestId, bytes32 _disputeId, uint32 _timestamp) public {
-    vm.assume(_timestamp > 1);
-    vm.assume(_timestamp < 1_000_000);
+  /**
+   * @notice Test that `resolveDispute` reverts if called during commiting or reavealing time window.
+   */
+  function test_revertResolveDispute_WrongPhase(bytes32 _requestId, bytes32 _disputeId, uint256 _timestamp) public {
+    _timestamp = bound(_timestamp, 1, 1_000_000);
 
     // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
@@ -511,13 +551,16 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     }
   }
 
+  /**
+   * @dev Helper function to store commitments and reveal votes.
+   */
   function _populateVoters(
     bytes32 _requestId,
     bytes32 _disputeId,
-    uint8 _amountOfVoters,
-    uint8 _amountOfVotes
+    uint256 _amountOfVoters,
+    uint256 _amountOfVotes
   ) internal returns (uint256 _totalVotesCast) {
-    for (uint256 i = 1; i < _amountOfVoters;) {
+    for (uint256 i = 1; i <= _amountOfVoters;) {
       vm.warp(120_000);
       vm.startPrank(vm.addr(i));
       bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, bytes32(i)); // index as salt
