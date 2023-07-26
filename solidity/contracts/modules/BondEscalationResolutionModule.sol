@@ -133,9 +133,11 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       }
 
       uint256 _currentTotalVotes = _currentForVotes + _currentAgainstVotes;
+
       // TODO: add larger coefficient
       uint256 _currentForVotesPercentage = _updatedForVotes * 100 / _currentTotalVotes;
       uint256 _currentAgainstVotesPercentage = _currentAgainstVotes * 100 / _currentTotalVotes;
+
       // TODO: check math
       int256 _forPercentageDifference = int256(_currentForVotesPercentage) - int256(_currentAgainstVotesPercentage);
       int256 _againstPercentageDifference = int256(_currentAgainstVotesPercentage) - int256(_currentForVotesPercentage);
@@ -318,7 +320,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     uint256 _pledgingDeadline = _escalationData.startTime + _timeUntilDeadline;
 
     // Revert if we have not yet reached the deadline and the timer has not passed
-    // TODO: double check this when fresh
+    // TODO: double check this when fresh - This is wrong because _inequalityTimerDeadline may never be 0, as that would require _timeToBreakInequality to be 0
+    //       the actual check should be something along the lines of _inequalityData.time != 0 not _inequalityTimerDeadline. check though
     if (
       block.timestamp < _pledgingDeadline && _inequalityTimerDeadline != 0 && block.timestamp < _inequalityTimerDeadline
     ) revert BondEscalationResolutionModule_PledgingPhaseNotOver();
