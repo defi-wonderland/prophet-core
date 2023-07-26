@@ -16,9 +16,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
   // todo: this storage layout must be super optimizable. many disputeId mappings
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
-  mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) private _votersData;
-  mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
-  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
+  mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) public _votersData;
+  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -73,8 +72,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       _escalationData.startTime + _commitingTimeWindow,
       _escalationData.startTime + _commitingTimeWindow + _revealingTimeWindow
     );
-    if (block.timestamp < _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
-    if (block.timestamp >= _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
+    if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
+    if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
 
     VoterData storage _voterData = _votersData[_disputeId][msg.sender];
 
@@ -83,6 +82,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     }
 
     _voterData.numOfVotes = _numberOfVotes;
+    _voterData.commitment = bytes32('');
     _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 

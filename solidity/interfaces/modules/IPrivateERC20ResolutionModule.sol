@@ -42,7 +42,6 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   function escalationData(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
   // TODO: create getter -- see if its possible to declare this
   // function votes(bytes32 _disputeId) external view returns (VoterData memory _voterData);
-  function totalNumberOfVotes(bytes32 _disputeId) external view returns (uint256 _numOfVotes);
   function commitVote(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) external;
   function revealVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt) external;
   function resolveDispute(bytes32 _disputeId) external;
