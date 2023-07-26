@@ -12,7 +12,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function decodeRequestData(bytes32 _requestId)
-    external
+    public
     view
     returns (
       string memory _url,
@@ -24,37 +24,21 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     )
   {
     (_url, _method, _body, _accountingExtension, _paymentToken, _paymentAmount) =
-      _decodeRequestData(requestData[_requestId]);
+      abi.decode(requestData[_requestId], (string, HttpMethod, string, IAccountingExtension, IERC20, uint256));
   }
 
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal override {
     (,,, IAccountingExtension _accountingExtension, IERC20 _paymentToken, uint256 _paymentAmount) =
-      _decodeRequestData(_data);
+      decodeRequestData(_requestId);
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     _accountingExtension.bond(_request.requester, _requestId, _paymentToken, _paymentAmount);
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (
-      string memory _url,
-      HttpMethod _method,
-      string memory _body,
-      IAccountingExtension _accountingExtension,
-      IERC20 _paymentToken,
-      uint256 _paymentAmount
-    )
-  {
-    (_url, _method, _body, _accountingExtension, _paymentToken, _paymentAmount) =
-      abi.decode(_data, (string, HttpMethod, string, IAccountingExtension, IERC20, uint256));
   }
 
   function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     (,,, IAccountingExtension _accountingExtension, IERC20 _paymentToken, uint256 _paymentAmount) =
-      _decodeRequestData(requestData[_requestId]);
+      decodeRequestData(_requestId);
     if (_response.createdAt != 0) {
       _accountingExtension.pay(_requestId, _request.requester, _response.proposer, _paymentToken, _paymentAmount);
     } else {

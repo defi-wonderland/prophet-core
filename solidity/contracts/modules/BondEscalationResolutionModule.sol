@@ -40,23 +40,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     )
   {
     (_accountingExtension, _token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality) =
-      _decodeRequestData(requestData[_requestId]);
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _token,
-      uint256 _percentageDiff,
-      uint256 _pledgeThreshold,
-      uint256 _timeUntilDeadline,
-      uint256 _timeToBreakInequality
-    )
-  {
-    (_accountingExtension, _token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality) =
-      abi.decode(_data, (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
+      abi.decode(requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
   }
 
   function startResolution(bytes32 _disputeId) external onlyOracle {
