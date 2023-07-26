@@ -20,7 +20,6 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
   mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) public votes;
-  mapping(bytes32 _disputeId => uint256 _numOfVotes) public totalNumberOfVotes;
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -99,8 +98,10 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
       emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
     }
 
+    uint256 _votersLength = __voters.length;
+
     // 6. Return tokens
-    for (uint256 _i; _i < __voters.length;) {
+    for (uint256 _i; _i < _votersLength;) {
       _token.safeTransfer(__voters[_i], votes[_disputeId][__voters[_i]]);
       unchecked {
         ++_i;

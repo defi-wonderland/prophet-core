@@ -27,7 +27,6 @@ interface IERC20ResolutionModule is IResolutionModule {
   error ERC20ResolutionModule_AlreadyResolved();
 
   function escalationData(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
-  function totalNumberOfVotes(bytes32 _disputeId) external view returns (uint256 _numOfVotes);
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) external;
   function votes(bytes32 _disputeId, address _voter) external view returns (uint256 _votes);
   function resolveDispute(bytes32 _disputeId) external;
