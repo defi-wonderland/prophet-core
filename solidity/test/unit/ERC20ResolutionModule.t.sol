@@ -81,11 +81,40 @@ contract ERC20ResolutionModule_UnitTest is Test {
   }
 
   /**
+   * @notice Test that the decodeRequestData function returns the correct values
+   */
+  function test_decodeRequestData_returnsCorrectData(
+    bytes32 _requestId,
+    address _accountingExtension,
+    address _token,
+    uint256 _minVotesForQuorum,
+    uint256 _votingTimeWindow
+  ) public {
+    // Mock data
+    bytes memory _requestData = abi.encode(_accountingExtension, _token, _minVotesForQuorum, _votingTimeWindow);
+
+    // Store the mock request
+    module.forTest_setRequestData(_requestId, _requestData);
+
+    // Test: decode the given request data
+    (
+      IAccountingExtension _accountingExtensionStored,
+      IERC20 _tokenStored,
+      uint256 _minVotesForQuorumStored,
+      uint256 _votingTimeWindowStored
+    ) = module.decodeRequestData(_requestId);
+
+    // Check: decoded values match original values?
+    assertEq(address(_accountingExtensionStored), _accountingExtension);
+    assertEq(address(_tokenStored), _token);
+    assertEq(_minVotesForQuorumStored, _minVotesForQuorum);
+    assertEq(_votingTimeWindowStored, _votingTimeWindow);
+  }
+
+  /**
    * @notice Test that the `startResolution` is correctly called and the voting phase is started
    */
   function test_startResolution(bytes32 _disputeId) public {
-    module.forTest_setEscalationData(_disputeId, IERC20ResolutionModule.EscalationData({startTime: 0, totalVotes: 0}));
-
     // Check: does revert if called by address != oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     module.startResolution(_disputeId);
@@ -348,6 +377,41 @@ contract ERC20ResolutionModule_UnitTest is Test {
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_OnGoingVotingPhase.selector);
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
+  }
+
+  /**
+   * @notice Test that `getVoters` returns an array of addresses of users that have voted.
+   */
+  function test_getVoters(bytes32 _requestId, bytes32 _disputeId) public {
+    // Store mock dispute and mock calls
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    // Store request data
+    uint256 _votingTimeWindow = 40_000;
+    uint256 _minVotesForQuorum = 1;
+
+    module.forTest_setRequestData(
+      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
+    );
+
+    // Store escalation data with `startTime` 100_000 and votes 0
+    module.forTest_setEscalationData(
+      _disputeId, IERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
+    );
+
+    uint256 _votersAmount = 10;
+
+    // Make 10 addresses cast 100 votes each
+    _populateVoters(_requestId, _disputeId, _votersAmount, 100);
+
+    address[] memory _votersArray = module.getVoters(_disputeId);
+
+    for (uint256 i = 1; i <= _votersAmount; i++) {
+      assertEq(_votersArray[i - 1], vm.addr(i));
+    }
   }
 
   /**
