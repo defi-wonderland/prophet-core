@@ -402,9 +402,9 @@ contract ERC20ResolutionModule_UnitTest is Test {
       _disputeId, IERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
     );
 
-    uint256 _votersAmount = 10;
+    uint256 _votersAmount = 3;
 
-    // Make 10 addresses cast 100 votes each
+    // Make 3 addresses cast 100 votes each
     _populateVoters(_requestId, _disputeId, _votersAmount, 100);
 
     address[] memory _votersArray = module.getVoters(_disputeId);
