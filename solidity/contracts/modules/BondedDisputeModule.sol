@@ -17,11 +17,12 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   function decodeRequestData(bytes32 _requestId)
-    external
+    public
     view
     returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize)
   {
-    (_accountingExtension, _bondToken, _bondSize) = _decodeRequestData(requestData[_requestId]);
+    (_accountingExtension, _bondToken, _bondSize) =
+      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256));
   }
 
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
@@ -41,15 +42,14 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       createdAt: block.timestamp
     });
 
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      _decodeRequestData(requestData[_requestId]);
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) = decodeRequestData(_requestId);
     _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
   }
 
   // TODO: This doesn't handle the cases of unconclusive statuses
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      _decodeRequestData(requestData[_dispute.requestId]);
+      decodeRequestData(_dispute.requestId);
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
     _accountingExtension.pay(
@@ -63,13 +63,5 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     _accountingExtension.release(
       _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
     );
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize)
-  {
-    (_accountingExtension, _bondToken, _bondSize) = abi.decode(_data, (IAccountingExtension, IERC20, uint256));
   }
 }

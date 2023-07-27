@@ -19,7 +19,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   // get the arbitrator address for a dispute (the same arbitrator is fixed for a given request)
-  function decodeRequestData(bytes32 _requestId) external view returns (address _arbitrator) {
+  function decodeRequestData(bytes32 _requestId) public view returns (address _arbitrator) {
     // Get the arbitrator address associated with the request id
     _arbitrator = abi.decode(requestData[_requestId], (address));
   }

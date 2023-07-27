@@ -9,7 +9,7 @@ import {IModule, Module} from '../Module.sol';
 contract CallbackModule is Module, ICallbackModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  function decodeRequestData(bytes32 _requestId) external view returns (address _target, bytes memory _data) {
+  function decodeRequestData(bytes32 _requestId) public view returns (address _target, bytes memory _data) {
     (_target, _data) = abi.decode(requestData[_requestId], (address, bytes));
   }
 

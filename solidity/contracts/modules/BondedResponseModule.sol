@@ -13,20 +13,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function decodeRequestData(bytes32 _requestId)
-    external
+    public
     view
     returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
   {
-    (_accountingExtension, _bondToken, _bondSize, _deadline) = _decodeRequestData(requestData[_requestId]);
-  }
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
-  {
     (_accountingExtension, _bondToken, _bondSize, _deadline) =
-      abi.decode(_data, (IAccountingExtension, IERC20, uint256, uint256));
+      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256));
   }
 
   function propose(
@@ -35,7 +27,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     bytes calldata _responseData
   ) external onlyOracle returns (IOracle.Response memory _response) {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _decodeRequestData(requestData[_requestId]);
+      decodeRequestData(_requestId);
 
     // Cannot propose after the deadline
     if (block.timestamp >= _deadline) revert BondedResponseModule_TooLateToPropose();
@@ -66,7 +58,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
   function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _decodeRequestData(requestData[_requestId]);
+      decodeRequestData(_requestId);
 
     if (block.timestamp < _deadline) revert BondedResponseModule_TooEarlyToFinalize();
 

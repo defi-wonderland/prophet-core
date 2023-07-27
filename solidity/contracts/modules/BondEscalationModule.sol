@@ -39,7 +39,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     if (_dispute.requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
 
-    (,,,, uint256 _bondEscalationDeadline, uint256 _tyingBuffer) = _decodeRequestData(requestData[_dispute.requestId]);
+    (,,,, uint256 _bondEscalationDeadline, uint256 _tyingBuffer) = decodeRequestData(_dispute.requestId);
 
     // If the bond escalation deadline is not over, no dispute can be escalated
     if (block.timestamp <= _bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
@@ -93,7 +93,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       ,
       uint256 _bondEscalationDeadline,
-    ) = _decodeRequestData(requestData[_requestId]);
+    ) = decodeRequestData(_requestId);
 
     // if the bond escalation is not over and there's an active dispute going through it, revert
     if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.Active) {
@@ -123,7 +123,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
   function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external onlyOracle {
     (IBondEscalationAccounting _accountingExtension, IERC20 _bondToken, uint256 _bondSize,,,) =
-      _decodeRequestData(requestData[_dispute.requestId]);
+      decodeRequestData(_dispute.requestId);
 
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
@@ -198,7 +198,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _maxNumberOfEscalations,
       uint256 _bondEscalationDeadline,
       uint256 _tyingBuffer
-    ) = _decodeRequestData(requestData[_dispute.requestId]);
+    ) = decodeRequestData(_dispute.requestId);
 
     if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
 
@@ -262,7 +262,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _maxNumberOfEscalations,
       uint256 _bondEscalationDeadline,
       uint256 _tyingBuffer
-    ) = _decodeRequestData(requestData[_dispute.requestId]);
+    ) = decodeRequestData(_dispute.requestId);
 
     if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
 
@@ -313,7 +313,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       ,
       uint256 _bondEscalationDeadline,
       uint256 _tyingBuffer
-    ) = _decodeRequestData(requestData[_requestId]);
+    ) = decodeRequestData(_requestId);
 
     if (block.timestamp <= _bondEscalationDeadline + _tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
@@ -370,7 +370,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    *                              party to tie if at the end of the initial deadline the pledgess weren't tied.
    */
   function decodeRequestData(bytes32 _requestId)
-    external
+    public
     view
     returns (
       IBondEscalationAccounting _accountingExtension,
@@ -382,7 +382,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     )
   {
     (_accountingExtension, _bondToken, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer) =
-      _decodeRequestData(requestData[_requestId]);
+      abi.decode(requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
   }
 
   /**
@@ -429,25 +429,5 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         ++i;
       }
     }
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  //                        Pure Functions
-  ////////////////////////////////////////////////////////////////////
-
-  function _decodeRequestData(bytes memory _data)
-    internal
-    pure
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      uint256 _maxNumberOfEscalations,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
-    )
-  {
-    (_accountingExtension, _bondToken, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer) =
-      abi.decode(_data, (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
   }
 }
