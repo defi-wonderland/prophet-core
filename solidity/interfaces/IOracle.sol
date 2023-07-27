@@ -104,9 +104,11 @@ interface IOracle {
   /**
    * @notice  Creates multiple requests, the same way as createRequest
    * @param   _requestsData  The array of calldata for each request
-   * @return  _requestIds    The array of request IDs
+   * @return  _batchRequestsIds    The array of request IDs
    */
-  function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestIds);
+  function createRequests(IOracle.NewRequest[] calldata _requestsData)
+    external
+    returns (bytes32[] memory _batchRequestsIds);
 
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule);
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute);

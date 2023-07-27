@@ -56,8 +56,47 @@ contract Oracle is IOracle {
     }
   }
 
-  // TODO: [OPO-86] Same as `createRequest` but with multiple requests passed in as an array
-  function createRequests(bytes[] calldata _requestsData) external returns (bytes32[] memory _requestsIds) {}
+  function createRequests(NewRequest[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
+    uint256 _requestsAmount = _requestsData.length;
+    _batchRequestsIds = new bytes32[](_requestsAmount);
+
+    for (uint256 _i = 0; _i < _requestsAmount;) {
+      uint256 _requestNonce = _nonce++;
+      bytes32 _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+
+      _batchRequestsIds[_i] = _requestId;
+      _requestIds[_requestNonce] = _requestId;
+
+      Request memory _storedRequest = Request({
+        ipfsHash: _requestsData[_i].ipfsHash,
+        requestModule: _requestsData[_i].requestModule,
+        responseModule: _requestsData[_i].responseModule,
+        disputeModule: _requestsData[_i].disputeModule,
+        resolutionModule: _requestsData[_i].resolutionModule,
+        finalityModule: _requestsData[_i].finalityModule,
+        requester: msg.sender,
+        nonce: _requestNonce,
+        createdAt: block.timestamp
+      });
+
+      _requests[_requestId] = _storedRequest;
+
+      _requestsData[_i].requestModule.setupRequest(_requestId, _requestsData[_i].requestModuleData);
+      _requestsData[_i].responseModule.setupRequest(_requestId, _requestsData[_i].responseModuleData);
+      _requestsData[_i].disputeModule.setupRequest(_requestId, _requestsData[_i].disputeModuleData);
+
+      if (address(_requestsData[_i].resolutionModule) != address(0)) {
+        _requestsData[_i].resolutionModule.setupRequest(_requestId, _requestsData[_i].resolutionModuleData);
+      }
+
+      if (address(_requestsData[_i].finalityModule) != address(0)) {
+        _requestsData[_i].finalityModule.setupRequest(_requestId, _requestsData[_i].finalityModuleData);
+      }
+      unchecked {
+        ++_i;
+      }
+    }
+  }
 
   function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list) {
     uint256 _totalRequestsCount = _nonce;

@@ -203,6 +203,127 @@ contract Oracle_UnitTest is Test {
   }
 
   /**
+   * @notice Test creation of requests in batch mode.
+   */
+  function test_createRequests(
+    bytes calldata _requestData,
+    bytes calldata _responseData,
+    bytes calldata _disputeData
+  ) public {
+    uint256 _initialNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+
+    uint256 _requestsAmount = 5;
+
+    IOracle.NewRequest[] memory _requests = new IOracle.NewRequest[](_requestsAmount);
+
+    bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
+
+    bool _useResoltionAndFinality = _requestData.length % 2 == 0;
+
+    // Generate requests batch
+    for (uint256 _i = 0; _i < _requestsAmount; _i++) {
+      if (!_useResoltionAndFinality) {
+        disputeModule = IDisputeModule(address(0));
+        finalityModule = IFinalityModule(address(0));
+      }
+
+      IOracle.NewRequest memory _request = IOracle.NewRequest({
+        requestModuleData: _requestData,
+        responseModuleData: _responseData,
+        disputeModuleData: _disputeData,
+        resolutionModuleData: bytes(''),
+        finalityModuleData: bytes(''),
+        ipfsHash: bytes32('69'),
+        requestModule: requestModule,
+        responseModule: responseModule,
+        disputeModule: disputeModule,
+        resolutionModule: resolutionModule,
+        finalityModule: finalityModule
+      });
+
+      bytes32 _theoricRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce + _i));
+      _requests[_i] = _request;
+      _precalculatedIds[_i] = _theoricRequestId;
+
+      if (_useResoltionAndFinality) {
+        vm.mockCall(
+          address(disputeModule),
+          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
+          abi.encode()
+        );
+        vm.expectCall(
+          address(resolutionModule),
+          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData))
+        );
+
+        vm.mockCall(
+          address(finalityModule),
+          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData)),
+          abi.encode()
+        );
+        vm.expectCall(
+          address(finalityModule),
+          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData))
+        );
+      }
+
+      // mock and expect disputeModule call
+      vm.mockCall(
+        address(disputeModule),
+        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData))
+      );
+
+      // mock and expect requestModule and responseModule calls
+      vm.mockCall(
+        address(requestModule),
+        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(requestModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData))
+      );
+
+      vm.mockCall(
+        address(responseModule),
+        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(responseModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData))
+      );
+    }
+
+    vm.prank(sender);
+    bytes32[] memory _requestsIds = oracle.createRequests(_requests);
+
+    for (uint256 _i = 0; _i < _requestsIds.length; _i++) {
+      assertEq(_requestsIds[_i], _precalculatedIds[_i]);
+
+      IOracle.Request memory _storedRequest = oracle.getRequest(_requestsIds[_i]);
+
+      // Check: request values correctly stored - unchanged ones
+      assertEq(_storedRequest.ipfsHash, _requests[_i].ipfsHash);
+      assertEq(address(_storedRequest.requestModule), address(_requests[_i].requestModule));
+      assertEq(address(_storedRequest.disputeModule), address(_requests[_i].disputeModule));
+      assertEq(address(_storedRequest.resolutionModule), address(_requests[_i].resolutionModule));
+      assertEq(address(_storedRequest.finalityModule), address(_requests[_i].finalityModule));
+
+      // Check: request values correctly stored - ones set by the oracle
+      assertEq(_storedRequest.requester, sender); // should be set
+      assertEq(_storedRequest.nonce, _initialNonce + _i);
+      assertEq(_storedRequest.createdAt, block.timestamp); // should be set
+    }
+
+    // Read the slot 7 (internal var) which holds the nonce
+    uint256 _newNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+    assertEq(_newNonce, _initialNonce + _requestsAmount);
+  }
+
+  /**
    * @notice Test list requests, fuzz start and batch size
    */
   function test_listRequests(uint256 _howMany) public {
