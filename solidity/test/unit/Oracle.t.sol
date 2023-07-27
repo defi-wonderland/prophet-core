@@ -218,11 +218,11 @@ contract Oracle_UnitTest is Test {
 
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
 
-    bool _useResoltionAndFinality = _requestData.length % 2 == 0;
+    bool _useResolutionAndFinality = _requestData.length % 2 == 0;
 
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
-      if (!_useResoltionAndFinality) {
+      if (!_useResolutionAndFinality) {
         disputeModule = IDisputeModule(address(0));
         finalityModule = IFinalityModule(address(0));
       }
@@ -245,7 +245,7 @@ contract Oracle_UnitTest is Test {
       _requests[_i] = _request;
       _precalculatedIds[_i] = _theoricRequestId;
 
-      if (_useResoltionAndFinality) {
+      if (_useResolutionAndFinality) {
         vm.mockCall(
           address(disputeModule),
           abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
