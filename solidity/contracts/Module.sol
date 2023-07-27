@@ -18,7 +18,7 @@ abstract contract Module is IModule {
     _;
   }
 
-  function setupRequest(bytes32 _requestId, bytes calldata _data) external {
+  function setupRequest(bytes32 _requestId, bytes calldata _data) external onlyOracle {
     requestData[_requestId] = _data;
     _afterSetupRequest(_requestId, _data);
   }

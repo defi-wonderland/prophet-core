@@ -114,6 +114,7 @@ contract HttpRequestModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, TOKEN, _amount))
     );
 
+    vm.prank(address(oracle));
     httpRequestModule.setupRequest(_requestId, _requestData);
 
     // Check: request data was set?
