@@ -25,35 +25,7 @@ contract Oracle is IOracle {
   uint256 internal _responseNonce;
 
   function createRequest(NewRequest memory _request) external payable returns (bytes32 _requestId) {
-    uint256 _requestNonce = _nonce++;
-    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
-    _requestIds[_requestNonce] = _requestId;
-
-    Request memory _storedRequest = Request({
-      ipfsHash: _request.ipfsHash,
-      requestModule: _request.requestModule,
-      responseModule: _request.responseModule,
-      disputeModule: _request.disputeModule,
-      resolutionModule: _request.resolutionModule,
-      finalityModule: _request.finalityModule,
-      requester: msg.sender,
-      nonce: _requestNonce,
-      createdAt: block.timestamp
-    });
-
-    _requests[_requestId] = _storedRequest;
-
-    _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
-    _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
-    _request.disputeModule.setupRequest(_requestId, _request.disputeModuleData);
-
-    if (address(_request.resolutionModule) != address(0)) {
-      _request.resolutionModule.setupRequest(_requestId, _request.resolutionModuleData);
-    }
-
-    if (address(_request.finalityModule) != address(0)) {
-      _request.finalityModule.setupRequest(_requestId, _request.finalityModuleData);
-    }
+    _requestId = _createRequest(_request);
   }
 
   function createRequests(NewRequest[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
@@ -61,37 +33,7 @@ contract Oracle is IOracle {
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      uint256 _requestNonce = _nonce++;
-      bytes32 _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
-
-      _batchRequestsIds[_i] = _requestId;
-      _requestIds[_requestNonce] = _requestId;
-
-      Request memory _storedRequest = Request({
-        ipfsHash: _requestsData[_i].ipfsHash,
-        requestModule: _requestsData[_i].requestModule,
-        responseModule: _requestsData[_i].responseModule,
-        disputeModule: _requestsData[_i].disputeModule,
-        resolutionModule: _requestsData[_i].resolutionModule,
-        finalityModule: _requestsData[_i].finalityModule,
-        requester: msg.sender,
-        nonce: _requestNonce,
-        createdAt: block.timestamp
-      });
-
-      _requests[_requestId] = _storedRequest;
-
-      _requestsData[_i].requestModule.setupRequest(_requestId, _requestsData[_i].requestModuleData);
-      _requestsData[_i].responseModule.setupRequest(_requestId, _requestsData[_i].responseModuleData);
-      _requestsData[_i].disputeModule.setupRequest(_requestId, _requestsData[_i].disputeModuleData);
-
-      if (address(_requestsData[_i].resolutionModule) != address(0)) {
-        _requestsData[_i].resolutionModule.setupRequest(_requestId, _requestsData[_i].resolutionModuleData);
-      }
-
-      if (address(_requestsData[_i].finalityModule) != address(0)) {
-        _requestsData[_i].finalityModule.setupRequest(_requestId, _requestsData[_i].finalityModuleData);
-      }
+      _batchRequestsIds[_i] = _createRequest(_requestsData[_i]);
       unchecked {
         ++_i;
       }
@@ -116,29 +58,7 @@ contract Oracle is IOracle {
     while (_index < _batchSize) {
       bytes32 _requestId = _requestIds[_startFrom + _index];
 
-      Request memory _storedRequest = _requests[_requestId];
-
-      _list[_index] = FullRequest({
-        requestModuleData: _storedRequest.requestModule.requestData(_requestId),
-        responseModuleData: _storedRequest.responseModule.requestData(_requestId),
-        disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
-        resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
-          ? bytes('')
-          : _storedRequest.resolutionModule.requestData(_requestId),
-        finalityModuleData: address(_storedRequest.finalityModule) == address(0)
-          ? bytes('')
-          : _storedRequest.finalityModule.requestData(_requestId),
-        ipfsHash: _storedRequest.ipfsHash,
-        requestModule: _storedRequest.requestModule,
-        responseModule: _storedRequest.responseModule,
-        disputeModule: _storedRequest.disputeModule,
-        resolutionModule: _storedRequest.resolutionModule,
-        finalityModule: _storedRequest.finalityModule,
-        requester: _storedRequest.requester,
-        nonce: _storedRequest.nonce,
-        createdAt: _storedRequest.createdAt,
-        requestId: _requestId
-      });
+      _list[_index] = _getRequest(_requestId);
 
       unchecked {
         ++_index;
@@ -161,29 +81,7 @@ contract Oracle is IOracle {
   }
 
   function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request) {
-    Request memory _storedRequest = _requests[_requestId];
-
-    _request = FullRequest({
-      requestModuleData: _storedRequest.requestModule.requestData(_requestId),
-      responseModuleData: _storedRequest.responseModule.requestData(_requestId),
-      disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
-      resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
-        ? bytes('')
-        : _storedRequest.resolutionModule.requestData(_requestId),
-      finalityModuleData: address(_storedRequest.finalityModule) == address(0)
-        ? bytes('')
-        : _storedRequest.finalityModule.requestData(_requestId),
-      ipfsHash: _storedRequest.ipfsHash,
-      requestModule: _storedRequest.requestModule,
-      responseModule: _storedRequest.responseModule,
-      disputeModule: _storedRequest.disputeModule,
-      resolutionModule: _storedRequest.resolutionModule,
-      finalityModule: _storedRequest.finalityModule,
-      requester: _storedRequest.requester,
-      nonce: _storedRequest.nonce,
-      createdAt: _storedRequest.createdAt,
-      requestId: _requestId
-    });
+    _request = _getRequest(_requestId);
   }
 
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
@@ -316,5 +214,63 @@ contract Oracle is IOracle {
     _request.disputeModule.finalizeRequest(_requestId);
     _request.responseModule.finalizeRequest(_requestId);
     _request.requestModule.finalizeRequest(_requestId);
+  }
+
+  function _createRequest(NewRequest memory _request) internal returns (bytes32 _requestId) {
+    uint256 _requestNonce = _nonce++;
+    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _requestIds[_requestNonce] = _requestId;
+
+    Request memory _storedRequest = Request({
+      ipfsHash: _request.ipfsHash,
+      requestModule: _request.requestModule,
+      responseModule: _request.responseModule,
+      disputeModule: _request.disputeModule,
+      resolutionModule: _request.resolutionModule,
+      finalityModule: _request.finalityModule,
+      requester: msg.sender,
+      nonce: _requestNonce,
+      createdAt: block.timestamp
+    });
+
+    _requests[_requestId] = _storedRequest;
+
+    _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
+    _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
+    _request.disputeModule.setupRequest(_requestId, _request.disputeModuleData);
+
+    if (address(_request.resolutionModule) != address(0)) {
+      _request.resolutionModule.setupRequest(_requestId, _request.resolutionModuleData);
+    }
+
+    if (address(_request.finalityModule) != address(0)) {
+      _request.finalityModule.setupRequest(_requestId, _request.finalityModuleData);
+    }
+  }
+
+  function _getRequest(bytes32 _requestId) internal view returns (FullRequest memory _fullRequest) {
+    Request memory _storedRequest = _requests[_requestId];
+
+    _fullRequest = FullRequest({
+      requestModuleData: _storedRequest.requestModule.requestData(_requestId),
+      responseModuleData: _storedRequest.responseModule.requestData(_requestId),
+      disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
+      resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
+        ? bytes('')
+        : _storedRequest.resolutionModule.requestData(_requestId),
+      finalityModuleData: address(_storedRequest.finalityModule) == address(0)
+        ? bytes('')
+        : _storedRequest.finalityModule.requestData(_requestId),
+      ipfsHash: _storedRequest.ipfsHash,
+      requestModule: _storedRequest.requestModule,
+      responseModule: _storedRequest.responseModule,
+      disputeModule: _storedRequest.disputeModule,
+      resolutionModule: _storedRequest.resolutionModule,
+      finalityModule: _storedRequest.finalityModule,
+      requester: _storedRequest.requester,
+      nonce: _storedRequest.nonce,
+      createdAt: _storedRequest.createdAt,
+      requestId: _requestId
+    });
   }
 }
