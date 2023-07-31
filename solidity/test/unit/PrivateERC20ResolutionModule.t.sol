@@ -13,6 +13,7 @@ import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExten
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IModule} from '../../interfaces/IModule.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import {Helpers} from '../utils/Helpers.sol';
 
 contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
   constructor(IOracle _oracle) PrivateERC20ResolutionModule(_oracle) {}
@@ -44,7 +45,7 @@ contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
   }
 }
 
-contract PrivateERC20ResolutionModule_UnitTest is Test {
+contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   // The target contract
   ForTest_PrivateERC20ResolutionModule public module;
 
@@ -131,7 +132,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     address _voter
   ) public {
     // Mock the dispute
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     // Store mock escalation data with startTime 100_000
     module.forTest_setEscalationData(
@@ -239,7 +240,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
    */
   function test_revertCommitVote_NotEscalated(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock the oracle response for looking up a dispute
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -253,7 +254,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
    */
   function test_revertCommitVote_CommitingPhaseOver(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     // Mock the oracle response for looking up a dispute
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -455,7 +456,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
    */
   function test_resolveDispute(bytes32 _requestId, bytes32 _disputeId, uint16 _minVotesForQuorum) public {
     // Store mock dispute and mock calls
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -513,7 +514,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
     _timestamp = bound(_timestamp, 1, 1_000_000);
 
     // Store mock dispute and mock calls
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -576,16 +577,5 @@ contract PrivateERC20ResolutionModule_UnitTest is Test {
         ++i;
       }
     }
-  }
-
-  function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
-    _dispute = IOracle.Dispute({
-      disputer: disputer,
-      responseId: bytes32('response'),
-      proposer: proposer,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.None,
-      createdAt: block.timestamp
-    });
   }
 }

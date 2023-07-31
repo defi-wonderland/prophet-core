@@ -23,9 +23,11 @@ import {IModule} from '../../contracts/Module.sol';
 
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
+import {Helpers} from '../utils/Helpers.sol';
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
+
 contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModule {
   constructor(IOracle _oracle) BondEscalationResolutionModule(_oracle) {}
 
@@ -72,7 +74,7 @@ contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModul
  * @title Bonded Escalation Resolution Module Unit tests
  */
 
-contract BondEscalationResolutionModule_UnitTest is Test {
+contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
   struct FakeDispute {
     bytes32 requestId;
     bytes32 test;
@@ -165,7 +167,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
   */
 
   function test_startResolution(bytes32 _disputeId, bytes32 _requestId, address _disputeModule) public {
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -368,7 +370,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     module.resolveDispute(_disputeId);
 
     // Revert if we have not yet reached the deadline and the timer has not passed
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -399,7 +401,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     uint256 _pledgesAgainst = 0;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -427,7 +429,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     uint256 _pledgesAgainst = 2000;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -454,7 +456,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     uint256 _pledgesAgainst = 2000;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -489,7 +491,7 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     uint256 _pledgesAgainst = 3000;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId);
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
@@ -723,17 +725,6 @@ contract BondEscalationResolutionModule_UnitTest is Test {
     BondEscalationResolutionModule.EscalationData memory _escalationData =
       IBondEscalationResolutionModule.EscalationData(_resolution, _startTime, _pledgesFor, _pledgesAgainst);
     module.forTest_setEscalationData(_disputeId, _escalationData);
-  }
-
-  function _getMockDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
-    _dispute = IOracle.Dispute({
-      disputer: disputer,
-      responseId: bytes32('response'),
-      proposer: proposer,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.Active,
-      createdAt: block.timestamp
-    });
   }
 
   function _createPledgers(
