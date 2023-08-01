@@ -9,6 +9,8 @@ import {console} from 'forge-std/console.sol';
 import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IDisputeModule} from '../../interfaces/modules/IDisputeModule.sol';
+import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
+import {IResponseModule} from '../../interfaces/modules/IResponseModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol';
 import {IFinalityModule} from '../../interfaces/modules/IFinalityModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
