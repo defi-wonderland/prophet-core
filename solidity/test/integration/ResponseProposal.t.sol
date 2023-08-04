@@ -116,7 +116,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     _bondProposerFunds();
 
     // Check: does revert if request does not exist?
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NonExistentRequest.selector, _nonExistentRequestId));
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidRequestId.selector, _nonExistentRequestId));
 
     vm.prank(proposer);
     oracle.proposeResponse(_nonExistentRequestId, _response);

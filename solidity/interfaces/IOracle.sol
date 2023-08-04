@@ -8,18 +8,18 @@ import {IResolutionModule} from './modules/IResolutionModule.sol';
 import {IFinalityModule} from './modules/IFinalityModule.sol';
 
 interface IOracle {
-  /// @notice Thrown when the caller of the slash() function is not the DisputeModule
   error Oracle_NotResolutionModule(address _caller);
   error Oracle_NotDisputeModule(address _caller);
-
+  error Oracle_NoResolutionModule(bytes32 _disputeId);
   error Oracle_ResponseAlreadyDisputed(bytes32 _responseId);
   error Oracle_AlreadyFinalized(bytes32 _requestId);
   error Oracle_InvalidFinalizedResponse(bytes32 _responseId);
   error Oracle_InvalidDisputeId(bytes32 _disputeId);
+  error Oracle_InvalidResponseId(bytes32 _responseId);
+  error Oracle_InvalidRequestId(bytes32 _requestId);
   error Oracle_CannotEscalate(bytes32 _disputeId);
   error Oracle_CannotResolve(bytes32 _disputeId);
-  error Oracle_NoResolutionModule(bytes32 _disputeId);
-  error Oracle_NonExistentRequest(bytes32 _requestId);
+  error Oracle_CannotDispute(bytes32 _responseId);
 
   // stored request
   struct Request {

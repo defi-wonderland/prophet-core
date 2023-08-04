@@ -90,7 +90,7 @@ contract Oracle is IOracle {
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
-    if (_request.createdAt == 0) revert Oracle_NonExistentRequest(_requestId);
+    if (_request.createdAt == 0) revert Oracle_InvalidRequestId(_requestId);
     _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData);
   }
 
@@ -117,9 +117,12 @@ contract Oracle is IOracle {
 
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
     if (disputeOf[_responseId] != bytes32(0)) revert Oracle_ResponseAlreadyDisputed(_responseId);
-
     Request memory _request = _requests[_requestId];
+    Response memory _response = _responses[_responseId];
 
+    if (_response.requestId != _requestId || _response.createdAt == 0) revert Oracle_InvalidResponseId(_responseId);
+
+    if (_finalizedResponses[_requestId].createdAt != 0) revert Oracle_AlreadyFinalized(_responseId);
     // Collision avoided -> this user disputes the _responseId from the _requestId
     // -> if trying to redispute, disputeOf isn't empty anymore
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
