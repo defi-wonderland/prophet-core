@@ -19,6 +19,7 @@ interface IOracle {
   error Oracle_CannotEscalate(bytes32 _disputeId);
   error Oracle_CannotResolve(bytes32 _disputeId);
   error Oracle_NoResolutionModule(bytes32 _disputeId);
+  error Oracle_NonExistentRequest(bytes32 _requestId);
 
   // stored request
   struct Request {

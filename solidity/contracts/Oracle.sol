@@ -90,6 +90,7 @@ contract Oracle is IOracle {
 
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
+    if (_request.createdAt == 0) revert Oracle_NonExistentRequest(_requestId);
     _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData);
   }
 
