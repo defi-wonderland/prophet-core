@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
+import {Helpers} from '../utils/Helpers.sol';
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
@@ -28,7 +29,7 @@ import {MockArbitrator} from '../mocks/MockArbitrator.sol';
 
 import {TestConstants} from '../utils/TestConstants.sol';
 
-contract IntegrationBase is DSTestPlus, TestConstants {
+contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   uint256 constant FORK_BLOCK = 756_611;
 
   uint256 initialBalance = 100_000 ether;
