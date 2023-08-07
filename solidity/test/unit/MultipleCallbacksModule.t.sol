@@ -59,9 +59,9 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
   /**
    * @notice Test that finalizeRequests calls the _target.callback with the correct data
    */
-  function test_finalizeRequest(bytes32 _requestId, address[1] calldata _targets, bytes[1] calldata _datas) public {
+  function test_finalizeRequest(bytes32 _requestId, address[1] calldata _targets, bytes[1] calldata __data) public {
     address _target = _targets[0];
-    bytes calldata _data = _datas[0];
+    bytes calldata _data = __data[0];
 
     assumeNoPrecompiles(_target);
     vm.assume(_target != address(vm));
@@ -70,7 +70,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     address[] memory _targetParams = new address[](1);
     _targetParams[0] = _targets[0];
     bytes[] memory _dataParams = new bytes[](1);
-    _dataParams[0] = _datas[0];
+    _dataParams[0] = __data[0];
     multipleCallbackModule.forTest_setRequestData(_requestId, _targetParams, _dataParams);
 
     vm.mockCall(_target, abi.encodeCall(ICallback.callback, (_requestId, _data)), abi.encode());
@@ -97,12 +97,12 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
   function test_Revert_InvalidParameters(
     bytes32 _requestId,
     address[] calldata _targets,
-    bytes[] calldata _datas
+    bytes[] calldata _data
   ) public {
-    vm.assume(_targets.length != _datas.length);
-    multipleCallbackModule.forTest_setRequestData(_requestId, _targets, _datas);
+    vm.assume(_targets.length != _data.length);
+    multipleCallbackModule.forTest_setRequestData(_requestId, _targets, _data);
 
-    vm.expectRevert(ICallbackModule.ICallbackModule_InvalidParameters.selector);
+    vm.expectRevert(ICallbackModule.CallbackModule_InvalidParameters.selector);
 
     vm.prank(address(oracle));
     multipleCallbackModule.finalizeRequest(_requestId);

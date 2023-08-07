@@ -2,8 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IArbitrator} from '../../interfaces/IArbitrator.sol';
-import {IArbitratorModule} from '../../interfaces/modules/IArbitratorModule.sol';
-import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract MockArbitrator is IArbitrator {
   function resolve(bytes32 /* _dispute */ ) external pure returns (bytes memory _result) {

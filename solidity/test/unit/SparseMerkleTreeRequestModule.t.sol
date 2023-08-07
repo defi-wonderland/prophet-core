@@ -5,18 +5,19 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {
-  ContractCallRequestModule,
-  IModule,
+  SparseMerkleTreeRequestModule,
   IOracle,
+  IModule,
+  ITreeVerifier,
   IAccountingExtension,
   IERC20
-} from '../../contracts/modules/ContractCallRequestModule.sol';
+} from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
-contract ForTest_ContractCallRequestModule is ContractCallRequestModule {
-  constructor(IOracle _oracle) ContractCallRequestModule(_oracle) {}
+contract ForTest_SparseMerkleTreeRequestModule is SparseMerkleTreeRequestModule {
+  constructor(IOracle _oracle) SparseMerkleTreeRequestModule(_oracle) {}
 
   function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
     requestData[_requestId] = _data;
@@ -24,11 +25,11 @@ contract ForTest_ContractCallRequestModule is ContractCallRequestModule {
 }
 
 /**
- * @title HTTP Request Module Unit tests
+ * @title Sparse Merkle Tree Request Module Unit tests
  */
-contract ContractCallRequestModule_UnitTest is Test {
+contract SparseMerkleTreeRequestModule_UnitTest is Test {
   // The target contract
-  ForTest_ContractCallRequestModule public contractCallRequestModule;
+  ForTest_SparseMerkleTreeRequestModule public sparseMerkleTreeRequestModule;
 
   // A mock oracle
   IOracle public oracle;
@@ -36,19 +37,47 @@ contract ContractCallRequestModule_UnitTest is Test {
   // A mock accounting extension
   IAccountingExtension public accounting;
 
-  // A mock user for testing
-  address _user = makeAddr('user');
+  // A mock tree verifier
+  ITreeVerifier public treeVerifier;
 
-  // A second mock user for testing
-  address _user2 = makeAddr('user2');
-
-  // A mock ERC20 token
-  IERC20 _token = IERC20(makeAddr('ERC20'));
-
-  // Mock data
-  address _targetContract = address(_token);
-  bytes4 _functionSelector = bytes4(abi.encodeWithSignature('allowance(address,address)'));
-  bytes _dataParams = abi.encode(_user, _user2);
+  // Mock data for the request
+  bytes32[32] internal _treeBranches = [
+    bytes32('branch1'),
+    bytes32('branch2'),
+    bytes32('branch3'),
+    bytes32('branch4'),
+    bytes32('branch5'),
+    bytes32('branch6'),
+    bytes32('branch7'),
+    bytes32('branch8'),
+    bytes32('branch9'),
+    bytes32('branch10'),
+    bytes32('branch11'),
+    bytes32('branch12'),
+    bytes32('branch13'),
+    bytes32('branch14'),
+    bytes32('branch15'),
+    bytes32('branch16'),
+    bytes32('branch17'),
+    bytes32('branch18'),
+    bytes32('branch19'),
+    bytes32('branch20'),
+    bytes32('branch21'),
+    bytes32('branch22'),
+    bytes32('branch23'),
+    bytes32('branch24'),
+    bytes32('branch25'),
+    bytes32('branch26'),
+    bytes32('branch27'),
+    bytes32('branch28'),
+    bytes32('branch29'),
+    bytes32('branch30'),
+    bytes32('branch31'),
+    bytes32('branch32')
+  ];
+  uint256 internal _treeCount = 1;
+  bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
+  bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -59,8 +88,10 @@ contract ContractCallRequestModule_UnitTest is Test {
 
     accounting = IAccountingExtension(makeAddr('AccountingExtension'));
     vm.etch(address(accounting), hex'069420');
+    treeVerifier = ITreeVerifier(makeAddr('TreeVerifier'));
+    vm.etch(address(accounting), hex'069420');
 
-    contractCallRequestModule = new ForTest_ContractCallRequestModule(oracle);
+    sparseMerkleTreeRequestModule = new ForTest_SparseMerkleTreeRequestModule(oracle);
   }
 
   /**
@@ -72,25 +103,33 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
 
     // Set the request data
-    contractCallRequestModule.forTest_setRequestData(_requestId, _requestData);
+    sparseMerkleTreeRequestModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
     (
-      address _decodedTarget,
-      bytes4 _decodedFunctionSelector,
-      bytes memory _decodedData,
+      bytes memory _decodedTreeData,
+      bytes32[] memory _decodedLeavesToInsert,
+      ITreeVerifier _decodedTreeVerifier,
       IAccountingExtension _decodedAccountingExtension,
       IERC20 _decodedPaymentToken,
       uint256 _decodedPaymentAmount
-    ) = contractCallRequestModule.decodeRequestData(_requestId);
+    ) = sparseMerkleTreeRequestModule.decodeRequestData(_requestId);
+
+    (bytes32[32] memory _decodedTreeBranches, uint256 _decodedTreeCount) =
+      abi.decode(_decodedTreeData, (bytes32[32], uint256));
 
     // Check: decoded values match original values?
-    assertEq(_decodedTarget, _targetContract, 'Mismatch: decoded target');
-    assertEq(_decodedFunctionSelector, _functionSelector, 'Mismatch: decoded function selector');
-    assertEq(_decodedData, _dataParams, 'Mismatch: decoded data');
+    for (uint256 _i = 0; _i < _treeBranches.length; _i++) {
+      assertEq(_decodedTreeBranches[_i], _treeBranches[_i], 'Mismatch: decoded tree branch');
+    }
+    for (uint256 _i = 0; _i < _leavesToInsert.length; _i++) {
+      assertEq(_decodedLeavesToInsert[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
+    }
+    assertEq(_decodedTreeCount, _treeCount, 'Mismatch: decoded tree count');
+    assertEq(address(_decodedTreeVerifier), address(treeVerifier), 'Mismatch: decoded tree verifier');
     assertEq(address(_decodedAccountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
     assertEq(address(_decodedPaymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
     assertEq(_decodedPaymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
@@ -114,7 +153,7 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -134,17 +173,10 @@ contract ContractCallRequestModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    contractCallRequestModule.setupRequest(_requestId, _requestData);
+    sparseMerkleTreeRequestModule.setupRequest(_requestId, _requestData);
 
     // Check: request data was set?
-    assertEq(contractCallRequestModule.requestData(_requestId), _requestData, 'Mismatch: Request data');
-  }
-
-  /**
-   * @notice Test that the moduleName function returns the correct name
-   */
-  function test_moduleNameReturnsName() public {
-    assertEq(contractCallRequestModule.moduleName(), 'ContractCallRequestModule', 'Wrong module name');
+    assertEq(sparseMerkleTreeRequestModule.requestData(_requestId), _requestData, 'Mismatch: Request data');
   }
 
   /**
@@ -169,7 +201,7 @@ contract ContractCallRequestModule_UnitTest is Test {
 
     // Use the correct accounting parameters
     bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -179,7 +211,7 @@ contract ContractCallRequestModule_UnitTest is Test {
     _fullResponse.createdAt = block.timestamp;
 
     // Set the request data
-    contractCallRequestModule.forTest_setRequestData(_requestId, _requestData);
+    sparseMerkleTreeRequestModule.forTest_setRequestData(_requestId, _requestData);
 
     // Mock and assert the calls
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
@@ -199,7 +231,7 @@ contract ContractCallRequestModule_UnitTest is Test {
     );
 
     vm.startPrank(address(oracle));
-    contractCallRequestModule.finalizeRequest(_requestId);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
 
     // Test the release flow
     _fullResponse.createdAt = 0;
@@ -219,7 +251,7 @@ contract ContractCallRequestModule_UnitTest is Test {
       abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount))
     );
 
-    contractCallRequestModule.finalizeRequest(_requestId);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
   }
 
   /**
@@ -229,6 +261,13 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(_caller != address(oracle));
 
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-    contractCallRequestModule.finalizeRequest(_requestId);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
+  }
+
+  /**
+   * @notice Test that the moduleName function returns the correct name
+   */
+  function test_moduleNameReturnsName() public {
+    assertEq(sparseMerkleTreeRequestModule.moduleName(), 'SparseMerkleTreeRequestModule', 'Wrong module name');
   }
 }
