@@ -4,15 +4,10 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_AccountingExtension is IntegrationBase {
-  AccountingExtension _accountingExtension;
-
   address user = makeAddr('user');
 
   function setUp() public override {
     super.setUp();
-
-    vm.prank(governance);
-    _accountingExtension = new AccountingExtension(oracle, weth);
   }
 
   function test_depositERC20(uint256 _initialBalance, uint256 _depositAmount) public {

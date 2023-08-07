@@ -41,9 +41,26 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   address governance = makeAddr('governance');
 
   Oracle public oracle;
+  HttpRequestModule public _requestModule;
+  BondedResponseModule public _responseModule;
+  AccountingExtension public _accountingExtension;
+  BondedDisputeModule public _disputeModule;
+  ArbitratorModule public _resolutionModule;
+  CallbackModule public _callbackModule;
+  MockCallback public _mockCallback;
+  MockArbitrator public _mockArbitrator;
 
   IERC20 usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
   IWeth9 weth = IWeth9(label(WETH_ADDRESS, 'WETH'));
+
+  string _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
+  IHttpRequestModule.HttpMethod _expectedMethod = IHttpRequestModule.HttpMethod.GET;
+  string _expectedBody = 'ids=ethereum&vs_currencies=usd';
+  string _expectedResponse = '{"ethereum":{"usd":1000}}';
+  uint256 _expectedBondSize = 100 ether;
+  uint256 _expectedReward = 30 ether;
+  uint256 _expectedDeadline;
+  uint256 _expectedCallbackValue = 42;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('optimism'), FORK_BLOCK);
@@ -64,6 +81,26 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     oracle = new Oracle();
     label(address(oracle), 'Oracle');
 
+    _requestModule = new HttpRequestModule(oracle);
+    label(address(_requestModule), 'RequestModule');
+
+    _responseModule = new BondedResponseModule(oracle);
+    label(address(_responseModule), 'ResponseModule');
+
+    _disputeModule = new BondedDisputeModule(oracle);
+    label(address(_disputeModule), 'DisputeModule');
+
+    _resolutionModule = new ArbitratorModule(oracle);
+    label(address(_resolutionModule), 'ResolutionModule');
+
+    _callbackModule = new CallbackModule(oracle);
+    label(address(_callbackModule), 'CallbackModule');
+
+    _accountingExtension = new AccountingExtension(oracle, weth);
+    label(address(_accountingExtension), 'AccountingExtension');
+
+    _mockCallback = new MockCallback();
+    _mockArbitrator = new MockArbitrator();
     vm.stopPrank();
   }
 

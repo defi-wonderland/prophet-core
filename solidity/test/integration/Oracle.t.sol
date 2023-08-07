@@ -4,46 +4,13 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract IntegrationOracle is IntegrationBase {
-  HttpRequestModule _requestModule;
-  BondedResponseModule _responseModule;
-  AccountingExtension _accountingExtension;
-  BondedDisputeModule _disputeModule;
-  ArbitratorModule _resolutionModule;
-  CallbackModule _callbackModule;
-  MockCallback _mockCallback;
-  MockArbitrator _mockArbitrator;
-
-  string _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
-  IHttpRequestModule.HttpMethod _expectedMethod = IHttpRequestModule.HttpMethod.GET;
-  string _expectedBody = 'ids=ethereum&vs_currencies=usd';
-  string _expectedResponse = '{"ethereum":{"usd":1000}}';
-
-  uint256 _expectedBondSize = 100 ether;
-  uint256 _expectedReward = 30 ether;
-  uint256 _expectedDeadline;
-  uint256 _expectedCallbackValue;
-
   bytes32 _requestId;
 
   function setUp() public override {
     super.setUp();
-
     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
-    _expectedCallbackValue = 42;
-    _mockCallback = new MockCallback();
-    _mockArbitrator = new MockArbitrator();
 
-    vm.prank(governance);
-    _requestModule = new HttpRequestModule(oracle);
-    _responseModule = new BondedResponseModule(oracle);
-    _disputeModule = new BondedDisputeModule(oracle);
-    _resolutionModule = new ArbitratorModule(oracle);
-    _callbackModule = new CallbackModule(oracle);
-    _accountingExtension = new AccountingExtension(oracle, weth);
-
-    vm.startPrank(requester);
-    usdc.approve(address(_accountingExtension), _expectedReward);
-    _accountingExtension.deposit(usdc, _expectedReward);
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
@@ -63,8 +30,8 @@ contract IntegrationOracle is IntegrationBase {
       ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
     });
 
+    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
   }
 
   function testIntegrationRequestModule() public {
@@ -95,14 +62,10 @@ contract IntegrationOracle is IntegrationBase {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
     oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
-    // Deposit and bond
-    vm.startPrank(proposer);
-    uint256 bondSize = _expectedBondSize * 2;
-    usdc.approve(address(_accounting), bondSize);
-    _accounting.deposit(usdc, bondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize * 2, _expectedBondSize * 2);
 
+    vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
-    vm.stopPrank();
 
     IOracle.Response memory _response = oracle.getResponse(_responseId);
     assertEq(_response.response, bytes(_expectedResponse));
@@ -114,43 +77,32 @@ contract IntegrationOracle is IntegrationBase {
 
   function testIntegrationDisputeResolutionModule() public {
     // Deposit and propose a response
-    vm.startPrank(proposer);
-    uint256 bondSize = _expectedBondSize * 2;
-    usdc.approve(address(_accountingExtension), bondSize);
-    _accountingExtension.deposit(usdc, bondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize * 2, _expectedBondSize * 2);
 
-    changePrank(proposer);
+    vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
 
     // Dispute the response
-    changePrank(disputer);
+    vm.prank(disputer);
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
     oracle.disputeResponse(_requestId, _responseId);
 
     // Bond and try again
-    usdc.approve(address(_accountingExtension), _expectedBondSize);
-    _accountingExtension.deposit(usdc, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
 
-    changePrank(disputer);
+    vm.prank(disputer);
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
     bytes32 _disputeIdStored = oracle.disputeOf(_responseId);
     assertEq(_disputeIdStored, _disputeId);
-
-    vm.stopPrank();
   }
 
   function testIntegrationCallbackResolutionModule() public {
     // Deposit and propose a response
-    vm.startPrank(proposer);
-    uint256 bondSize = _expectedBondSize * 2;
-    usdc.approve(address(_accountingExtension), bondSize);
-    _accountingExtension.deposit(usdc, bondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize * 2, _expectedBondSize * 2);
 
-    changePrank(proposer);
+    vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes(_expectedResponse));
-
-    vm.stopPrank();
 
     // Revert if tried to finalize the request before the deadline
     vm.expectRevert(abi.encodeWithSelector(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector));
@@ -161,7 +113,9 @@ contract IntegrationOracle is IntegrationBase {
     oracle.finalize(_requestId, _responseId);
 
     assertEq(
-      _accountingExtension.balanceOf(proposer, usdc), bondSize + _expectedReward, 'The proposer should be rewarded'
+      _accountingExtension.balanceOf(proposer, usdc),
+      _expectedBondSize * 2 + _expectedReward,
+      'The proposer should be rewarded'
     );
     assertEq(
       _accountingExtension.bondedAmountOf(proposer, usdc, _requestId),
