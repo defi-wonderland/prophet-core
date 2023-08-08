@@ -30,10 +30,10 @@ contract Helpers is DSTestPlus {
     uint256 _depositAmount,
     uint256 _balanceIncrease
   ) internal {
-    uint256 _maxDeposit = type(uint256).max - address(_weth).balance;
+    uint256 _maxDeposit = type(uint256).max - _weth.balance;
     vm.assume(_depositAmount > 0);
     vm.assume(_depositAmount < _maxDeposit);
-    vm.assume(_depositAmount < _depositor.balance + _balanceIncrease);
+    vm.assume(_depositAmount <= _depositor.balance + _balanceIncrease);
     deal(_depositor, _balanceIncrease);
 
     vm.prank(_depositor);

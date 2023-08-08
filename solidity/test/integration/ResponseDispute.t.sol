@@ -31,7 +31,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
-      ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
+      ipfsHash: _ipfsHash
     });
 
     vm.prank(requester);
@@ -68,7 +68,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
-      ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
+      ipfsHash: _ipfsHash
     });
     vm.prank(requester);
     bytes32 _secondRequest = oracle.createRequest(_request);

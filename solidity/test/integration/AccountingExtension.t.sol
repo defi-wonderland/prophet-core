@@ -119,7 +119,7 @@ contract Integration_AccountingExtension is IntegrationBase {
       disputeModule: _disputeModule,
       resolutionModule: IResolutionModule(address(0)),
       finalityModule: IFinalityModule(address(0)),
-      ipfsHash: bytes32('')
+      ipfsHash: _ipfsHash
     });
 
     vm.startPrank(user);

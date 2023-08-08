@@ -27,7 +27,7 @@ contract IntegrationOracle is IntegrationBase {
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
       finalityModule: IFinalityModule(_callbackModule),
-      ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
+      ipfsHash: _ipfsHash
     });
 
     vm.prank(requester);

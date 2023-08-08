@@ -61,6 +61,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   uint256 _expectedReward = 30 ether;
   uint256 _expectedDeadline;
   uint256 _expectedCallbackValue = 42;
+  bytes32 _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('optimism'), FORK_BLOCK);
