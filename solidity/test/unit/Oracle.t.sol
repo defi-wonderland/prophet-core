@@ -102,8 +102,7 @@ contract Oracle_UnitTest is Test {
       finalityModule = IFinalityModule(address(0));
     }
 
-    // Read the slot 7 (internal var) which holds the nonce
-    uint256 _initialNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+    uint256 _initialNonce = oracle.totalRequestCount();
 
     // Create the request
     IOracle.NewRequest memory _request = IOracle.NewRequest({
@@ -178,8 +177,7 @@ contract Oracle_UnitTest is Test {
     vm.prank(sender);
     bytes32 _requestId = oracle.createRequest(_request);
 
-    // Read the slot 7 (internal var) which holds the nonce
-    uint256 _newNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+    uint256 _newNonce = oracle.totalRequestCount();
 
     // Check: correct request id returned?
     assertEq(_requestId, _theoricRequestId);
@@ -210,7 +208,7 @@ contract Oracle_UnitTest is Test {
     bytes calldata _responseData,
     bytes calldata _disputeData
   ) public {
-    uint256 _initialNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+    uint256 _initialNonce = oracle.totalRequestCount();
 
     uint256 _requestsAmount = 5;
 
@@ -318,8 +316,7 @@ contract Oracle_UnitTest is Test {
       assertEq(_storedRequest.createdAt, block.timestamp); // should be set
     }
 
-    // Read the slot 7 (internal var) which holds the nonce
-    uint256 _newNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
+    uint256 _newNonce = oracle.totalRequestCount();
     assertEq(_newNonce, _initialNonce + _requestsAmount);
   }
 
@@ -409,8 +406,8 @@ contract Oracle_UnitTest is Test {
     (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
     bytes32 _requestId = _dummyRequestIds[0];
 
-    // Get the current response nonce (8th slot)
-    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
+    // Get the current response nonce (7th slot)
+    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
 
     // Compute the response ID
     bytes32 _responseId = keccak256(abi.encodePacked(sender, address(oracle), _requestId, _responseNonce));
@@ -472,8 +469,8 @@ contract Oracle_UnitTest is Test {
     (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
     bytes32 _requestId = _dummyRequestIds[0];
 
-    // Get the current response nonce (8th slot)
-    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x8))));
+    // Get the current response nonce (7th slot)
+    uint256 _responseNonce = uint256(vm.load(address(oracle), bytes32(uint256(0x7))));
 
     // Compute the response ID
     bytes32 _responseId = keccak256(abi.encodePacked(_proposer, address(oracle), _requestId, _responseNonce));
@@ -827,6 +824,13 @@ contract Oracle_UnitTest is Test {
     // Test: finalize the request
     vm.prank(_caller);
     oracle.finalize(_requestId, _responseId);
+  }
+
+  function test_totalRequestCount(uint256 _requestsToAdd) public {
+    _requestsToAdd = bound(_requestsToAdd, 1, 10);
+    uint256 _initialCount = oracle.totalRequestCount();
+    _storeDummyRequests(_requestsToAdd);
+    assert(oracle.totalRequestCount() == _initialCount + _requestsToAdd);
   }
 
   /**

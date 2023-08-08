@@ -132,4 +132,5 @@ interface IOracle {
   function listRequests(uint256 _startFrom, uint256 _amount) external view returns (FullRequest[] memory _list);
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
+  function totalRequestCount() external view returns (uint256 _count);
 }

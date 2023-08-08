@@ -18,11 +18,11 @@ contract Oracle is IOracle {
 
   mapping(bytes32 _disputeId => Dispute) internal _disputes;
 
-  mapping(uint256 _nonce => bytes32 _id) internal _requestIds;
-
-  uint256 internal _nonce;
+  mapping(uint256 _requestNumber => bytes32 _id) internal _requestIds;
 
   uint256 internal _responseNonce;
+
+  uint256 public totalRequestCount;
 
   function createRequest(NewRequest memory _request) external payable returns (bytes32 _requestId) {
     _requestId = _createRequest(_request);
@@ -41,7 +41,7 @@ contract Oracle is IOracle {
   }
 
   function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list) {
-    uint256 _totalRequestsCount = _nonce;
+    uint256 _totalRequestsCount = totalRequestCount;
 
     // If trying to collect unexisting requests only, return empty array
     if (_startFrom > _totalRequestsCount) {
@@ -69,7 +69,7 @@ contract Oracle is IOracle {
   }
 
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
-    return _requestIds.getSubset(_startFrom, _batchSize, _nonce);
+    return _requestIds.getSubset(_startFrom, _batchSize, totalRequestCount);
   }
 
   function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
@@ -221,7 +221,7 @@ contract Oracle is IOracle {
   }
 
   function _createRequest(NewRequest memory _request) internal returns (bytes32 _requestId) {
-    uint256 _requestNonce = _nonce++;
+    uint256 _requestNonce = totalRequestCount++;
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
     _requestIds[_requestNonce] = _requestId;
 
