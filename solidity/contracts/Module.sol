@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../interfaces/IOracle.sol';
 import {IModule} from '../interfaces/IModule.sol';
+import {ModuleData} from './ModuleData.sol';
+import {IOracle} from '../interfaces/IOracle.sol';
 
 abstract contract Module is IModule {
   IOracle public immutable ORACLE;
@@ -18,7 +19,7 @@ abstract contract Module is IModule {
     _;
   }
 
-  function setupRequest(bytes32 _requestId, bytes calldata _data) external onlyOracle {
+  function setupRequest(bytes32 _requestId, bytes calldata _data) public virtual onlyOracle {
     requestData[_requestId] = _data;
     _afterSetupRequest(_requestId, _data);
   }
