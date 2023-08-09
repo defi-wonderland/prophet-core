@@ -8,6 +8,14 @@ import {IResolutionModule} from './modules/IResolutionModule.sol';
 import {IFinalityModule} from './modules/IFinalityModule.sol';
 
 interface IOracle {
+  event Oracle_RequestCreated(address indexed _requester, bytes32 indexed _requestId);
+  event Oracle_ResponseProposed(address indexed _proposer, bytes32 indexed _requestId, bytes32 indexed _responseId);
+  event Oracle_ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
+  event Oracle_RequestFinalized(address indexed _caller, bytes32 indexed _requestId);
+  event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _newStatus);
+  event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+
   error Oracle_NotResolutionModule(address _caller);
   error Oracle_NotDisputeModule(address _caller);
   error Oracle_NoResolutionModule(bytes32 _disputeId);
@@ -112,25 +120,41 @@ interface IOracle {
     returns (bytes32[] memory _batchRequestsIds);
 
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule);
+
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute);
+
   function getResponse(bytes32 _responseId) external view returns (Response memory _response);
+
   function getRequest(bytes32 _requestId) external view returns (Request memory _request);
+
   function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request);
+
   function disputeOf(bytes32 _requestId) external view returns (bytes32 _disputeId);
+
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
+
   function proposeResponse(
     address _proposer,
     bytes32 _requestId,
     bytes calldata _responseData
   ) external returns (bytes32 _responseId);
+
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
+
   function escalateDispute(bytes32 _disputeId) external;
+
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
+
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
+
   function resolveDispute(bytes32 _disputeId) external;
+
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
+
   function listRequests(uint256 _startFrom, uint256 _amount) external view returns (FullRequest[] memory _list);
+
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
+
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
   function totalRequestCount() external view returns (uint256 _count);
 }

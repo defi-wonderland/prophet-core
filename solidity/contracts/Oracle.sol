@@ -100,7 +100,9 @@ contract Oracle is IOracle {
     bytes calldata _responseData
   ) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
-    if (msg.sender != address(_request.disputeModule)) revert Oracle_NotDisputeModule(msg.sender);
+    if (msg.sender != address(_request.disputeModule)) {
+      revert Oracle_NotDisputeModule(msg.sender);
+    }
     _responseId = _proposeResponse(_proposer, _requestId, _request, _responseData);
   }
 
@@ -113,29 +115,41 @@ contract Oracle is IOracle {
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
     _responseIds[_requestId].push(_responseId);
+
+    emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
   }
 
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
-    if (disputeOf[_responseId] != bytes32(0)) revert Oracle_ResponseAlreadyDisputed(_responseId);
+    if (disputeOf[_responseId] != bytes32(0)) {
+      revert Oracle_ResponseAlreadyDisputed(_responseId);
+    }
     Request memory _request = _requests[_requestId];
     Response memory _response = _responses[_responseId];
 
-    if (_response.requestId != _requestId || _response.createdAt == 0) revert Oracle_InvalidResponseId(_responseId);
+    if (_response.requestId != _requestId || _response.createdAt == 0) {
+      revert Oracle_InvalidResponseId(_responseId);
+    }
 
-    if (_finalizedResponses[_requestId].createdAt != 0) revert Oracle_AlreadyFinalized(_responseId);
+    if (_finalizedResponses[_requestId].createdAt != 0) {
+      revert Oracle_AlreadyFinalized(_responseId);
+    }
     // Collision avoided -> this user disputes the _responseId from the _requestId
     // -> if trying to redispute, disputeOf isn't empty anymore
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
     _disputes[_disputeId] =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
     disputeOf[_responseId] = _disputeId;
+
+    emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
   }
 
   function escalateDispute(bytes32 _disputeId) external {
     Dispute memory _dispute = _disputes[_disputeId];
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
-    if (_dispute.status != DisputeStatus.Active) revert Oracle_CannotEscalate(_disputeId);
+    if (_dispute.status != DisputeStatus.Active) {
+      revert Oracle_CannotEscalate(_disputeId);
+    }
 
     // Change the dispute status
     _dispute.status = DisputeStatus.Escalated;
@@ -150,6 +164,8 @@ contract Oracle is IOracle {
       // Initiate the resolution
       _request.resolutionModule.startResolution(_disputeId);
     }
+
+    emit Oracle_DisputeEscalated(msg.sender, _disputeId);
   }
 
   function resolveDispute(bytes32 _disputeId) external {
@@ -158,21 +174,31 @@ contract Oracle is IOracle {
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     // Revert if the dispute is not active nor escalated
     unchecked {
-      if (uint256(_dispute.status) - 1 > 1) revert Oracle_CannotResolve(_disputeId);
+      if (uint256(_dispute.status) - 1 > 1) {
+        revert Oracle_CannotResolve(_disputeId);
+      }
     }
 
     Request memory _request = _requests[_dispute.requestId];
-    if (address(_request.resolutionModule) == address(0)) revert Oracle_NoResolutionModule(_disputeId);
+    if (address(_request.resolutionModule) == address(0)) {
+      revert Oracle_NoResolutionModule(_disputeId);
+    }
 
     _request.resolutionModule.resolveDispute(_disputeId);
+
+    emit Oracle_DisputeResolved(msg.sender, _disputeId);
   }
 
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
     Request memory _request = _requests[_dispute.requestId];
-    if (msg.sender != address(_request.resolutionModule)) revert Oracle_NotResolutionModule(msg.sender);
+    if (msg.sender != address(_request.resolutionModule)) {
+      revert Oracle_NotResolutionModule(msg.sender);
+    }
     _dispute.status = _status;
     _request.disputeModule.updateDisputeStatus(_disputeId, _dispute);
+
+    emit Oracle_DisputeStatusUpdated(_disputeId, _status);
   }
 
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
@@ -191,7 +217,9 @@ contract Oracle is IOracle {
   }
 
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
-    if (_finalizedResponses[_requestId].createdAt != 0) revert Oracle_AlreadyFinalized(_requestId);
+    if (_finalizedResponses[_requestId].createdAt != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
+    }
 
     Request memory _request = _requests[_requestId];
     Response storage _response = _responses[_finalizedResponseId];
@@ -218,6 +246,8 @@ contract Oracle is IOracle {
     _request.disputeModule.finalizeRequest(_requestId);
     _request.responseModule.finalizeRequest(_requestId);
     _request.requestModule.finalizeRequest(_requestId);
+
+    emit Oracle_RequestFinalized(msg.sender, _requestId);
   }
 
   function _createRequest(NewRequest memory _request) internal returns (bytes32 _requestId) {
@@ -250,6 +280,8 @@ contract Oracle is IOracle {
     if (address(_request.finalityModule) != address(0)) {
       _request.finalityModule.setupRequest(_requestId, _request.finalityModuleData);
     }
+
+    emit Oracle_RequestCreated(msg.sender, _requestId);
   }
 
   function _getRequest(bytes32 _requestId) internal view returns (FullRequest memory _fullRequest) {

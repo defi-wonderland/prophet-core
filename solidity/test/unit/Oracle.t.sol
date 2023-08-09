@@ -62,6 +62,14 @@ contract Oracle_UnitTest is Test {
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
 
+  event Oracle_RequestCreated(address indexed _requester, bytes32 indexed _requestId);
+  event Oracle_ResponseProposed(address indexed _proposer, bytes32 indexed _requestId, bytes32 indexed _responseId);
+  event Oracle_ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
+  event Oracle_RequestFinalized(address indexed _caller, bytes32 indexed _requestId);
+  event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _newStatus);
+  event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+
   /**
    * @notice Deploy the target and mock oracle+modules
    */
@@ -173,7 +181,11 @@ contract Oracle_UnitTest is Test {
       address(responseModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData))
     );
 
-    // Test: crete the request
+    // Check: emits RequestCreated event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_RequestCreated(sender, _theoricRequestId);
+
+    // Test: create the request
     vm.prank(sender);
     bytes32 _requestId = oracle.createRequest(_request);
 
@@ -212,7 +224,9 @@ contract Oracle_UnitTest is Test {
 
     uint256 _requestsAmount = 5;
 
-    IOracle.NewRequest[] memory _requests = new IOracle.NewRequest[](_requestsAmount);
+    IOracle.NewRequest[] memory _requests = new IOracle.NewRequest[](
+            _requestsAmount
+        );
 
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
 
@@ -293,6 +307,10 @@ contract Oracle_UnitTest is Test {
       vm.expectCall(
         address(responseModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData))
       );
+
+      // Check: emits RequestCreated event?
+      vm.expectEmit(true, true, true, true);
+      emit Oracle_RequestCreated(sender, _theoricRequestId);
     }
 
     vm.prank(sender);
@@ -429,9 +447,19 @@ contract Oracle_UnitTest is Test {
     );
     vm.expectCall(address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, sender, _responseData)));
 
+    // Check: emits ResponseProposed event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseProposed(sender, _requestId, _responseId);
+
     // Test: propose the response
     vm.prank(sender);
     bytes32 _actualResponseId = oracle.proposeResponse(_requestId, _responseData);
+
+    // Check: emits ResponseProposed event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseProposed(
+      sender, _requestId, keccak256(abi.encodePacked(sender, address(oracle), _requestId, _responseNonce + 1))
+    );
 
     vm.prank(sender);
     bytes32 _secondResponseId = oracle.proposeResponse(_requestId, _responseData);
@@ -499,9 +527,19 @@ contract Oracle_UnitTest is Test {
       address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData))
     );
 
+    // Check: emits ResponseProposed event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
+
     // Test: propose the response
     vm.prank(address(disputeModule));
     bytes32 _actualResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
+
+    // Check: emits ResponseProposed event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseProposed(
+      _proposer, _requestId, keccak256(abi.encodePacked(_proposer, address(oracle), _requestId, _responseNonce + 1))
+    );
 
     vm.prank(address(disputeModule));
     bytes32 _secondResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
@@ -563,6 +601,10 @@ contract Oracle_UnitTest is Test {
       address(disputeModule),
       abi.encodeCall(IDisputeModule.disputeResponse, (_requestId, _responseId, sender, _proposer))
     );
+
+    // Check: emits ResponseDisputed event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseDisputed(sender, _responseId, _disputeId);
 
     // Test: dispute the response
     vm.prank(sender);
@@ -636,6 +678,10 @@ contract Oracle_UnitTest is Test {
           address(disputeModule), abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, mockDispute))
         );
 
+        // Check: emits DisputeStatusUpdated event?
+        vm.expectEmit(true, true, true, true);
+        emit Oracle_DisputeStatusUpdated(_disputeId, IOracle.DisputeStatus(_newStatus));
+
         // Test: change the status
         vm.prank(address(resolutionModule));
         oracle.updateDisputeStatus(_disputeId, IOracle.DisputeStatus(_newStatus));
@@ -663,6 +709,10 @@ contract Oracle_UnitTest is Test {
     // Mock and expect the resolution module call
     vm.mockCall(address(resolutionModule), abi.encodeCall(IResolutionModule.resolveDispute, (_disputeId)), abi.encode());
     vm.expectCall(address(resolutionModule), abi.encodeCall(IResolutionModule.resolveDispute, (_disputeId)));
+
+    // Check: emits DisputeResolved event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_DisputeResolved(address(this), _disputeId);
 
     // Test: resolve the dispute
     oracle.resolveDispute(_disputeId);
@@ -820,6 +870,10 @@ contract Oracle_UnitTest is Test {
       vm.mockCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
       vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
     }
+
+    // Check: emits RequestFinalized event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_RequestFinalized(_caller, _requestId);
 
     // Test: finalize the request
     vm.prank(_caller);
