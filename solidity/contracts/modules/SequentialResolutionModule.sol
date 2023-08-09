@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
-import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {Module} from '../Module.sol';
 import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol';
 import {ISequentialResolutionModule, IOracle} from '../../interfaces/modules/ISequentialResolutionModule.sol';
@@ -121,6 +117,10 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
 
   function escalateDispute(bytes32 _disputeId) external onlySubmodule {
     ORACLE.escalateDispute(_disputeId);
+  }
+
+  function totalRequestCount() external view returns (uint256 _count) {
+    _count = ORACLE.totalRequestCount();
   }
 
   // ============ ORACLE Proxy not implemented =============
