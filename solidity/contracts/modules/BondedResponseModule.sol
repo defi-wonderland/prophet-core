@@ -56,11 +56,16 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
   }
 
-  function finalizeRequest(bytes32 _requestId, address) external override(IModule, Module) onlyOracle {
+
+  function finalizeRequest(bytes32 _requestId, address _finalizer) external override(IModule, Module) onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
       decodeRequestData(_requestId);
 
-    if (block.timestamp < _deadline) revert BondedResponseModule_TooEarlyToFinalize();
+    bool _isModule = ORACLE.validModule(_requestId, _finalizer);
+
+    if (!_isModule && block.timestamp < _deadline) {
+      revert BondedResponseModule_TooEarlyToFinalize();
+    }
 
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     if (_response.createdAt != 0) {

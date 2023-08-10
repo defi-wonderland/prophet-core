@@ -147,6 +147,9 @@ contract BondedResponseModule_UnitTest is Test {
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
     bondedResponseModule.finalizeRequest(_requestId, address(this));
 
@@ -180,8 +183,45 @@ contract BondedResponseModule_UnitTest is Test {
   }
 
   /**
+   * @notice Test that the finalize function can be called by a valid module before the time window.
+   */
+  function test_finalizeRequestEarlyByModule(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+    vm.assume(_deadline > block.timestamp);
+    vm.startPrank(address(oracle));
+
+    address validModule = makeAddr('valid module');
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, validModule)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, validModule)));
+
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      requestId: _requestId,
+      disputeId: bytes32(''),
+      proposer: proposer,
+      response: bytes('bleh')
+    });
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId), abi.encode(_mockResponse));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
+    );
+
+    bondedResponseModule.finalizeRequest(_requestId, validModule);
+  }
+  /**
    * @notice Test that the moduleName function returns the correct name
    */
+
   function test_moduleNameReturnsName() public {
     assertEq(bondedResponseModule.moduleName(), 'BondedResponseModule');
   }
