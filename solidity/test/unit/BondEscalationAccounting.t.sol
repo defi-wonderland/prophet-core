@@ -1,3 +1,4 @@
+// TODO: add event emission tests
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
@@ -209,6 +210,45 @@ contract BondEscalationAccounting_UnitTest is Test {
 
     uint256 _pledgesAfter = bondEscalationAccounting.pledges(_requestId, _disputeId, token);
     assertEq(_pledgesAfter, 0);
+  }
+
+  ////////////////////////////////////////////////////////////////////
+  //                 Tests for releasePledge
+  ////////////////////////////////////////////////////////////////////
+  function test_releasePledgeRevertIfInvalidModule(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    address _pledger,
+    uint256 _amount
+  ) public {
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
+    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _pledger, token, _amount);
+  }
+
+  function test_releaseRevertIfInsufficientFunds(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
+    vm.assume(_amount < type(uint256).max);
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+
+    bondEscalationAccounting.forTest_setPledge(_requestId, _disputeId, token, _amount);
+    uint256 _underflowAmount = _amount + 1;
+    address _randomPledger = makeAddr('randomPledger');
+    vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
+    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _randomPledger, token, _underflowAmount);
+  }
+
+  function test_releaseSuccessfullCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+
+    bondEscalationAccounting.forTest_setPledge(_requestId, _disputeId, token, _amount);
+
+    address _randomPledger = makeAddr('randomPledger');
+
+    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _randomPledger, token, _amount);
+    assertEq(bondEscalationAccounting.balanceOf(_randomPledger, token), _amount);
   }
 
   ////////////////////////////////////////////////////////////////////

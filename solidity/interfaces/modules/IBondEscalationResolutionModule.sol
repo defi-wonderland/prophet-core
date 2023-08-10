@@ -8,7 +8,6 @@ import {IBondEscalationAccounting} from '../extensions/IBondEscalationAccounting
 
 interface IBondEscalationResolutionModule is IResolutionModule {
   enum InequalityStatus {
-    Unstarted,
     Equalized,
     ForTurnToEqualize,
     AgainstTurnToEqualize
@@ -21,7 +20,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
     NoResolution
   }
 
-  struct PledgeData {
+  struct PledgerData {
     address pledger;
     uint256 pledges;
   }
@@ -47,8 +46,28 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   event PledgedAgainstDispute(
     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
   );
+  event PledgeClaimedDisputerWon(
+    bytes32 indexed _requestId,
+    bytes32 indexed _disputeId,
+    address indexed _pledger,
+    IERC20 _token,
+    uint256 _pledgeReleased
+  );
+  event PledgeClaimedDisputerLost(
+    bytes32 indexed _requestId,
+    bytes32 indexed _disputeId,
+    address indexed _pledger,
+    IERC20 _token,
+    uint256 _pledgeReleased
+  );
+  event PledgeClaimedNoResolution(
+    bytes32 indexed _requestId,
+    bytes32 indexed _disputeId,
+    address indexed _pledger,
+    IERC20 _token,
+    uint256 _pledgeReleased
+  );
 
-  error BondEscalationResolutionModule_OnlyDisputeModule();
   error BondEscalationResolutionModule_AlreadyResolved();
   error BondEscalationResolutionModule_NotResolved();
   error BondEscalationResolutionModule_NotEscalated();
@@ -58,11 +77,17 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   error BondEscalationResolutionModule_AgainstTurnToEqualize();
   error BondEscalationResolutionModule_ForTurnToEqualize();
 
+  function BASE() external view returns (uint256 _base);
   function escalationData(bytes32 _disputeId)
     external
     view
-    returns (Resolution _resolution, uint128 _startTime, uint256 _votesFor, uint256 _votesAgainst);
+    returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);
   function inequalityData(bytes32 _disputeId) external view returns (InequalityStatus _inequalityStatus, uint256 _time);
+  function pledgesForDispute(bytes32 _disputeId, address _pledger) external view returns (uint256 _pledgesForDispute);
+  function pledgesAgainstDispute(
+    bytes32 _disputeId,
+    address _pledger
+  ) external view returns (uint256 _pledgesAgainstDispute);
 
   function decodeRequestData(bytes32 _requestId)
     external
@@ -75,4 +100,8 @@ interface IBondEscalationResolutionModule is IResolutionModule {
       uint256 _timeUntilDeadline,
       uint256 _timeToBreakInequality
     );
+
+  function pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external;
+  function pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external;
+  function claimPledge(bytes32 _requestId, bytes32 _disputeId) external;
 }

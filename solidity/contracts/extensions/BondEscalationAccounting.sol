@@ -77,4 +77,32 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
 
     emit PayWinningPledgers(_requestId, _disputeId, _winningPledgers, _token, _amountPerPledger);
   }
+
+  /**
+   * @notice Releases a given amount of funds to the pledger.
+   *
+   * @dev This function must be called by a valid module.
+   *
+   * @param _requestId         ID of the bond-escalated request.
+   * @param _disputeId         ID of the bond-escalated dispute.
+   * @param _pledger           Address of the pledger.
+   * @param _token             Address of the token to be released.
+   * @param _amount            Amount of token to be released to the pledger.
+   */
+  function releasePledge(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    address _pledger,
+    IERC20 _token,
+    uint256 _amount
+  ) external onlyValidModule(_requestId) {
+    if (pledges[_requestId][_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
+
+    unchecked {
+      pledges[_requestId][_disputeId][_token] -= _amount;
+      balanceOf[_pledger][_token] += _amount;
+    }
+
+    emit ReleasePledge(_requestId, _disputeId, _pledger, _token, _amount);
+  }
 }

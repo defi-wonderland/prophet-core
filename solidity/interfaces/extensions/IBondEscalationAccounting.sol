@@ -13,6 +13,9 @@ interface IBondEscalationAccounting is IAccountingExtension {
     IERC20 _token,
     uint256 _amountPerPledger
   );
+  event ReleasePledge(
+    bytes32 indexed _requestId, bytes32 indexed _disputeId, address indexed _pledgers, IERC20 _token, uint256 _amount
+  );
 
   error BondEscalationAccounting_InsufficientFunds();
 
@@ -24,5 +27,13 @@ interface IBondEscalationAccounting is IAccountingExtension {
     address[] memory _winningPledgers,
     IERC20 _token,
     uint256 _amountPerPledger
+  ) external;
+
+  function releasePledge(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    address _pledger,
+    IERC20 _token,
+    uint256 _amount
   ) external;
 }
