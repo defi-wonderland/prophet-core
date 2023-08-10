@@ -166,7 +166,7 @@ contract HttpRequestModule_UnitTest is Test {
     );
 
     vm.startPrank(address(oracle));
-    httpRequestModule.finalizeRequest(_requestId);
+    httpRequestModule.finalizeRequest(_requestId, address(oracle));
 
     // Test the release flow
     _fullResponse.createdAt = 0;
@@ -185,7 +185,7 @@ contract HttpRequestModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount))
     );
 
-    httpRequestModule.finalizeRequest(_requestId);
+    httpRequestModule.finalizeRequest(_requestId, address(this));
   }
 
   /**
@@ -195,7 +195,8 @@ contract HttpRequestModule_UnitTest is Test {
     vm.assume(_caller != address(oracle));
 
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-    httpRequestModule.finalizeRequest(_requestId);
+    vm.prank(_caller);
+    httpRequestModule.finalizeRequest(_requestId, address(_caller));
   }
 
   /**

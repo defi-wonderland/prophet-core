@@ -851,25 +851,25 @@ contract Oracle_UnitTest is Test {
     }
 
     // mock and expect the finalize request in requestModule
-    vm.mockCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
-    vm.expectCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
+    vm.mockCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
 
     // mock and expect the finalize request in responseModule
-    vm.mockCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
-    vm.expectCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
+    vm.mockCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
 
     // mock and expect the finalize request in resolutionModule
-    vm.mockCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
-    vm.expectCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
+    vm.mockCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
 
     if (_useResolutionAndFinality) {
       // mock and expect the call to disputeModule
-      vm.mockCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
-      vm.expectCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
+      vm.mockCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+      vm.expectCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
 
       // mock and expect the call to finalityModule
-      vm.mockCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)), abi.encode());
-      vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId)));
+      vm.mockCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+      vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
     }
 
     // Check: emits RequestFinalized event?

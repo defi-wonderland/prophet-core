@@ -251,13 +251,14 @@ contract SequentialResolutionModule_UnitTest is Base {
     vm.expectCall(address(submodule2), abi.encodeWithSelector(IModule.finalizeRequest.selector, requestId));
     vm.expectCall(address(submodule3), abi.encodeWithSelector(IModule.finalizeRequest.selector, requestId));
     vm.prank(address(oracle));
-    module.finalizeRequest(requestId);
+    module.finalizeRequest(requestId, address(oracle));
   }
 
   function testReverts_finalizeRequestCalledByNonOracle() public {
-    vm.prank(makeAddr('other_sender'));
+    address _caller = makeAddr('other_sender');
+    vm.prank(_caller);
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-    module.finalizeRequest(requestId);
+    module.finalizeRequest(requestId, _caller);
   }
 
   function test_listSubmodulesFullList() public {

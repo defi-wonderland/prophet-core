@@ -231,7 +231,7 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     );
 
     vm.startPrank(address(oracle));
-    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(oracle));
 
     // Test the release flow
     _fullResponse.createdAt = 0;
@@ -251,7 +251,7 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
       abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount))
     );
 
-    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(this));
   }
 
   /**
@@ -261,7 +261,8 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     vm.assume(_caller != address(oracle));
 
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-    sparseMerkleTreeRequestModule.finalizeRequest(_requestId);
+    vm.prank(_caller);
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(_caller));
   }
 
   /**

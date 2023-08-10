@@ -17,7 +17,7 @@ contract MultipleCallbacksModule is Module, ICallbackModule {
     _moduleName = 'MultipleCallbacksModule';
   }
 
-  function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
+  function finalizeRequest(bytes32 _requestId, address) external override(IModule, Module) onlyOracle {
     (address[] memory _targets, bytes[] memory _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
     if (_targets.length != _data.length) revert CallbackModule_InvalidParameters();
 

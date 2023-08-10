@@ -8,5 +8,6 @@ interface IModule is IModuleData {
   error Module_InvalidCaller();
 
   function setupRequest(bytes32 _requestId, bytes calldata _data) external;
-  function finalizeRequest(bytes32 _requestId) external;
+  function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+  function moduleName() external view returns (string memory _moduleName);
 }

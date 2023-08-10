@@ -125,7 +125,7 @@ contract Integration_Payments is IntegrationBase {
     vm.prank(address(oracle));
     _disputeModule.updateDisputeStatus(bytes32(0), _dispute);
     vm.prank(address(oracle));
-    _requestModule.finalizeRequest(_requestId);
+    _requestModule.finalizeRequest(_requestId, address(oracle));
 
     uint256 _requesterBalanceAfter = _accountingExtension.balanceOf(requester, usdc);
     uint256 _proposerBalanceAfter = _accountingExtension.balanceOf(proposer, usdc);
@@ -176,7 +176,7 @@ contract Integration_Payments is IntegrationBase {
     vm.prank(address(oracle));
     _disputeModule.updateDisputeStatus(bytes32(0), _dispute);
     vm.prank(address(oracle));
-    _requestModule.finalizeRequest(_requestId);
+    _requestModule.finalizeRequest(_requestId, address(oracle));
 
     uint256 _requesterBalanceAfter = _accountingExtension.balanceOf(requester, weth);
     uint256 _proposerBalanceAfter = _accountingExtension.balanceOf(proposer, weth);

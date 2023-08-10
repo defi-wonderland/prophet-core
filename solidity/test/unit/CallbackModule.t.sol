@@ -76,7 +76,7 @@ contract CallbackModule_UnitTest is Test {
     emit Callback(_target, _requestId, _data);
 
     vm.prank(address(oracle));
-    callbackModule.finalizeRequest(_requestId);
+    callbackModule.finalizeRequest(_requestId, address(oracle));
   }
 
   /**
@@ -84,9 +84,9 @@ contract CallbackModule_UnitTest is Test {
    */
   function test_finalizeOnlyCalledByOracle(bytes32 _requestId, address _caller) public {
     vm.assume(_caller != address(oracle));
-
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-    callbackModule.finalizeRequest(_requestId);
+    vm.prank(_caller);
+    callbackModule.finalizeRequest(_requestId, address(_caller));
   }
 
   /**

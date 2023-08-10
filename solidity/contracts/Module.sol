@@ -24,6 +24,6 @@ abstract contract Module is IModule {
     _afterSetupRequest(_requestId, _data);
   }
 
-  function finalizeRequest(bytes32 _requestId) external virtual onlyOracle {}
+  function finalizeRequest(bytes32 _requestId, address _finalizer) external virtual onlyOracle {}
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}
 }

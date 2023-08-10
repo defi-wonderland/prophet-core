@@ -67,11 +67,11 @@ contract Module_UnitTest is Test {
     // Check: reverts if not called by oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
     vm.prank(_caller);
-    module.finalizeRequest(_requestId);
+    module.finalizeRequest(_requestId, address(_caller));
 
     // Check: does not revert if called by oracle
     vm.prank(address(oracle));
-    module.finalizeRequest(_requestId);
+    module.finalizeRequest(_requestId, address(oracle));
   }
 
   /**

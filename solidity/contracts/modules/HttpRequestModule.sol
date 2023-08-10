@@ -34,7 +34,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     _accountingExtension.bond(_request.requester, _requestId, _paymentToken, _paymentAmount);
   }
 
-  function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
+  function finalizeRequest(bytes32 _requestId, address) external override(IModule, Module) onlyOracle {
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     (,,, IAccountingExtension _accountingExtension, IERC20 _paymentToken, uint256 _paymentAmount) =

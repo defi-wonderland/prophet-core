@@ -236,16 +236,16 @@ contract Oracle is IOracle {
     _finalizedResponses[_requestId] = _response;
 
     if (address(_request.finalityModule) != address(0)) {
-      _request.finalityModule.finalizeRequest(_requestId);
+      _request.finalityModule.finalizeRequest(_requestId, msg.sender);
     }
 
     if (address(_request.resolutionModule) != address(0)) {
-      _request.resolutionModule.finalizeRequest(_requestId);
+      _request.resolutionModule.finalizeRequest(_requestId, msg.sender);
     }
 
-    _request.disputeModule.finalizeRequest(_requestId);
-    _request.responseModule.finalizeRequest(_requestId);
-    _request.requestModule.finalizeRequest(_requestId);
+    _request.disputeModule.finalizeRequest(_requestId, msg.sender);
+    _request.responseModule.finalizeRequest(_requestId, msg.sender);
+    _request.requestModule.finalizeRequest(_requestId, msg.sender);
 
     emit Oracle_RequestFinalized(msg.sender, _requestId);
   }

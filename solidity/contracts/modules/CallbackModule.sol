@@ -19,7 +19,7 @@ contract CallbackModule is Module, ICallbackModule {
 
   // callback to _target (which should implement ICallback), passing _data and _request
   // the callback will be executed by a keeper job
-  function finalizeRequest(bytes32 _requestId) external override(IModule, Module) onlyOracle {
+  function finalizeRequest(bytes32 _requestId, address) external override(IModule, Module) onlyOracle {
     (address _target, bytes memory _data) = abi.decode(requestData[_requestId], (address, bytes));
     ICallback(_target).callback(_requestId, _data);
     emit Callback(_target, _requestId, _data);

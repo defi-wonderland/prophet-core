@@ -81,7 +81,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     emit Callback(_target, _requestId, _data);
 
     vm.prank(address(oracle));
-    multipleCallbackModule.finalizeRequest(_requestId);
+    multipleCallbackModule.finalizeRequest(_requestId, address(oracle));
   }
 
   /**
@@ -91,7 +91,8 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     vm.assume(_caller != address(oracle));
 
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
-    multipleCallbackModule.finalizeRequest(_requestId);
+    vm.prank(_caller);
+    multipleCallbackModule.finalizeRequest(_requestId, address(_caller));
   }
 
   function test_Revert_InvalidParameters(
@@ -105,6 +106,6 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     vm.expectRevert(ICallbackModule.CallbackModule_InvalidParameters.selector);
 
     vm.prank(address(oracle));
-    multipleCallbackModule.finalizeRequest(_requestId);
+    multipleCallbackModule.finalizeRequest(_requestId, address(oracle));
   }
 }

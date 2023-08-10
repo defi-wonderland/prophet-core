@@ -51,9 +51,9 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   }
 
   // TODO: finalizeRequest function. None of the resolution modules use it. How should we implement it?
-  function finalizeRequest(bytes32 _requestId) external virtual override onlyOracle {
+  function finalizeRequest(bytes32 _requestId, address _finalizer) external virtual override onlyOracle {
     for (uint256 i; i < resolutionModules.length; ++i) {
-      resolutionModules[i].finalizeRequest(_requestId);
+      resolutionModules[i].finalizeRequest(_requestId, _finalizer);
     }
   }
 

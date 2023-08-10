@@ -148,7 +148,7 @@ contract BondedResponseModule_UnitTest is Test {
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
-    bondedResponseModule.finalizeRequest(_requestId);
+    bondedResponseModule.finalizeRequest(_requestId, address(this));
 
     // Check correct calls are made if deadline has passed
     _deadline = block.timestamp;
@@ -176,7 +176,7 @@ contract BondedResponseModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
     );
 
-    bondedResponseModule.finalizeRequest(_requestId);
+    bondedResponseModule.finalizeRequest(_requestId, address(this));
   }
 
   /**
