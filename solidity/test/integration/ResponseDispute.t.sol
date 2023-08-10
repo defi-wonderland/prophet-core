@@ -42,6 +42,17 @@ contract Integration_ResponseDispute is IntegrationBase {
     _responseId = oracle.proposeResponse(_requestId, _responseData);
   }
 
+  // check that the dispute id is stored in the response struct
+  function test_disputeResponse_disputeIdStoredInResponse() public {
+    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
+
+    vm.prank(disputer);
+    bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
+
+    IOracle.Response memory _disputedResponse = oracle.getResponse(_responseId);
+    assertEq(_disputedResponse.disputeId, _disputeId);
+  }
+
   // dispute a non-existent response
   function test_disputeResponse_nonExistentResponse(bytes32 _nonExistentResponseId) public {
     vm.assume(_nonExistentResponseId != _responseId);

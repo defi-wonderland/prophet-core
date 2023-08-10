@@ -124,7 +124,7 @@ contract Oracle is IOracle {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
     Request memory _request = _requests[_requestId];
-    Response memory _response = _responses[_responseId];
+    Response storage _response = _responses[_responseId];
 
     if (_response.requestId != _requestId || _response.createdAt == 0) {
       revert Oracle_InvalidResponseId(_responseId);
@@ -139,6 +139,8 @@ contract Oracle is IOracle {
     _disputes[_disputeId] =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
     disputeOf[_responseId] = _disputeId;
+
+    _response.disputeId = _disputeId;
 
     emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
   }

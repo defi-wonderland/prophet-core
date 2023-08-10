@@ -615,6 +615,7 @@ contract Oracle_UnitTest is Test {
     assertEq(_disputeId, _actualDisputeId);
 
     IOracle.Dispute memory _storedDispute = oracle.getDispute(_disputeId);
+    IOracle.Response memory _storedResponse = oracle.getResponse(_responseId);
 
     // Check: correct dispute stored?
     assertEq(_storedDispute.createdAt, mockDispute.createdAt);
@@ -623,6 +624,8 @@ contract Oracle_UnitTest is Test {
     assertEq(_storedDispute.responseId, mockDispute.responseId);
     assertEq(_storedDispute.requestId, mockDispute.requestId);
     assertEq(uint256(_storedDispute.status), uint256(mockDispute.status));
+
+    assertEq(_storedResponse.disputeId, _disputeId);
   }
 
   /**
