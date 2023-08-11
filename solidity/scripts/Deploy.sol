@@ -15,11 +15,18 @@ import {HttpRequestModule} from '../contracts/modules/HttpRequestModule.sol';
 import {ContractCallRequestModule} from '../contracts/modules/ContractCallRequestModule.sol';
 import {ERC20ResolutionModule} from '../contracts/modules/ERC20ResolutionModule.sol';
 import {MultipleCallbacksModule} from '../contracts/modules/MultipleCallbacksModule.sol';
+import {PrivateERC20ResolutionModule} from '../contracts/modules/PrivateERC20ResolutionModule.sol';
+import {BondEscalationResolutionModule} from '../contracts/modules/BondEscalationResolutionModule.sol';
+import {SequentialResolutionModule} from '../contracts/modules/SequentialResolutionModule.sol';
+import {RootVerificationModule} from '../contracts/modules/RootVerificationModule.sol';
+import {SparseMerkleTreeRequestModule} from '../contracts/modules/SparseMerkleTreeRequestModule.sol';
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
 
 import {RequestFinalizerJob} from '../contracts/jobs/RequestFinalizerJob.sol';
+
+import {IResolutionModule} from '../interfaces/modules/IResolutionModule.sol';
 
 // solhint-disable no-console
 contract Deploy is Script {
@@ -38,10 +45,18 @@ contract Deploy is Script {
   ERC20ResolutionModule erc20ResolutionModule;
   MultipleCallbacksModule multipleCallbacksModule;
 
+  PrivateERC20ResolutionModule privateErc20ResolutionModule;
+  BondEscalationResolutionModule bondEscalationResolutionModule;
+  SequentialResolutionModule sequentialResolutionModule;
+  RootVerificationModule rootVerificationModule;
+  SparseMerkleTreeRequestModule sparseMerkleTreeRequestModule;
+
   AccountingExtension accountingExtension;
   BondEscalationAccounting bondEscalationAccounting;
 
   RequestFinalizerJob requestFinalizerJob;
+
+  IResolutionModule[] resolutionModules = new IResolutionModule[](3);
 
   function run() public {
     address deployer = vm.rememberKey(vm.envUint('DEPLOYER_PRIVATE_KEY'));
@@ -84,10 +99,29 @@ contract Deploy is Script {
     // Deploy ERC20 resolution module
     erc20ResolutionModule = new ERC20ResolutionModule(oracle);
     console.log('ERC20_RESOLUTION_MODULE:', address(erc20ResolutionModule));
+    resolutionModules.push(IResolutionModule(address(erc20ResolutionModule)));
+
+    // Deploy private ERC20 resolution module
+    privateErc20ResolutionModule = new PrivateERC20ResolutionModule(oracle);
+    console.log('PRIVATE_ERC20_RESOLUTION_MODULE:', address(privateErc20ResolutionModule));
+    resolutionModules.push(IResolutionModule(address(privateErc20ResolutionModule)));
+
+    // Deploy bond escalation resolution module
+    bondEscalationResolutionModule = new BondEscalationResolutionModule(oracle);
+    console.log('BOND_ESCALATION_RESOLUTION_MODULE:', address(bondEscalationResolutionModule));
+    resolutionModules.push(IResolutionModule(address(bondEscalationResolutionModule)));
 
     // Deploy multiple callbacks module
     multipleCallbacksModule = new MultipleCallbacksModule(oracle);
     console.log('MULTIPLE_CALLBACKS_MODULE:', address(multipleCallbacksModule));
+
+    // Deploy root verification module
+    rootVerificationModule = new RootVerificationModule(oracle);
+    console.log('ROOT_VERIFICATION_MODULE:', address(rootVerificationModule));
+
+    // Deploy root verification module
+    sparseMerkleTreeRequestModule = new SparseMerkleTreeRequestModule(oracle);
+    console.log('SPARSE_MERKLE_TREE_REQUEST_MODULE:', address(sparseMerkleTreeRequestModule));
 
     // Deploy accounting extension
     accountingExtension = new AccountingExtension(oracle, WETH);
@@ -101,6 +135,8 @@ contract Deploy is Script {
     requestFinalizerJob = new RequestFinalizerJob(governance);
     console.log('REQUEST_FINALIZER_JOB:', address(requestFinalizerJob));
 
-    vm.stopBroadcast();
+    // Deploy multiple callbacks module
+    sequentialResolutionModule = new SequentialResolutionModule(oracle, resolutionModules);
+    console.log('SEQUENTIAL_RESOLUTION_MODULE:', address(sequentialResolutionModule));
   }
 }
