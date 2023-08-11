@@ -183,13 +183,13 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/keep3r-v2@0.0.0-31de77ed":
-  version "0.0.0-31de77ed"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/keep3r-v2/-/keep3r-v2-0.0.0-31de77ed.tgz#e2bb680838af23bacf5034a89c37d1d56b91970c"
-  integrity sha512-8hYmy2TYCmea30oKfXiDxwh2UtKF85r5P1Y/HW7I9l6UvEeM+WBfmjXTMG2qnxGyRB9eBGCClwo8UmmQN3ZCBg==
+"@defi-wonderland/keep3r-v2@0.0.0-2d137af2":
+  version "0.0.0-2d137af2"
+  resolved "https://registry.npmjs.org/@defi-wonderland/keep3r-v2/-/keep3r-v2-0.0.0-2d137af2.tgz#a42c19cdf9f17f299062629b05f499fe290f4cb4"
+  integrity sha512-7HR6+Iu5MjMFswmQivPgTUqaxK7IF7YX9nC3m7E/jIJZCRZO0uf+QELEcuCpaQfswYgyu0D1icunPryT7P4Hhg==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-6c86c0fc"
-    "@openzeppelin/contracts" "4.3.0"
+    "@openzeppelin/contracts" "4.9.2"
 
 "@defi-wonderland/solidity-utils@0.0.0-4298c6c6":
   version "0.0.0-4298c6c6"
@@ -261,15 +261,15 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@openzeppelin/contracts@4.3.0":
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.3.0.tgz#345236d4ec73ef381ab4907c6ef66fd55e5dedad"
-  integrity sha512-+uBDl/TrmR0Kch6mq3tuxMex/fK7huR6+fQMae+zJk1K5T+dp0pFl12Hbc+1L6oYMXoyDSBJ8zqhRIntrREDFA==
-
 "@openzeppelin/contracts@4.8.1":
   version "4.8.1"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.1.tgz#709cfc4bbb3ca9f4460d60101f15dac6b7a2d5e4"
   integrity sha512-xQ6eUZl+RDyb/FiZe1h+U7qr/f4p/SrTSQcTPH2bjur3C5DbuW/zFgCU/b1P/xcIaEqJep+9ju4xDRi3rmChdQ==
+
+"@openzeppelin/contracts@4.9.2":
+  version "4.9.2"
+  resolved "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-4.9.2.tgz#1cb2d5e4d3360141a17dbc45094a8cad6aac16c1"
+  integrity sha512-mO+y6JaqXjWeMh9glYVzVu8HYPGknAAnWyxTRhGeckOruyXQMNnlcW6w/Dx9ftLeIQk6N+ZJFuVmTwF7lEIFrg==
 
 "@solidity-parser/parser@^0.14.1":
   version "0.14.5"
