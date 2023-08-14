@@ -1,0 +1,57 @@
+name: Interface Exporter Action - Canary
+
+on: workflow_dispatch
+
+jobs:
+  generate-and-publish-interfaces:
+    name: Generate Interfaces (canary)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Build project and generate out directory
+        run: yarn build
+
+      - name: Export Interfaces - web3-v1
+        uses: defi-wonderland/interface-exporter-action@v1.0.0
+        with:
+          out_dir: "out"
+          publish_type: "web3-v1"
+          package_name: "opoo-interface-web3-v1"
+          destination_dir: "exported-interfaces"
+      
+      - name: Export Interfaces - ethers-v6
+        uses: defi-wonderland/interface-exporter-action@v1.0.0
+        with:
+          out_dir: "out"
+          publish_type: "ethers-v6"
+          package_name: "opoo-interface-ethers-v6"
+          destination_dir: "exported-interfaces"
+      
+      - name: Export Interfaces - ABI
+        uses: defi-wonderland/interface-exporter-action@v1.0.0
+        with:
+          out_dir: "out"
+          publish_type: "abi"
+          package_name: "opoo-interface-abi"
+          destination_dir: "exported-interfaces"
+
+      - name: Publish
+        run: cd exported-interfaces && npm publish --access public --tag canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
