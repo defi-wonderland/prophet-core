@@ -183,29 +183,12 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/keep3r-v2@0.0.0-2d137af2":
-  version "0.0.0-2d137af2"
-  resolved "https://registry.npmjs.org/@defi-wonderland/keep3r-v2/-/keep3r-v2-0.0.0-2d137af2.tgz#a42c19cdf9f17f299062629b05f499fe290f4cb4"
-  integrity sha512-7HR6+Iu5MjMFswmQivPgTUqaxK7IF7YX9nC3m7E/jIJZCRZO0uf+QELEcuCpaQfswYgyu0D1icunPryT7P4Hhg==
-  dependencies:
-    "@defi-wonderland/solidity-utils" "0.0.0-6c86c0fc"
-    "@openzeppelin/contracts" "4.9.2"
-
 "@defi-wonderland/solidity-utils@0.0.0-3e9c8e8b":
   version "0.0.0-3e9c8e8b"
   resolved "https://registry.npmjs.org/@defi-wonderland/solidity-utils/-/solidity-utils-0.0.0-3e9c8e8b.tgz#1f9c47506e1679ea36d0854e9aa69bd210af4da0"
   integrity sha512-HCN5TTO58jTrLrAcxXwTPm++P0u4dMDnwVkssszoEu0SmVKwegzZOdoA+gNbfOjjYydph+3+9bAZbNXj+UK2rg==
   dependencies:
     "@openzeppelin/contracts" "4.9.2"
-    ds-test "https://github.com/dapphub/ds-test"
-    forge-std "https://github.com/foundry-rs/forge-std"
-
-"@defi-wonderland/solidity-utils@0.0.0-6c86c0fc":
-  version "0.0.0-6c86c0fc"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/solidity-utils/-/solidity-utils-0.0.0-6c86c0fc.tgz#36da2deab6e181299c4ec328a0719d044142cab3"
-  integrity sha512-JVRPMw06UiK0LRMi5wuIH9bkx33+3DSIUdN4QHhlqqGQa9rm9r6H/yVBWDOchACiJIfaShfLZZA0gAnL8tkkvA==
-  dependencies:
-    "@openzeppelin/contracts" "4.8.1"
     ds-test "https://github.com/dapphub/ds-test"
     forge-std "https://github.com/foundry-rs/forge-std"
 
@@ -260,11 +243,6 @@
   dependencies:
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
-
-"@openzeppelin/contracts@4.8.1":
-  version "4.8.1"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.1.tgz#709cfc4bbb3ca9f4460d60101f15dac6b7a2d5e4"
-  integrity sha512-xQ6eUZl+RDyb/FiZe1h+U7qr/f4p/SrTSQcTPH2bjur3C5DbuW/zFgCU/b1P/xcIaEqJep+9ju4xDRi3rmChdQ==
 
 "@openzeppelin/contracts@4.9.2":
   version "4.9.2"
@@ -1125,11 +1103,6 @@ dotgitignore@^2.1.0:
     find-up "^3.0.0"
     minimatch "^3.0.4"
 
-"ds-test@git+https://github.com/dapphub/ds-test.git":
-  version "1.0.0"
-  uid e282159d5170298eb2455a6c05280ab5a73a4ef0
-  resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
-
 "ds-test@https://github.com/dapphub/ds-test":
   version "1.0.0"
   resolved "https://github.com/dapphub/ds-test#e282159d5170298eb2455a6c05280ab5a73a4ef0"
@@ -1436,10 +1409,6 @@ flatted@^2.0.0:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-2.0.2.tgz#4575b21e2bcee7434aa9be662f4b7b5f9c2b5138"
   integrity sha512-r5wGx7YeOwNWNlCA0wQ86zKyDLMQr+/RB8xy74M4hTphfmjlijTSSXGuH8rnvKZnfT9i+75zmd8jcKdMR4O6jA==
-
-"forge-std@git+https://github.com/foundry-rs/forge-std.git":
-  version "1.6.0"
-  resolved "git+https://github.com/foundry-rs/forge-std.git#c0c6a4206531a3f785538240412ea2467ef58ebf"
 
 "forge-std@https://github.com/foundry-rs/forge-std":
   version "1.5.6"

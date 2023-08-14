@@ -7,7 +7,7 @@ import {Helpers} from '../utils/Helpers.sol';
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 import {Helpers} from '../utils/Helpers.sol';
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IDisputeModule} from '../../interfaces/modules/IDisputeModule.sol';
 import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
@@ -51,7 +51,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   MockArbitrator public _mockArbitrator;
 
   IERC20 usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
-  IWeth9 weth = IWeth9(label(WETH_ADDRESS, 'WETH'));
+  IWETH9 weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
 
   string _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
   IHttpRequestModule.HttpMethod _expectedMethod = IHttpRequestModule.HttpMethod.GET;

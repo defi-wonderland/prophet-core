@@ -44,7 +44,6 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/keep3r-v2": "0.0.0-2d137af2",
     "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
     "forge-std": "https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e",

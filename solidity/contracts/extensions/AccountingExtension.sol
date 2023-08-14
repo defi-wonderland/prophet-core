@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
@@ -11,7 +11,7 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 contract AccountingExtension is IAccountingExtension {
   using SafeERC20 for IERC20;
 
-  IWeth9 public immutable WETH;
+  IWETH9 public immutable WETH;
   IOracle public immutable ORACLE;
 
   // The available balance (ie deposit - amount currently bonded in a process), per depositor and per oracle
@@ -21,7 +21,7 @@ contract AccountingExtension is IAccountingExtension {
   mapping(address _bonder => mapping(IERC20 _token => mapping(bytes32 _requestId => uint256 _amount))) public
     bondedAmountOf;
 
-  constructor(IOracle _oracle, IWeth9 _weth) {
+  constructor(IOracle _oracle, IWETH9 _weth) {
     WETH = _weth;
     ORACLE = _oracle;
   }

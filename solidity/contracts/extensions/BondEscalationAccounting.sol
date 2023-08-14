@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 
 import {AccountingExtension} from './AccountingExtension.sol';
 
@@ -12,7 +12,7 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccounting {
   mapping(bytes32 _requestId => mapping(bytes32 _disputeId => mapping(IERC20 _token => uint256 _amount))) public pledges;
 
-  constructor(IOracle _oracle, IWeth9 _weth) AccountingExtension(_oracle, _weth) {}
+  constructor(IOracle _oracle, IWETH9 _weth) AccountingExtension(_oracle, _weth) {}
 
   /**
    * @notice Pledges the given amount of token to the provided dispute id of the provided request id.

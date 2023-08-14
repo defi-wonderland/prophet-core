@@ -9,7 +9,7 @@ import {
   IAccountingExtension,
   IERC20,
   IOracle,
-  IWeth9
+  IWETH9
 } from '../../contracts/extensions/AccountingExtension.sol';
 
 /**
@@ -32,7 +32,7 @@ contract AccountingExtension_UnitTest is Test {
   IOracle public oracle;
 
   // Mock Weth
-  IWeth9 public weth;
+  IWETH9 public weth;
 
   // Mock deposit token
   IERC20 public token;
@@ -44,7 +44,7 @@ contract AccountingExtension_UnitTest is Test {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    weth = IWeth9(makeAddr('WETH9'));
+    weth = IWETH9(makeAddr('WETH9'));
     vm.etch(address(weth), hex'069420');
 
     token = IERC20(makeAddr('Token'));
@@ -64,8 +64,8 @@ contract AccountingExtension_UnitTest is Test {
     vm.deal(_sender, _value);
 
     // Mock and expect the weth deposit
-    vm.mockCall(address(weth), abi.encodeCall(IWeth9.deposit, ()), abi.encode());
-    vm.expectCall(address(weth), abi.encodeCall(IWeth9.deposit, ()));
+    vm.mockCall(address(weth), abi.encodeCall(IWETH9.deposit, ()), abi.encode());
+    vm.expectCall(address(weth), abi.encodeCall(IWETH9.deposit, ()));
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(module));

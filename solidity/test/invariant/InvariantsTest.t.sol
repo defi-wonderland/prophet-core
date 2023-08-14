@@ -12,7 +12,7 @@ import {BondEscalationResolutionModule} from '../../contracts/modules/BondEscala
 import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../../contracts/extensions/BondEscalationAccounting.sol';
 
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {WETH9} from './imports/WETH9.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
@@ -53,7 +53,7 @@ contract HandlerOpoo is Test {
   AccountingExtension public accountingExtension;
   BondEscalationAccounting public bondEscalationAccounting;
 
-  IWeth9 public weth;
+  IWETH9 public weth;
 
   bytes32 public requestId;
 
@@ -77,7 +77,7 @@ contract HandlerOpoo is Test {
     bondedDisputeModule = new BondedDisputeModule(oracle);
     bondEscalationResolutionModule = new BondEscalationResolutionModule(oracle);
 
-    weth = IWeth9(address(new WETH9()));
+    weth = IWETH9(address(new WETH9()));
     accountingExtension = new AccountingExtension(oracle, weth);
 
     requestId = _createRequest(1 ether, 1 ether); // TODO: fuzz payment amount

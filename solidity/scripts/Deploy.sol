@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Script, console} from 'forge-std/Script.sol';
-import {IWeth9} from '@defi-wonderland/keep3r-v2/solidity/interfaces/external/IWeth9.sol';
+import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 import {Oracle} from '../contracts/Oracle.sol';
 
@@ -31,7 +31,7 @@ import {IResolutionModule} from '../interfaces/modules/IResolutionModule.sol';
 // solhint-disable no-console
 contract Deploy is Script {
   // TODO: Change the WETH address based on the network
-  IWeth9 constant WETH = IWeth9(0x4200000000000000000000000000000000000006); // Optimism Mainnet
+  IWETH9 constant WETH = IWETH9(0x4200000000000000000000000000000000000006); // Optimism Mainnet
 
   Oracle oracle;
 
@@ -132,7 +132,7 @@ contract Deploy is Script {
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
 
     // Deploy request finalizer job
-    requestFinalizerJob = new RequestFinalizerJob(governance);
+    requestFinalizerJob = new RequestFinalizerJob();
     console.log('REQUEST_FINALIZER_JOB:', address(requestFinalizerJob));
 
     // Deploy multiple callbacks module
