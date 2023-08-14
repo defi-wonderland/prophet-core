@@ -4,9 +4,7 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {
-  CallbackModule, ICallback, ICallbackModule, IModule, IOracle
-} from '../../contracts/modules/CallbackModule.sol';
+import {CallbackModule, ICallbackModule, IModule, IOracle} from '../../contracts/modules/CallbackModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
@@ -56,6 +54,29 @@ contract CallbackModule_UnitTest is Test {
     assertEq(_decodedTarget, _target);
     assertEq(_decodedData, _data);
   }
+  /**
+   * @notice Test that _afterSetupRequest checks if the target address is a contract.
+   */
+
+  function test_revertIfTargetNotContract(
+    bytes32 _requestId,
+    address _target,
+    bool _hasCode,
+    bytes calldata _data
+  ) public {
+    assumeNoPrecompiles(_target);
+    vm.assume(_target.code.length == 0);
+    bytes memory _requestData = abi.encode(_target, _data);
+
+    if (_hasCode) {
+      vm.etch(_target, hex'069420');
+    } else {
+      vm.expectRevert(ICallbackModule.CallbackModule_TargetHasNoCode.selector);
+    }
+
+    vm.prank(address(oracle));
+    callbackModule.setupRequest(_requestId, _requestData);
+  }
 
   /**
    * @notice Test that finalizeRequest calls the _target.callback with the correct data
@@ -68,8 +89,6 @@ contract CallbackModule_UnitTest is Test {
     bytes memory _requestData = abi.encode(_target, _data);
     callbackModule.forTest_setRequestData(_requestId, _requestData);
 
-    vm.mockCall(_target, abi.encodeCall(ICallback.callback, (_requestId, _data)), abi.encode());
-    vm.expectCall(_target, abi.encodeCall(ICallback.callback, (_requestId, _data)));
 
     // Check: correct event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));

@@ -6,7 +6,6 @@ import 'forge-std/Test.sol';
 
 import {
   MultipleCallbacksModule,
-  ICallback,
   IModule,
   IOracle,
   ICallbackModule
@@ -73,8 +72,8 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     _dataParams[0] = __data[0];
     multipleCallbackModule.forTest_setRequestData(_requestId, _targetParams, _dataParams);
 
-    vm.mockCall(_target, abi.encodeCall(ICallback.callback, (_requestId, _data)), abi.encode());
-    vm.expectCall(_target, abi.encodeCall(ICallback.callback, (_requestId, _data)), 1);
+    vm.mockCall(_target, _data, abi.encode());
+    vm.expectCall(_target, _data, 1);
 
     // Check: correct event emitted
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
@@ -95,17 +94,31 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     multipleCallbackModule.finalizeRequest(_requestId, address(_caller));
   }
 
-  function test_Revert_InvalidParameters(
-    bytes32 _requestId,
-    address[] calldata _targets,
-    bytes[] calldata _data
-  ) public {
+  function test_Revert_InvalidParameters(bytes32 _requestId, address[] memory _targets, bytes[] memory _data) public {
     vm.assume(_targets.length != _data.length);
-    multipleCallbackModule.forTest_setRequestData(_requestId, _targets, _data);
 
-    vm.expectRevert(ICallbackModule.CallbackModule_InvalidParameters.selector);
+    bytes memory _requestData = abi.encode(_targets, _data);
 
     vm.prank(address(oracle));
-    multipleCallbackModule.finalizeRequest(_requestId, address(oracle));
+    vm.expectRevert(ICallbackModule.CallbackModule_InvalidParameters.selector);
+
+    multipleCallbackModule.setupRequest(_requestId, _requestData);
+  }
+
+  function test_Revert_InvalidTarget(bytes32 _requestId, address[] memory _targets, bytes memory _data) public {
+    vm.assume(_targets.length > 1);
+
+    // Hardcoding data (as it is not the case tested) to avoid vm.assume issues
+    bytes[] memory _targetData = new bytes[](_targets.length);
+    for (uint256 i = 0; i < _targets.length; i++) {
+      _targetData[i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
+    }
+
+    bytes memory _requestData = abi.encode(_targets, _targetData);
+
+    vm.prank(address(oracle));
+    vm.expectRevert(ICallbackModule.CallbackModule_TargetHasNoCode.selector);
+
+    multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
 }
