@@ -13,7 +13,9 @@ contract Integration_Finalization is IntegrationBase {
     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
   }
 
-  // Check: expect not to revert.
+  /**
+   * @notice Test to check if another module can be set as callback module.
+   */
   function test_targetIsAnotherModule() public {
     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
 
@@ -29,6 +31,9 @@ contract Integration_Finalization is IntegrationBase {
     oracle.finalize(_requestId, _responseId);
   }
 
+  /**
+   * @notice Test to check that finalization data is set and callback calls are made.
+   */
   function test_makeAndIgnoreLowLevelCalls(bytes memory _calldata) public {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
@@ -53,6 +58,106 @@ contract Integration_Finalization is IntegrationBase {
     assertEq(_finalizedResponse.requestId, _requestId);
   }
 
+  /**
+   * @notice Test to check that finalizing a request that has no response will revert.
+   */
+  function test_revertFinalizeIfNoResponse(bytes32 _responseId) public {
+    address _callbackTarget = makeAddr('target');
+    vm.etch(_callbackTarget, hex'069420');
+
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+
+    IOracle.NewRequest memory _request =
+      _customFinalizationRequest(address(_callbackModule), abi.encode(_callbackTarget, bytes('')));
+
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(_request);
+
+    vm.prank(_finalizer);
+
+    // Check: reverts if request has no response?
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    oracle.finalize(_requestId, _responseId);
+  }
+
+  /**
+   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   */
+  function test_revertFinalizeWithDisputedResponse() public {
+    address _callbackTarget = makeAddr('target');
+    vm.etch(_callbackTarget, hex'069420');
+
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+
+    IOracle.NewRequest memory _request =
+      _customFinalizationRequest(address(_callbackModule), abi.encode(_callbackTarget, bytes('')));
+
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(_request);
+
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+
+    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(disputer);
+    oracle.disputeResponse(_requestId, _responseId);
+
+    vm.prank(_finalizer);
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    oracle.finalize(_requestId, _responseId);
+  }
+
+  /**
+   * @notice Test to check that finalizing a request without disputes triggers callback calls and executes without reverting.
+   */
+  function test_finalizeWithUndisputedResponse(bytes calldata _calldata) public {
+    address _callbackTarget = makeAddr('target');
+    vm.etch(_callbackTarget, hex'069420');
+
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+
+    IOracle.NewRequest memory _request =
+      _customFinalizationRequest(address(_callbackModule), abi.encode(_callbackTarget, _calldata));
+
+    vm.expectCall(_callbackTarget, _calldata);
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(_request);
+
+    bytes32 _responseId = _setupFinalizationStage(_requestId);
+
+    vm.prank(_finalizer);
+    oracle.finalize(_requestId, _responseId);
+  }
+
+  /**
+   * @notice Test to check that finalizing a request before the disputing deadline will revert.
+   */
+  function test_revertFinalizeBeforeDeadline(bytes calldata _calldata) public {
+    address _callbackTarget = makeAddr('target');
+    vm.etch(_callbackTarget, hex'069420');
+
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+
+    IOracle.NewRequest memory _request =
+      _customFinalizationRequest(address(_callbackModule), abi.encode(_callbackTarget, _calldata));
+
+    vm.expectCall(_callbackTarget, _calldata);
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(_request);
+
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response_data'));
+
+    vm.prank(_finalizer);
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
+    oracle.finalize(_requestId, _responseId);
+  }
+
+  /**
+   * @notice Internal helper function to setup the finalization stage of a request.
+   */
   function _setupFinalizationStage(bytes32 _requestId) internal returns (bytes32 _responseId) {
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
     vm.prank(proposer);

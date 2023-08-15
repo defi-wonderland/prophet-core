@@ -89,7 +89,6 @@ contract CallbackModule_UnitTest is Test {
     bytes memory _requestData = abi.encode(_target, _data);
     callbackModule.forTest_setRequestData(_requestId, _requestData);
 
-
     // Check: correct event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
     emit Callback(_target, _requestId, _data);
