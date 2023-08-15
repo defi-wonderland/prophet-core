@@ -5,20 +5,19 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {
-  RootVerificationModule,
+  CircuitResolverModule,
   IOracle,
-  ITreeVerifier,
   IAccountingExtension,
   IERC20
-} from '../../contracts/modules/RootVerificationModule.sol';
+} from '../../contracts/modules/CircuitResolverModule.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
-contract ForTest_RootVerificationModule is RootVerificationModule {
-  constructor(IOracle _oracle) RootVerificationModule(_oracle) {}
+contract ForTest_CircuitResolverModule is CircuitResolverModule {
+  constructor(IOracle _oracle) CircuitResolverModule(_oracle) {}
 
   function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
     requestData[_requestId] = _data;
@@ -26,13 +25,13 @@ contract ForTest_RootVerificationModule is RootVerificationModule {
 }
 
 /**
- * @title HTTP Request Module Unit tests
+ * @title Bonded Dispute Module Unit tests
  */
-contract RootVerificationModule_UnitTest is Test {
+contract CircuitResolverModule_UnitTest is Test {
   using stdStorage for StdStorage;
 
   // The target contract
-  ForTest_RootVerificationModule public rootVerificationModule;
+  ForTest_CircuitResolverModule public circuitResolverModule;
 
   // A mock oracle
   IOracle public oracle;
@@ -49,53 +48,15 @@ contract RootVerificationModule_UnitTest is Test {
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
-  // A mock tree verifier
-  ITreeVerifier public treeVerifier;
+  // A mock circuit verifier address
+  address public circuitVerifier;
 
   // Mock addresses
   IERC20 internal _token = IERC20(makeAddr('token'));
   address internal _disputer = makeAddr('disputer');
   address internal _proposer = makeAddr('proposer');
 
-  // Mock request data
-  bytes32[32] internal _treeBranches = [
-    bytes32('branch1'),
-    bytes32('branch2'),
-    bytes32('branch3'),
-    bytes32('branch4'),
-    bytes32('branch5'),
-    bytes32('branch6'),
-    bytes32('branch7'),
-    bytes32('branch8'),
-    bytes32('branch9'),
-    bytes32('branch10'),
-    bytes32('branch11'),
-    bytes32('branch12'),
-    bytes32('branch13'),
-    bytes32('branch14'),
-    bytes32('branch15'),
-    bytes32('branch16'),
-    bytes32('branch17'),
-    bytes32('branch18'),
-    bytes32('branch19'),
-    bytes32('branch20'),
-    bytes32('branch21'),
-    bytes32('branch22'),
-    bytes32('branch23'),
-    bytes32('branch24'),
-    bytes32('branch25'),
-    bytes32('branch26'),
-    bytes32('branch27'),
-    bytes32('branch28'),
-    bytes32('branch29'),
-    bytes32('branch30'),
-    bytes32('branch31'),
-    bytes32('branch32')
-  ];
-  uint256 internal _treeCount = 1;
-  bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
-
-  bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
+  bytes internal _callData = abi.encodeWithSignature('test(uint256)', 123);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -106,10 +67,10 @@ contract RootVerificationModule_UnitTest is Test {
 
     accountingExtension = IAccountingExtension(makeAddr('AccountingExtension'));
     vm.etch(address(accountingExtension), hex'069420');
-    treeVerifier = ITreeVerifier(makeAddr('TreeVerifier'));
-    vm.etch(address(treeVerifier), hex'069420');
+    circuitVerifier = makeAddr('CircuitVerifier');
+    vm.etch(address(circuitVerifier), hex'069420');
 
-    rootVerificationModule = new ForTest_RootVerificationModule(oracle);
+    circuitResolverModule = new ForTest_CircuitResolverModule(oracle);
 
     mockDispute = IOracle.Dispute({
       createdAt: block.timestamp,
@@ -131,35 +92,22 @@ contract RootVerificationModule_UnitTest is Test {
     uint256 _bondSize
   ) public {
     // Mock data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, _accountingExtension, _randomtoken, _bondSize);
+    bytes memory _requestData = abi.encode(_callData, circuitVerifier, _accountingExtension, _randomtoken, _bondSize);
 
     // Store the mock request
-    rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
+    circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
 
     // Test: decode the given request data
     (
-      bytes memory _treeDataStored,
-      bytes32[] memory _leavesToInsertStored,
-      ITreeVerifier _treeVerifierStored,
+      bytes memory _callDataStored,
+      address _verifierStored,
       IAccountingExtension _accountingExtensionStored,
       IERC20 _tokenStored,
       uint256 _bondSizeStored
-    ) = rootVerificationModule.decodeRequestData(_requestId);
+    ) = circuitResolverModule.decodeRequestData(_requestId);
 
-    bytes32[32] memory _treeBranchesStored;
-    uint256 _treeCountStored;
-    (_treeBranchesStored, _treeCountStored) = abi.decode(_treeDataStored, (bytes32[32], uint256));
-
-    // Check: decoded values match original values?
-    for (uint256 _i = 0; _i < _treeBranches.length; _i++) {
-      assertEq(_treeBranchesStored[_i], _treeBranches[_i], 'Mismatch: decoded tree branch');
-    }
-    for (uint256 _i = 0; _i < _leavesToInsert.length; _i++) {
-      assertEq(_leavesToInsertStored[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
-    }
-    assertEq(_treeCountStored, _treeCount, 'Mismatch: decoded tree count');
-    assertEq(address(_treeVerifierStored), address(treeVerifier), 'Mismatch: decoded tree verifier');
+    assertEq(_callDataStored, _callData, 'Mismatch: decoded calldata');
+    assertEq(_verifierStored, circuitVerifier, 'Mismatch: decoded circuit verifier');
     assertEq(address(_accountingExtensionStored), _accountingExtension, 'Mismatch: decoded accounting extension');
     assertEq(address(_tokenStored), _randomtoken, 'Mismatch: decoded token');
     assertEq(_bondSizeStored, _bondSize, 'Mismatch: decoded bond size');
@@ -172,8 +120,8 @@ contract RootVerificationModule_UnitTest is Test {
     // Record sstore and sload
     vm.prank(address(oracle));
     vm.record();
-    rootVerificationModule.disputeEscalated(mockId);
-    (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(rootVerificationModule));
+    circuitResolverModule.disputeEscalated(mockId);
+    (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(circuitResolverModule));
 
     // Check: no storage access?
     assertEq(reads.length, 0);
@@ -188,13 +136,13 @@ contract RootVerificationModule_UnitTest is Test {
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
     bytes32 _newResponseId = bytes32(uint256(mockId) + 2);
+    bool _correctResponse = false;
 
     // Mock request data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
 
     // Store the mock request
-    rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
+    circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
 
     // Create new Response memory struct with random values
     IOracle.Response memory _mockResponse = IOracle.Response({
@@ -202,20 +150,16 @@ contract RootVerificationModule_UnitTest is Test {
       proposer: _proposer,
       requestId: _requestId,
       disputeId: mockId,
-      response: abi.encode(bytes32('randomRoot'))
+      response: abi.encode(true)
     });
 
     // Mock and expect the call to the oracle, getting the response
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
 
-    // Mock and expect the call to the tree verifier, calculating the root
-    vm.mockCall(
-      address(treeVerifier),
-      abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
-      abi.encode(bytes32('randomRoot2'))
-    );
-    vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
+    // Mock and expect the call to the verifier
+    vm.mockCall(circuitVerifier, _callData, abi.encode(_correctResponse));
+    vm.expectCall(circuitVerifier, _callData);
 
     // Mock and expect the call to pay, from¨*proposer to disputer*
     vm.mockCall(
@@ -243,23 +187,23 @@ contract RootVerificationModule_UnitTest is Test {
     vm.mockCall(
       address(oracle),
       abi.encodeWithSignature(
-        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(bytes32('randomRoot2'))
+        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(abi.encode(_correctResponse))
       ),
       abi.encode(_newResponseId)
     );
     vm.expectCall(
       address(oracle),
       abi.encodeWithSignature(
-        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(bytes32('randomRoot2'))
+        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(abi.encode(_correctResponse))
       )
     );
 
     vm.mockCall(address(oracle), abi.encodeCall(oracle.finalize, (_requestId, _newResponseId)), abi.encode());
 
-    // Test: call disputeResponse
+    // // Test: call disputeResponse
     vm.prank(address(oracle));
     IOracle.Dispute memory _dispute =
-      rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
+      circuitResolverModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
 
     // Check: dispute is correct?
     assertEq(_dispute.disputer, _disputer, 'Mismatch: disputer');
@@ -277,14 +221,13 @@ contract RootVerificationModule_UnitTest is Test {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
-    bytes memory _encodedCorrectRoot = abi.encode(bytes32('randomRoot'));
+    bytes memory _encodedCorrectResponse = abi.encode(true);
 
     // Mock request data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
 
     // Store the mock request
-    rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
+    circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
 
     // Create new Response memory struct with random values
     IOracle.Response memory _mockResponse = IOracle.Response({
@@ -292,20 +235,16 @@ contract RootVerificationModule_UnitTest is Test {
       proposer: _proposer,
       requestId: _requestId,
       disputeId: mockId,
-      response: _encodedCorrectRoot
+      response: _encodedCorrectResponse
     });
 
     // Mock and expect the call to the oracle, getting the response
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
 
-    // Mock and expect the call to the tree verifier, calculating the root
-    vm.mockCall(
-      address(treeVerifier),
-      abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
-      _encodedCorrectRoot
-    );
-    vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
+    // Mock and expect the call to the verifier
+    vm.mockCall(circuitVerifier, _callData, _encodedCorrectResponse);
+    vm.expectCall(circuitVerifier, _callData);
 
     // Mock and expect the call to release, to the proposer
     vm.mockCall(
@@ -323,7 +262,7 @@ contract RootVerificationModule_UnitTest is Test {
     // Test: call disputeResponse
     vm.prank(address(oracle));
     IOracle.Dispute memory _dispute =
-      rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
+      circuitResolverModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
 
     // Check: dispute is correct?
     assertEq(_dispute.disputer, _disputer, 'Mismatch: disputer');
@@ -345,13 +284,13 @@ contract RootVerificationModule_UnitTest is Test {
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);
-    rootVerificationModule.disputeResponse(mockId, mockId, dude, dude);
+    circuitResolverModule.disputeResponse(mockId, mockId, dude, dude);
   }
 
   /**
    * @notice Test that the moduleName function returns the correct name
    */
   function test_moduleNameReturnsName() public {
-    assertEq(rootVerificationModule.moduleName(), 'RootVerificationModule');
+    assertEq(circuitResolverModule.moduleName(), 'CircuitResolverModule');
   }
 }
