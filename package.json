@@ -16,7 +16,7 @@
     "gas1cent (https://github.com/gas1cent)"
   ],
   "scripts": {
-    "build": "yarn compile && node interfaces-exporter.js",
+    "build": "yarn compile",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",
     "compile": "forge build",
     "coverage": "forge coverage --match-contract Unit",

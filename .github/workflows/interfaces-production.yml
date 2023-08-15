@@ -1,10 +1,13 @@
-name: Interface Exporter Action - Canary
+name: Interface Exporter Action - Production
 
-on: workflow_dispatch
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   generate-and-publish-interfaces:
-    name: Generate Interfaces (canary)
+    name: Generate Interfaces
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -30,9 +33,6 @@ jobs:
       - name: Build project and generate out directory
         run: yarn build
 
-      - name: Update version
-        run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
-
       - name: Export Interfaces - ${{ matrix.publish_type }}
         uses: defi-wonderland/interface-exporter-action@v1.0.0
         with:
@@ -42,6 +42,6 @@ jobs:
           destination_dir: "exported-interfaces/opoo-core-${{ matrix.publish_type }}"
 
       - name: Publish
-        run: cd exported-interfaces/opoo-core-${{ matrix.publish_type }} && npm publish --access public --tag canary
+        run: cd exported-interfaces/opoo-core-${{ matrix.publish_type }} && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
