@@ -119,7 +119,6 @@ contract Oracle is IOracle {
     emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
   }
 
-  // TODO: what should this method return?
   function deleteResponse(bytes32 _responseId) external {
     Response memory _response = _responses[_responseId];
     Request memory _request = _requests[_response.requestId];
