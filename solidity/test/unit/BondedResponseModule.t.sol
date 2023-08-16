@@ -125,6 +125,36 @@ contract BondedResponseModule_UnitTest is Test {
   }
 
   /**
+   * @notice Test that the delete response function triggers bond release.
+   */
+  function test_deleteResponse(bytes32 _requestId, uint256 _bondSize, uint256 _deadline, uint256 _timestamp) public {
+    vm.assume(_timestamp > 0);
+    // Create and set some mock request data
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    vm.warp(_timestamp);
+
+    if (_deadline >= _timestamp) {
+      // Mock and expect the call to the accounting extension to release the proposer funds
+      vm.mockCall(
+        address(accounting),
+        abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize)),
+        abi.encode()
+      );
+      vm.expectCall(
+        address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
+      );
+    } else {
+      // If deadline has passed, revert.
+      vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToDelete.selector);
+    }
+
+    vm.prank(address(oracle));
+    bondedResponseModule.deleteResponse(_requestId, proposer);
+  }
+
+  /**
    * @notice Test that the propose function is only callable by the oracle
    */
   function test_proposeRevertNotOracle(bytes32 _requestId, address _sender, bytes calldata _responseData) public {
