@@ -10,6 +10,7 @@ interface IBondedResponseModule is IResponseModule {
   error BondedResponseModule_TooEarlyToFinalize();
   error BondedResponseModule_TooLateToPropose();
   error BondedResponseModule_AlreadyResponded();
+  error BondedResponseModule_TooLateToDelete();
 
   function decodeRequestData(bytes32 _requestId)
     external

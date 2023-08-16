@@ -145,4 +145,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   function proposeResponse(address, bytes32, bytes calldata) external view onlySubmodule returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
+
+  function deleteResponse(bytes32) external view onlySubmodule {
+    revert SequentialResolutionModule_NotImplemented();
+  }
 }

@@ -15,6 +15,7 @@ interface IOracle {
   event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
   event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _newStatus);
   event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+  event Oracle_ResponseDeleted(address indexed _caller, bytes32 indexed _requestId, bytes32 indexed _responseId);
 
   error Oracle_NotResolutionModule(address _caller);
   error Oracle_NotDisputeModule(address _caller);
@@ -28,6 +29,8 @@ interface IOracle {
   error Oracle_CannotEscalate(bytes32 _disputeId);
   error Oracle_CannotResolve(bytes32 _disputeId);
   error Oracle_CannotDispute(bytes32 _responseId);
+  error Oracle_CannotDeleteWhileDisputing(bytes32 _responseId);
+  error Oracle_CannotDeleteInvalidProposer(address _proposer);
 
   // stored request
   struct Request {
@@ -138,6 +141,8 @@ interface IOracle {
     bytes32 _requestId,
     bytes calldata _responseData
   ) external returns (bytes32 _responseId);
+
+  function deleteResponse(bytes32 _responseId) external;
 
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
 
