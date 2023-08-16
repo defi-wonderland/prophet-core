@@ -1,0 +1,16 @@
+html,
+input {
+  font-family: "PlusJakartaSans", "Open Sans", sans-serif;
+}
+
+@font-face {
+  font-family: "PlusJakartaSans";
+  font-style: normal;
+  src: url("/fonts/PlusJakartaSans.ttf") format("ttf");
+}
+
+@font-face {
+  font-family: "PlusJakartaSans";
+  font-style: italic;
+  src: url("/fonts/PlusJakartaSans-Italic.ttf") format("ttf");
+}
