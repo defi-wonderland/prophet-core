@@ -65,8 +65,8 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   address public disputer;
 
   // Mocking module events
-  event CommitingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
-  event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
+  event CommittingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
+  event VoteCommitted(address _voter, bytes32 _disputeId, bytes32 _commitment);
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
 
@@ -97,7 +97,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   }
 
   /**
-   * @notice Test that the startResolution is correctly called and the commiting phase is started
+   * @notice Test that the startResolution is correctly called and the committing phase is started
    */
   function test_startResolution(bytes32 _disputeId) public {
     module.forTest_setEscalationData(
@@ -108,9 +108,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     module.startResolution(_disputeId);
 
-    // Check: emits CommitingPhaseStarted event?
+    // Check: emits CommittingPhaseStarted event?
     vm.expectEmit(true, true, true, true);
-    emit CommitingPhaseStarted(block.timestamp, _disputeId);
+    emit CommittingPhaseStarted(block.timestamp, _disputeId);
 
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
@@ -143,20 +143,21 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
       })
     );
 
-    // Store mock request data with 40_000 commiting time window
+    // Store mock request data with 40_000 committing time window
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 40_000;
+    uint256 _committingTimeWindow = 40_000;
     uint256 _revealingTimewindow = 40_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
     );
 
     // Mock the oracle response for looking up a dispute
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Set timestamp for valid commitingTimeWindow
+    // Set timestamp for valid committingTimeWindow
     vm.warp(123_456);
 
     // Compute commitment
@@ -165,7 +166,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
-    emit VoteCommited(_voter, _disputeId, _commitment);
+    emit VoteCommitted(_voter, _disputeId, _commitment);
 
     // Revert if no commitment is given
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_EmptyCommitment.selector);
@@ -250,9 +251,13 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   }
 
   /**
-   * @notice Test that `commitVote` reverts if called outside of the commiting time window.
+   * @notice Test that `commitVote` reverts if called outside of the committing time window.
    */
-  function test_revertCommitVote_CommitingPhaseOver(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
+  function test_revertCommitVote_CommittingPhaseOver(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    bytes32 _commitment
+  ) public {
     // Mock the oracle response for looking up a dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
@@ -267,18 +272,19 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     );
 
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 40_000;
+    uint256 _committingTimeWindow = 40_000;
     uint256 _revealingTimewindow = 40_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
     );
 
     // Warp to invalid timestamp for commitment
     vm.warp(150_000);
 
-    // Check: reverts if commiting phase is over?
-    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_CommitingPhaseOver.selector);
+    // Check: reverts if committing phase is over?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_CommittingPhaseOver.selector);
     module.commitVote(_requestId, _disputeId, _commitment);
   }
 
@@ -301,7 +307,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
       })
     );
 
-    // Store mock request data with 40_000 commiting time window
+    // Store mock request data with 40_000 committing time window
     module.forTest_setRequestData(
       _requestId, abi.encode(address(accounting), token, uint256(1), uint256(40_000), uint256(40_000))
     );
@@ -373,19 +379,20 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Store request data
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 40_000;
+    uint256 _committingTimeWindow = 40_000;
     uint256 _revealingTimewindow = 40_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
     );
 
     // Jump to timestamp
     vm.warp(_timestamp);
 
     if (_timestamp <= 140_000) {
-      // Check: reverts if trying to reveal during commiting phase?
-      vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommitingPhase.selector);
+      // Check: reverts if trying to reveal during committing phase?
+      vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
       module.revealVote(_requestId, _disputeId, _numberOfVotes, _salt);
     } else {
       // Check: reverts if trying to reveal after revealing phase?
@@ -422,11 +429,12 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Store request data
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 40_000;
+    uint256 _committingTimeWindow = 40_000;
     uint256 _revealingTimewindow = 40_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
     );
     vm.warp(150_000);
 
@@ -462,11 +470,12 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
     // Store request data
-    uint256 _commitingTimeWindow = 40_000;
+    uint256 _committingTimeWindow = 40_000;
     uint256 _revealingTimewindow = 40_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimewindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
     );
 
     // Store escalation data with starttime 100_000 and votes 0
@@ -508,7 +517,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   }
 
   /**
-   * @notice Test that `resolveDispute` reverts if called during commiting or reavealing time window.
+   * @notice Test that `resolveDispute` reverts if called during committing or reavealing time window.
    */
   function test_revertResolveDispute_WrongPhase(bytes32 _requestId, bytes32 _disputeId, uint256 _timestamp) public {
     _timestamp = bound(_timestamp, 1, 1_000_000);
@@ -529,19 +538,20 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Store request data
     uint256 _minVotesForQuorum = 1;
-    uint256 _commitingTimeWindow = 500_000;
+    uint256 _committingTimeWindow = 500_000;
     uint256 _revealingTimeWindow = 1_000_000;
 
     module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimeWindow)
+      _requestId,
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
 
     // Jump to timestamp
     vm.warp(_timestamp);
 
     if (_timestamp <= 500_000) {
-      // Check: reverts if trying to resolve during commiting phase?
-      vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommitingPhase.selector);
+      // Check: reverts if trying to resolve during committing phase?
+      vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
       vm.prank(address(oracle));
       module.resolveDispute(_disputeId);
     } else {

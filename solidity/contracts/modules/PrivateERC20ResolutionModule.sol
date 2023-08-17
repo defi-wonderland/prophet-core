@@ -14,9 +14,15 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  // todo: this storage layout must be super optimizable. many disputeId mappings
+  /// @inheritdoc IPrivateERC20ResolutionModule
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
-  mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) public _votersData;
+  /**
+   * @notice The data of the voters for a given dispute
+   */
+  mapping(bytes32 _disputeId => mapping(address _voter => VoterData)) internal _votersData;
+  /**
+   * @notice The voters addresses for a given dispute
+   */
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -25,6 +31,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     return 'PrivateERC20ResolutionModule';
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function decodeRequestData(bytes32 _requestId)
     public
     view
@@ -32,19 +39,21 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       IAccountingExtension _accountingExtension,
       IERC20 _token,
       uint256 _minVotesForQuorum,
-      uint256 _commitingTimeWindow,
+      uint256 _committingTimeWindow,
       uint256 _revealingTimeWindow
     )
   {
-    (_accountingExtension, _token, _minVotesForQuorum, _commitingTimeWindow, _revealingTimeWindow) =
+    (_accountingExtension, _token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow) =
       abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256, uint256));
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function startResolution(bytes32 _disputeId) external onlyOracle {
     escalationData[_disputeId].startTime = block.timestamp;
-    emit CommitingPhaseStarted(block.timestamp, _disputeId);
+    emit CommittingPhaseStarted(block.timestamp, _disputeId);
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function commitVote(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment) public {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
@@ -53,26 +62,27 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     uint256 _startTime = escalationData[_disputeId].startTime;
     if (_startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (,,, uint256 _commitingTimeWindow,) = decodeRequestData(_requestId);
-    uint256 _commitingDeadline = _startTime + _commitingTimeWindow;
-    if (block.timestamp >= _commitingDeadline) revert PrivateERC20ResolutionModule_CommitingPhaseOver();
+    (,,, uint256 _committingTimeWindow,) = decodeRequestData(_requestId);
+    uint256 _committingDeadline = _startTime + _committingTimeWindow;
+    if (block.timestamp >= _committingDeadline) revert PrivateERC20ResolutionModule_CommittingPhaseOver();
 
     if (_commitment == bytes32('')) revert PrivateERC20ResolutionModule_EmptyCommitment();
     _votersData[_disputeId][msg.sender] = VoterData({numOfVotes: 0, commitment: _commitment});
 
-    emit VoteCommited(msg.sender, _disputeId, _commitment);
+    emit VoteCommitted(msg.sender, _disputeId, _commitment);
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function revealVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt) public {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token,, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) = decodeRequestData(_requestId);
+    (, IERC20 _token,, uint256 _committingTimeWindow, uint256 _revealingTimeWindow) = decodeRequestData(_requestId);
     (uint256 _revealStartTime, uint256 _revealEndTime) = (
-      _escalationData.startTime + _commitingTimeWindow,
-      _escalationData.startTime + _commitingTimeWindow + _revealingTimeWindow
+      _escalationData.startTime + _committingTimeWindow,
+      _escalationData.startTime + _committingTimeWindow + _revealingTimeWindow
     );
-    if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
+    if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
 
     VoterData storage _voterData = _votersData[_disputeId][msg.sender];
@@ -91,6 +101,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     emit VoteRevealed(msg.sender, _disputeId, _numberOfVotes);
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
@@ -99,12 +110,12 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _commitingTimeWindow, uint256 _revealingTimeWindow) =
+    (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _committingTimeWindow, uint256 _revealingTimeWindow) =
       decodeRequestData(_dispute.requestId);
-    if (block.timestamp < _escalationData.startTime + _commitingTimeWindow) {
-      revert PrivateERC20ResolutionModule_OnGoingCommitingPhase();
+    if (block.timestamp < _escalationData.startTime + _committingTimeWindow) {
+      revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp < _escalationData.startTime + _commitingTimeWindow + _revealingTimeWindow) {
+    if (block.timestamp < _escalationData.startTime + _committingTimeWindow + _revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
@@ -129,6 +140,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     }
   }
 
+  /// @inheritdoc IPrivateERC20ResolutionModule
   function computeCommitment(
     bytes32 _disputeId,
     uint256 _numberOfVotes,
