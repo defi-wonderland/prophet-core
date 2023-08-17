@@ -133,7 +133,18 @@ contract Oracle is IOracle {
     _request.responseModule.deleteResponse(_response.requestId, msg.sender);
 
     delete _responses[_responseId];
-    // TODO: delete response id from _responseIds[_requestId]
+
+    uint256 _length = _responseIds[_response.requestId].length;
+    for (uint256 _i = 0; _i < _length;) {
+      if (_responseIds[_response.requestId][_i] == _responseId) {
+        _responseIds[_response.requestId][_i] = _responseIds[_response.requestId][_length - 1];
+        _responseIds[_response.requestId].pop();
+        break;
+      }
+      unchecked {
+        ++_i;
+      }
+    }
     emit Oracle_ResponseDeleted(msg.sender, _response.requestId, _responseId);
   }
 

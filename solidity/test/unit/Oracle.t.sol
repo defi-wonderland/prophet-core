@@ -600,6 +600,9 @@ contract Oracle_UnitTest is Test {
     );
     vm.expectCall(address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, sender)));
 
+    bytes32[] memory _responsesIds = oracle.getResponseIds(_requestId);
+    assertEq(_responsesIds.length, 1);
+
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
     emit Oracle_ResponseDeleted(sender, _requestId, _responseId);
@@ -615,6 +618,9 @@ contract Oracle_UnitTest is Test {
     assertEq(_deletedResponse.requestId, bytes32(0));
     assertEq(_deletedResponse.disputeId, bytes32(0));
     assertEq(_deletedResponse.response, bytes(''));
+
+    _responsesIds = oracle.getResponseIds(_requestId);
+    assertEq(_responsesIds.length, 0);
   }
 
   /**
