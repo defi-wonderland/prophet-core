@@ -15,11 +15,11 @@ html.ayu {
   --fg: rgba(255, 255, 255, 0.87);
   --sidebar-bg: #121212;
   --sidebar-fg: rgba(255, 255, 255, 0.5);
-  --sidebar-active: white;
+  --sidebar-active: #ff0420;
   --border: rgba(255, 255, 255, 0.12);
   --border-active: rgba(255, 255, 255, 0.3);
   --link-visited: #acacac;
-  --logo-h: url(/images/logo-dark-h.svg);
+  --logo-h: url(/images/logo.svg);
   --quote-bg: #121212;
 }
 
@@ -29,16 +29,20 @@ html.light {
   --fg: rgba(0, 0, 0, 0.87);
   --sidebar-bg: #fff;
   --sidebar-fg: rgba(0, 0, 0, 0.54);
-  --sidebar-active: rgba(0, 0, 0, 0.87);
+  --sidebar-active: #ff0420;
   --border: rgba(0, 0, 0, 0.12);
   --border-active: rgba(0, 0, 0, 0.3);
   --link-visited: #909090;
-  --logo-h: url(/images/logo-light-h.svg);
+  --logo-h: url(/images/logo.svg);
   --quote-bg: #fff;
-
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   letter-spacing: -0.05px;
   padding: 0 24px;
 }
@@ -55,7 +59,9 @@ h3 {
   font-size: 20px;
 }
 
-p, pre, .table-wrapper {
+p,
+pre,
+.table-wrapper {
   padding: 0 24px;
 }
 
@@ -63,7 +69,8 @@ p, pre, .table-wrapper {
   line-height: 1.5;
 }
 
-li, li > p {
+li,
+li > p {
   padding: unset;
   margin: unset;
   margin-top: 10px;
@@ -86,14 +93,21 @@ blockquote p {
 }
 
 @media screen and (max-width: 600px) {
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     padding: 0 16px;
   }
 
-  p, pre, .table-wrapper {
+  p,
+  pre,
+  .table-wrapper {
     padding: 0 16px;
   }
-  
+
   blockquote {
     padding-left: 16px;
   }

@@ -60,6 +60,7 @@ a,
 a > .hljs {
   text-decoration: underline;
   color: var(--fg);
+  font-weight: 500;
 }
 a:visited {
   color: var(--link-visited);
