@@ -22,7 +22,6 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   event VoteCommited(address _voter, bytes32 _disputeId, bytes32 _commitment);
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event CommitingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
-  event RevealingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
 
   error PrivateERC20ResolutionModule_OnlyDisputeModule();

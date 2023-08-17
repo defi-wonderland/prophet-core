@@ -294,7 +294,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
 
     _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
-    emit BondEscalatedForDisputer(msg.sender, _bondSize);
+    emit BondEscalatedForProposer(msg.sender, _bondSize);
   }
 
   /**
