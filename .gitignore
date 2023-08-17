@@ -27,3 +27,4 @@ docs/src/static
 # Coverage
 lcov.info
 report
+.vercel

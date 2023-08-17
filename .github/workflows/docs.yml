@@ -8,7 +8,6 @@ on:
 
 jobs:
   deploy-docs:
-    if: ${{ false }}
     name: Deploy docs
     runs-on: ubuntu-latest
     environment:
@@ -37,18 +36,10 @@ jobs:
       - name: Build Docs
         run: yarn docs:build
 
-      - name: Create book folder
-        run: mdbook build docs
-
-      - uses: reggionick/s3-deploy@v3
+      - uses: amondnet/vercel-action@v25
         with:
-          folder: docs/book
-          bucket: ${{ secrets.DOCS_S3_BUCKET_NAME }}
-          bucket-region: ${{ secrets.DOCS_S3_BUCKET_REGION }}
-          dist-id: ${{ secrets.DOCS_CLOUDFRONT_DISTRIBUTION_ID }}
-          invalidation: / *
-          delete-removed: true
-          private: true
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
+          vercel-org-id: ${{ secrets.ORG_ID}} #Required
+          scope: ${{ secrets.ORG_ID}} #Required
+          vercel-project-id: ${{ secrets.PROJECT_ID}} #Required
+          working-directory: ./docs/book
