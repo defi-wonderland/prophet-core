@@ -100,4 +100,43 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.prank(proposer);
     oracle.proposeResponse(_requestId, _response);
   }
+
+  function test_deleteResponse(bytes memory _responseData) public {
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+
+    IOracle.Response memory _response = oracle.getResponse(_responseId);
+    assertEq(_response.proposer, proposer);
+    assertEq(_response.response, _responseData);
+    assertEq(_response.createdAt, block.timestamp);
+    assertEq(_response.disputeId, bytes32(0));
+
+    vm.prank(proposer);
+    oracle.deleteResponse(_responseId);
+
+    // Check: response data is correctly deleted?
+    IOracle.Response memory _deletedResponse = oracle.getResponse(_responseId);
+    assertEq(_deletedResponse.proposer, address(0));
+    assertEq(_deletedResponse.response.length, 0);
+    assertEq(_deletedResponse.createdAt, 0);
+    assertEq(_deletedResponse.disputeId, bytes32(0));
+  }
+
+  function test_deleteResponse_afterDeadline(bytes memory _responseData, uint256 _timestamp) public {
+    vm.assume(_timestamp > _expectedDeadline);
+
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+
+    vm.warp(_timestamp);
+
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToDelete.selector);
+
+    vm.prank(proposer);
+    oracle.deleteResponse(_responseId);
+  }
 }

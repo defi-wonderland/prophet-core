@@ -119,6 +119,35 @@ contract Oracle is IOracle {
     emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
   }
 
+  function deleteResponse(bytes32 _responseId) external {
+    Response memory _response = _responses[_responseId];
+    Request memory _request = _requests[_response.requestId];
+
+    if (disputeOf[_responseId] != bytes32(0)) {
+      revert Oracle_CannotDeleteWhileDisputing(_responseId);
+    }
+    if (msg.sender != _response.proposer) {
+      revert Oracle_CannotDeleteInvalidProposer(msg.sender);
+    }
+
+    _request.responseModule.deleteResponse(_response.requestId, msg.sender);
+
+    delete _responses[_responseId];
+
+    uint256 _length = _responseIds[_response.requestId].length;
+    for (uint256 _i = 0; _i < _length;) {
+      if (_responseIds[_response.requestId][_i] == _responseId) {
+        _responseIds[_response.requestId][_i] = _responseIds[_response.requestId][_length - 1];
+        _responseIds[_response.requestId].pop();
+        break;
+      }
+      unchecked {
+        ++_i;
+      }
+    }
+    emit Oracle_ResponseDeleted(msg.sender, _response.requestId, _responseId);
+  }
+
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_responseId);

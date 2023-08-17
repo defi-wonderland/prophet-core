@@ -56,6 +56,15 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
   }
 
+  function deleteResponse(bytes32 _requestId, address _proposer) external onlyOracle {
+    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
+      decodeRequestData(_requestId);
+
+    if (block.timestamp > _deadline) revert BondedResponseModule_TooLateToDelete();
+
+    _accountingExtension.release(_proposer, _requestId, _bondToken, _bondSize);
+  }
+
   function finalizeRequest(bytes32 _requestId, address _finalizer) external override(IModule, Module) onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
       decodeRequestData(_requestId);

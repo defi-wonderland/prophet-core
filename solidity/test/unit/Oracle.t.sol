@@ -70,6 +70,7 @@ contract Oracle_UnitTest is Test {
   event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
   event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _newStatus);
   event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+  event Oracle_ResponseDeleted(address indexed _caller, bytes32 indexed _requestId, bytes32 indexed _responseId);
 
   /**
    * @notice Deploy the target and mock oracle+modules
@@ -566,6 +567,60 @@ contract Oracle_UnitTest is Test {
     assertEq(_responseIds.length, 2);
     assertEq(_responseIds[0], _responseId);
     assertEq(_responseIds[1], _secondResponseId);
+  }
+
+  /**
+   * @notice Test response deletion
+   */
+  function test_deleteResponse() public {
+    // Create mock request and store it
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
+
+    // Create mock response
+    IOracle.Response memory _response = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: sender,
+      requestId: _requestId,
+      disputeId: bytes32('69'),
+      response: bytes('response')
+    });
+
+    vm.mockCall(
+      address(responseModule),
+      abi.encodeCall(IResponseModule.propose, (_requestId, sender, bytes('response'))),
+      abi.encode(_response)
+    );
+
+    vm.prank(sender);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response'));
+
+    vm.mockCall(
+      address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, sender)), abi.encode()
+    );
+    vm.expectCall(address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, sender)));
+
+    bytes32[] memory _responsesIds = oracle.getResponseIds(_requestId);
+    assertEq(_responsesIds.length, 1);
+
+    // Check: is event emitted?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_ResponseDeleted(sender, _requestId, _responseId);
+
+    vm.prank(sender);
+    oracle.deleteResponse(_responseId);
+
+    IOracle.Response memory _deletedResponse = oracle.getResponse(_responseId);
+
+    // Check: correct response deleted?
+    assertEq(_deletedResponse.createdAt, 0);
+    assertEq(_deletedResponse.proposer, address(0));
+    assertEq(_deletedResponse.requestId, bytes32(0));
+    assertEq(_deletedResponse.disputeId, bytes32(0));
+    assertEq(_deletedResponse.response, bytes(''));
+
+    _responsesIds = oracle.getResponseIds(_requestId);
+    assertEq(_responsesIds.length, 0);
   }
 
   /**

@@ -10,4 +10,6 @@ interface IResponseModule is IModule {
     address _proposer,
     bytes calldata _responseData
   ) external returns (IOracle.Response memory _response);
+
+  function deleteResponse(bytes32 _requestId, address _proposer) external;
 }
