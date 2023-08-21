@@ -4,7 +4,8 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {CallbackModule, ICallbackModule, IModule, IOracle} from '../../contracts/modules/CallbackModule.sol';
+import {CallbackModule, ICallbackModule, IOracle} from '../../contracts/modules/CallbackModule.sol';
+import {IModule} from '../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IModule} from '../interfaces/IModule.sol';
-import {ModuleData} from './ModuleData.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
 
 abstract contract Module is IModule {

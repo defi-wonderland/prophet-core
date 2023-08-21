@@ -4,11 +4,11 @@ pragma solidity ^0.8.19;
 import {IFinalityModule} from './IFinalityModule.sol';
 
 /**
- * @title CallbackModule
- * @notice Module allowing users to call a function on a contract
+ * @title MultipleCallbackModule
+ * @notice Module allowing users to make multiple calls to different contracts
  * as a result of a request being finalized. 
  */
-interface ICallbackModule is IFinalityModule {
+interface IMultipleCallbackModule is IFinalityModule {
   /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
@@ -26,9 +26,14 @@ interface ICallbackModule is IFinalityModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Thrown when the target address has no code (i.e. is not a contract)
+   * @notice Thrown when then target address has no code (i.e. is not a contract)
    */
-  error CallbackModule_TargetHasNoCode();
+  error MultipleCallbackModule_TargetHasNoCode();
+
+  /**
+   * @notice Thrown when the targets array and the data array have different lengths
+   */
+  error MultipleCallbackModule_InvalidParameters();
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
@@ -37,14 +42,17 @@ interface ICallbackModule is IFinalityModule {
   /**
    * @notice Returns the decoded data for a request
    * @param _requestId The id of the request
-   * @return _target The target address for the callback
-   * @return _data The calldata forwarded to the _target
+   * @return _targets The target addresses for the callback
+   * @return _data The calldata forwarded to the targets
    */
-  function decodeRequestData(bytes32 _requestId) external view returns (address _target, bytes memory _data);
+  function decodeRequestData(bytes32 _requestId)
+    external
+    view
+    returns (address[] memory _targets, bytes[] memory _data);
 
   /**
-   * @notice Finalizes the request by executing the callback call on the target
-   * @dev The success of the callback call is purposely not checked
+   * @notice Finalizes the request by executing the callback calls on the targets
+   * @dev The success of the callback calls is purposely not checked
    * @param _requestId The id of the request
    */
   function finalizeRequest(bytes32 _requestId, address) external;

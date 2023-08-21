@@ -6,10 +6,11 @@ import 'forge-std/Test.sol';
 
 import {
   MultipleCallbacksModule,
-  IModule,
   IOracle,
-  ICallbackModule
+  IMultipleCallbackModule
 } from '../../contracts/modules/MultipleCallbacksModule.sol';
+
+import {IModule} from '../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
@@ -100,7 +101,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes memory _requestData = abi.encode(_targets, _data);
 
     vm.prank(address(oracle));
-    vm.expectRevert(ICallbackModule.CallbackModule_InvalidParameters.selector);
+    vm.expectRevert(IMultipleCallbackModule.MultipleCallbackModule_InvalidParameters.selector);
 
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
@@ -117,7 +118,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes memory _requestData = abi.encode(_targets, _targetData);
 
     vm.prank(address(oracle));
-    vm.expectRevert(ICallbackModule.CallbackModule_TargetHasNoCode.selector);
+    vm.expectRevert(IMultipleCallbackModule.MultipleCallbackModule_TargetHasNoCode.selector);
 
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
