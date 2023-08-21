@@ -6,15 +6,16 @@ import 'forge-std/Test.sol';
 
 import {
   ContractCallRequestModule,
-  IModule,
   IOracle,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/ContractCallRequestModule.sol';
 
+import {IModule} from '../../interfaces/IModule.sol';
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
+
 contract ForTest_ContractCallRequestModule is ContractCallRequestModule {
   constructor(IOracle _oracle) ContractCallRequestModule(_oracle) {}
 
