@@ -148,6 +148,14 @@ contract Oracle is IOracle {
     emit Oracle_ResponseDeleted(msg.sender, _response.requestId, _responseId);
   }
 
+  /**
+   * @notice Starts the process of disputing a response
+   * @dev If pre-dispute modules are being used, the returned dispute
+   * from `disputeModule.disputeResponse` may have a status other than `Active`,
+   * in which case the dispute is considered resolved and the dispute status updated.
+   * @param _requestId The id of the request which was responded
+   * @param _responseId The id of the response being disputer
+   */
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
@@ -162,14 +170,17 @@ contract Oracle is IOracle {
     if (_finalizedResponses[_requestId].createdAt != 0) {
       revert Oracle_AlreadyFinalized(_responseId);
     }
-    // Collision avoided -> this user disputes the _responseId from the _requestId
-    // -> if trying to redispute, disputeOf isn't empty anymore
+
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
     _disputes[_disputeId] =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
     disputeOf[_responseId] = _disputeId;
 
     _response.disputeId = _disputeId;
+
+    if (_disputes[_disputeId].status != DisputeStatus.Active) {
+      _request.disputeModule.updateDisputeStatus(_disputeId, _disputes[_disputeId]);
+    }
 
     emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
   }

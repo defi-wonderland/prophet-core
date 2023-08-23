@@ -15,6 +15,8 @@ import {Module} from '../Module.sol';
 contract RootVerificationModule is Module, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;
 
+  mapping(bytes32 _requestId => bytes32 _correctRoot) public correctRoot;
+
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function moduleName() external pure returns (string memory _moduleName) {
@@ -38,7 +40,26 @@ contract RootVerificationModule is Module, IRootVerificationModule {
   }
 
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
-  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {}
+
+  function updateDisputeStatus(bytes32, IOracle.Dispute memory _dispute) external onlyOracle {
+    (,,, IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
+      decodeRequestData(_dispute.requestId);
+
+    IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
+
+    bool _won = abi.decode(_response.response, (bytes32)) != correctRoot[_dispute.requestId];
+
+    if (_won) {
+      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
+      bytes32 _correctResponseId =
+        ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(correctRoot[_dispute.requestId]));
+      ORACLE.finalize(_dispute.requestId, _correctResponseId);
+    } else {
+      ORACLE.finalize(_dispute.requestId, _dispute.responseId);
+    }
+
+    delete correctRoot[_dispute.requestId];
+  }
 
   function disputeResponse(
     bytes32 _requestId,
@@ -47,16 +68,13 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
+    (bytes memory _treeData, bytes32[] memory _leavesToInsert, ITreeVerifier _treeVerifier,,,) =
+      decodeRequestData(_requestId);
 
-    (
-      bytes32 _proposedRoot,
-      bytes32 _correctRoot,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    ) = _getDisputeData(_requestId, _response);
+    bytes32 _correctRoot = _treeVerifier.calculateRoot(_treeData, _leavesToInsert);
+    correctRoot[_requestId] = _correctRoot;
 
-    bool _won = _proposedRoot != _correctRoot;
+    bool _won = abi.decode(_response.response, (bytes32)) != _correctRoot;
 
     _dispute = IOracle.Dispute({
       disputer: _disputer,
@@ -66,44 +84,5 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
-
-    if (_won) {
-      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
-      _accountingExtension.release(_dispute.disputer, _dispute.requestId, _bondToken, _bondSize);
-      bytes32 _correctResponseId = ORACLE.proposeResponse(_disputer, _requestId, abi.encode(_correctRoot));
-      ORACLE.finalize(_requestId, _correctResponseId);
-    } else {
-      _accountingExtension.release(_dispute.proposer, _dispute.requestId, _bondToken, _bondSize);
-      ORACLE.finalize(_requestId, _responseId);
-    }
-  }
-
-  function _getDisputeData(
-    bytes32 _requestId,
-    IOracle.Response memory _response
-  )
-    internal
-    returns (
-      bytes32 _proposedRoot,
-      bytes32 _correctRoot,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    )
-  {
-    (
-      bytes memory _treeData,
-      bytes32[] memory _leavesToInsert,
-      ITreeVerifier _treeVerifier,
-      IAccountingExtension __accountingExtension,
-      IERC20 __bondToken,
-      uint256 __bondSize
-    ) = decodeRequestData(_requestId);
-
-    _proposedRoot = abi.decode(_response.response, (bytes32));
-    _correctRoot = _treeVerifier.calculateRoot(_treeData, _leavesToInsert);
-    _accountingExtension = __accountingExtension;
-    _bondToken = __bondToken;
-    _bondSize = __bondSize;
   }
 }

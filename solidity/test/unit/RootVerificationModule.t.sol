@@ -187,7 +187,6 @@ contract RootVerificationModule_UnitTest is Test {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
-    bytes32 _newResponseId = bytes32(uint256(mockId) + 2);
 
     // Mock request data
     bytes memory _requestData =
@@ -216,45 +215,6 @@ contract RootVerificationModule_UnitTest is Test {
       abi.encode(bytes32('randomRoot2'))
     );
     vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
-
-    // Mock and expect the call to pay, from¨*proposer to disputer*
-    vm.mockCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize)),
-      abi.encode()
-    );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize))
-    );
-
-    // Mock and expect the call to release, to the disputer
-    vm.mockCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
-      abi.encode()
-    );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize))
-    );
-
-    // Mock and expect the call to the oracle, proposing the response
-    vm.mockCall(
-      address(oracle),
-      abi.encodeWithSignature(
-        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(bytes32('randomRoot2'))
-      ),
-      abi.encode(_newResponseId)
-    );
-    vm.expectCall(
-      address(oracle),
-      abi.encodeWithSignature(
-        'proposeResponse(address,bytes32,bytes)', _disputer, _requestId, abi.encode(bytes32('randomRoot2'))
-      )
-    );
-
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.finalize, (_requestId, _newResponseId)), abi.encode());
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
@@ -306,19 +266,6 @@ contract RootVerificationModule_UnitTest is Test {
       _encodedCorrectRoot
     );
     vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
-
-    // Mock and expect the call to release, to the proposer
-    vm.mockCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
-      abi.encode()
-    );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
-    );
-
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.finalize, (_requestId, _responseId)), abi.encode());
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
