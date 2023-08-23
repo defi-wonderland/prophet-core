@@ -6,7 +6,7 @@ import {IFinalityModule} from './IFinalityModule.sol';
 /**
  * @title MultipleCallbackModule
  * @notice Module allowing users to make multiple calls to different contracts
- * as a result of a request being finalized. 
+ * as a result of a request being finalized.
  */
 interface IMultipleCallbackModule is IFinalityModule {
   /*///////////////////////////////////////////////////////////////

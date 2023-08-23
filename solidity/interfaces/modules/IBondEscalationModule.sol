@@ -6,23 +6,24 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBondEscalationAccounting} from '../extensions/IBondEscalationAccounting.sol';
 
 interface IBondEscalationModule is IDisputeModule {
-  event BondEscalatedForProposer(address indexed _escalator, uint256 indexed _amount);
-  event BondEscalatedForDisputer(address indexed _escalator, uint256 indexed _amount);
+  event BondEscalatedForProposer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
+  event BondEscalatedForDisputer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
+  event BondEscalationStatusUpdated(
+    bytes32 indexed _requestId, bytes32 indexed _disputeId, BondEscalationStatus _status
+  );
 
   error BondEscalationModule_BondEscalationNotOver();
-  error BondEscalationModule_DisputeCurrentlyActive();
   error BondEscalationModule_DisputeNotEscalated();
   error BondEscalationModule_MaxNumberOfEscalationsReached();
   error BondEscalationModule_BondEscalationNotSettable();
   error BondEscalationModule_ShouldBeEscalated();
   error BondEscalationModule_CanOnlyTieDuringTyingBuffer();
-  error BondEscalationModule_NotEnoughDepositedCapital();
   error BondEscalationModule_ZeroValue();
   error BondEscalationModule_BondEscalationOver();
   error BondEscalationModule_NotEscalatable();
   error BondEscalationModule_DisputeDoesNotExist();
   error BondEscalationModule_CanOnlySurpassByOnePledge();
-  error BondEscalationModule_TyingBufferNotOver();
+  error BondEscalationModule_ChallengePeriodOver();
 
   enum BondEscalationStatus {
     None,
@@ -52,7 +53,8 @@ interface IBondEscalationModule is IDisputeModule {
       uint256 _bondSize,
       uint256 _numberOfEscalations,
       uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
+      uint256 _tyingBuffer,
+      uint256 _challengePeriod
     );
 
   function fetchPledgersForDispute(bytes32 _disputeId) external view returns (address[] memory _pledgersForDispute);

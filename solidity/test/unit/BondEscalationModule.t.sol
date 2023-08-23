@@ -82,6 +82,16 @@ contract BondEscalationModule_UnitTest is Test {
   // Mock tyingBuffer
   uint256 tyingBuffer;
 
+  // Mock challengePeriod
+  uint256 challengePeriod;
+
+  // Events
+  event BondEscalatedForProposer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
+  event BondEscalatedForDisputer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
+  event BondEscalationStatusUpdated(
+    bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
+  );
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -97,6 +107,9 @@ contract BondEscalationModule_UnitTest is Test {
 
     proposer = makeAddr('proposer');
     disputer = makeAddr('disputer');
+
+    // Set to an arbitrary large value to avoid unintended reverts
+    challengePeriod = type(uint128).max;
 
     // Avoid starting at 0 for time sensitive tests
     vm.warp(123_456);
@@ -154,62 +167,17 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp;
 
     // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod);
+
+    // Setting this dispute as the one going through the bond escalation process, as the user can only
+    // dispute once before the bond escalation deadline is over, and that dispute goes through the escalation module.
+    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
     // Expect the call to revert with BondEscalationNotOver
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
-
-    // Call disputeEscalated()
-    vm.prank(address(oracle));
-    bondEscalationModule.disputeEscalated(_disputeId);
-  }
-
-  /**
-   * @notice Tests that escalateDispute reverts if a dispute is escalated during the tying buffer while the dispute going through
-   *         the bond escalation mechanism is active and the pledges are not tied.
-   *         Conditions to reach this check:
-   *                                         - The _requestId tied to the dispute tied to _disputeId must be valid (non-zero)
-   *                                         - The block.timestamp has to be > bond escalation deadline and <= end of tying buffer
-   *                                         - The status of the bond escalation mechanism has to be active
-   *                                         - The pledges must not be tied
-   */
-  function test_escalateDisputeRevertEscalationDuringTyingBufferActiveDisputeNonTiedPledges(
-    bytes32 _disputeId,
-    bytes32 _requestId
-  ) public {
-    // Assume _requestId is not zero
-    vm.assume(_requestId > 0);
-
-    // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
-    _mockDispute(_disputeId, _requestId);
-
-    // Give the tying buffer a value so it's non-zero
-    uint256 _tyingBuffer = 1000;
-
-    // Make the current timestamp be greater than the bond escalation deadline
-    uint256 _bondEscalationDeadline = block.timestamp - 1;
-
-    // Have the number of pledgers be different, meaning pledgers are not tied
-    uint256 _numForPledgers = 2;
-    uint256 _numAgainstPledgers = _numForPledgers - 1;
-
-    // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
-
-    // Set the bond escalation status of the given requestId to Active
-    bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
-
-    // Creates an array of pledgers from both sides using the number of pledgers provided and sets it as bondEscalationData
-    _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
-
-    // Expect Oracle.getDispute to be called.
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-
-    // Expect the call to revert with TyingBufferNotOver
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_TyingBufferNotOver.selector);
 
     // Call disputeEscalated()
     vm.prank(address(oracle));
@@ -246,7 +214,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
 
     // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
 
     // Set the bond escalation status of the given requestId to something different than Active
     bondEscalationModule.forTest_setBondEscalationStatus(
@@ -297,7 +265,7 @@ contract BondEscalationModule_UnitTest is Test {
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
     // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
 
     // Set the bond escalation status of the given requestId to Active
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
@@ -350,7 +318,7 @@ contract BondEscalationModule_UnitTest is Test {
     vm.warp(_bondEscalationDeadline + _tyingBuffer);
 
     // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
 
     // Set the bond escalation status of the given requestId to Active
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
@@ -363,6 +331,10 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Escalated);
 
     // Call disputeEscalated()
     vm.prank(address(oracle));
@@ -377,66 +349,29 @@ contract BondEscalationModule_UnitTest is Test {
 
   /**
    * @notice Tests that escalateDispute escalates a dispute not going through the bond escalation mechanism correctly after
-   *         the bond mechanism deadline and its buffer have gone by.
+   *         the bond mechanism deadline has gone by.
    *         Conditions for the function to succeed:
    *             - The _requestId tied to the dispute tied to _disputeId must be valid (non-zero)
-   *             - The block.timestamp has to be > bond escalation deadline + tying buffer
+   *             - The block.timestamp has to be > bond escalation deadline
    */
   function test_escalateDisputeEscalateNormalDispute(bytes32 _disputeId, bytes32 _requestId) public {
     // Assume _requestId and _disputeId are not zero
     vm.assume(_requestId > 0);
     vm.assume(_disputeId > 0);
 
+    uint256 _tyingBuffer = 1000;
+
     // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
     _mockDispute(_disputeId, _requestId);
-
-    // Set a tying buffer
-    uint256 _tyingBuffer = 1000;
 
     // Set bond escalation deadline to be the current timestamp. We will warp this.
     uint256 _bondEscalationDeadline = block.timestamp;
 
     // Warp so we are past the tying buffer period
-    vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
+    vm.warp(_bondEscalationDeadline + 1);
 
     // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
-
-    // Expect Oracle.getDispute to be called.
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-
-    // Call disputeEscalated() and expect this does not fail
-    vm.prank(address(oracle));
-    bondEscalationModule.disputeEscalated(_disputeId);
-  }
-
-  /**
-   * @notice Tests that escalateDispute escalates a dispute not going through the bond escalation mechanism correctly even during
-   *         the tying buffer if no proposed answer was dispute before the bond escalation deadline.
-   *         Conditions for the function to succeed:
-   *             - The _requestId tied to the dispute tied to _disputeId must be valid (non-zero)
-   *             - There must be no active dispute going through the bond mechanism
-   *             - The block.timestamp has to be > bond escalation deadline and <= end of tying buffer
-   */
-  function test_escalateDisputeEscalateNormalDisputeDuringTyingBuffer(bytes32 _disputeId, bytes32 _requestId) public {
-    // Assume _requestId is not zero
-    vm.assume(_requestId > 0);
-    vm.assume(_disputeId > 0);
-
-    // Creates a fake dispute and mocks Oracle.getDispute to return it when called.
-    _mockDispute(_disputeId, _requestId);
-
-    // Set a tying buffer
-    uint256 _tyingBuffer = 1000;
-
-    // Set bond escalation deadline to be the current timestamp. We will warp this.
-    uint256 _bondEscalationDeadline = block.timestamp;
-
-    // Warp so we are in the tying buffer period
-    vm.warp(_bondEscalationDeadline + _tyingBuffer);
-
-    // Populate the requestData for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -465,27 +400,21 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that disputeReponse reverts if someone tries to dispute while there's an active dispute going through the
-   *         bond escalation mechanism and the bond escalation deadline has not finished.
-   *         Conditions to reach this check:
-   *             - Current timestamp must be <= bond escalation deadline
-   *             - bond escalation status == Active
+   * @notice Tests that disputeResponse reverts if the challenge period for the response is over.
    */
-  function test_disputeResponseRevertIfBondEscalatedDisputeCurrentlyActive(
-    bytes32 _requestId,
-    bytes32 _responseId
-  ) public {
-    //  Set deadline to timestamp so we are still in the bond escalation period
-    uint256 _bondEscalationDeadline = block.timestamp;
+  function test_disputeResponseRevertIfChallengingPeriodIsOver(bytes32 _requestId, bytes32 _responseId) public {
+    uint256 _challengePeriod = 1;
 
-    // Set the request data for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, _challengePeriod);
 
-    // Set bond escalation status to Active
-    bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
+    _mockResponse(_responseId, _requestId);
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
+
+    // Warp to a time after the challengePeriod is over.
+    vm.warp(block.timestamp + _challengePeriod + 1);
 
     vm.prank(address(oracle));
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_DisputeCurrentlyActive.selector);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ChallengePeriodOver.selector);
     bondEscalationModule.disputeResponse(_requestId, _responseId, disputer, proposer);
   }
 
@@ -500,7 +429,10 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
 
     // Set the request data for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod);
+
+    _mockResponse(_responseId, _requestId);
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
 
     vm.mockCall(
       address(accounting),
@@ -525,7 +457,10 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp;
 
     // Set the request data for the given requestId
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod);
+    _mockResponse(_responseId, _requestId);
+
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
 
     vm.mockCall(
       address(accounting),
@@ -533,12 +468,16 @@ contract BondEscalationModule_UnitTest is Test {
       abi.encode(true)
     );
 
-    bytes32 _expectedDisputeId = keccak256(abi.encodePacked(disputer, _requestId));
+    bytes32 _expectedDisputeId = keccak256(abi.encodePacked(disputer, _requestId, _responseId));
 
     vm.prank(address(oracle));
     vm.expectCall(
       address(accounting), abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize))
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _expectedDisputeId, IBondEscalationModule.BondEscalationStatus.Active);
 
     bondEscalationModule.disputeResponse(_requestId, _responseId, disputer, proposer);
 
@@ -581,7 +520,7 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
 
     vm.mockCall(
       address(accounting),
@@ -614,7 +553,7 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
 
     vm.mockCall(
       address(accounting),
@@ -651,7 +590,7 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
 
     uint256 _numForPledgers = 0;
     uint256 _numAgainstPledgers = 0;
@@ -710,7 +649,9 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    uint256 _bondSize = 1000;
+
+    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
 
     uint256 _numForPledgers = 2;
     uint256 _numAgainstPledgers = 2;
@@ -728,40 +669,46 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize)),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, _bondSize)),
       abi.encode(true)
     );
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, _bondSize)),
       abi.encode(true)
     );
 
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _winningForPledgers, token, bondSize)
+        IBondEscalationAccounting.payWinningPledgers,
+        (_requestId, _disputeId, _winningForPledgers, token, _bondSize << 1)
       ),
       abi.encode(true)
     );
 
     vm.expectCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize))
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, _bondSize))
     );
 
     vm.expectCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, _bondSize))
     );
 
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _winningForPledgers, token, bondSize)
+        IBondEscalationAccounting.payWinningPledgers,
+        (_requestId, _disputeId, _winningForPledgers, token, _bondSize << 1)
       )
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerWon);
 
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
@@ -786,7 +733,9 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    uint256 _bondSize = 1000;
+
+    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
 
     uint256 _numForPledgers = 2;
     uint256 _numAgainstPledgers = 2;
@@ -805,40 +754,46 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize)),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, _bondSize)),
       abi.encode(true)
     );
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize)),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, _bondSize)),
       abi.encode(true)
     );
 
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _winningAgainstPledgers, token, bondSize)
+        IBondEscalationAccounting.payWinningPledgers,
+        (_requestId, _disputeId, _winningAgainstPledgers, token, _bondSize << 1)
       ),
       abi.encode(true)
     );
 
     vm.expectCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize))
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, _bondSize))
     );
 
     vm.expectCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize))
+      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, _bondSize))
     );
 
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _winningAgainstPledgers, token, bondSize)
+        IBondEscalationAccounting.payWinningPledgers,
+        (_requestId, _disputeId, _winningAgainstPledgers, token, _bondSize << 1)
       )
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerLost);
 
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
@@ -886,7 +841,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     uint256 _bondSize = 1;
 
-    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
@@ -902,7 +857,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     uint256 _maxNumberOfEscalations = 1;
 
-    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
@@ -923,7 +878,9 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
@@ -942,7 +899,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
@@ -970,7 +929,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _maxNumberOfEscalations = 3;
     uint256 _bondEscalationDeadline = block.timestamp + 1;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers - 1;
@@ -999,7 +960,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
@@ -1007,39 +970,6 @@ contract BondEscalationModule_UnitTest is Test {
     _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
-    bondEscalationModule.pledgeForDispute(_disputeId);
-  }
-
-  /**
-   * @notice Tests that pledgeForDispute reverts if pledger didn't deposit enough funds before making his pledge
-   */
-  function test_pledgeForDisputeRevertIfPledgerDoesntHaveEnoughBalanceDeposited(
-    bytes32 _disputeId,
-    bytes32 _requestId
-  ) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _bondSize = 1000;
-    uint256 _maxNumberOfEscalations = 3;
-    uint256 _bondEscalationDeadline = block.timestamp - 1;
-    uint256 _tyingBuffer = 1000;
-
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
-
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers + 1;
-
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
-
-    vm.mockCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)), abi.encode(999)
-    );
-    vm.expectCall(address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)));
-
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEnoughDepositedCapital.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
 
@@ -1057,17 +987,14 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers + 1;
 
     _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
-
-    vm.mockCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)), abi.encode(1001)
-    );
-    vm.expectCall(address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)));
 
     vm.mockCall(
       address(accounting),
@@ -1078,6 +1005,10 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IBondEscalationAccounting.pledge, (address(this), _requestId, _disputeId, token, _bondSize))
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalatedForDisputer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeForDispute(_disputeId);
     address[] memory _pledgersForDispute = bondEscalationModule.fetchPledgersForDispute(_disputeId);
@@ -1125,7 +1056,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     uint256 _bondSize = 1;
 
-    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
@@ -1141,7 +1072,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     uint256 _maxNumberOfEscalations = 1;
 
-    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
@@ -1162,7 +1093,9 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
@@ -1184,7 +1117,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
@@ -1212,7 +1147,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _maxNumberOfEscalations = 3;
     uint256 _bondEscalationDeadline = block.timestamp + 1;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod
+    );
 
     uint256 numAgainstPledgers = 2;
     uint256 numForPledgers = numAgainstPledgers - 1;
@@ -1241,7 +1178,9 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
@@ -1249,39 +1188,6 @@ contract BondEscalationModule_UnitTest is Test {
     _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
-    bondEscalationModule.pledgeAgainstDispute(_disputeId);
-  }
-
-  /**
-   * @notice Tests that pledgeAgainstDispute reverts if pledger didn't deposit enough funds before making his pledge
-   */
-  function test_pledgeAgainstDisputeRevertIfPledgerDoesntHaveEnoughBalanceDeposited(
-    bytes32 _disputeId,
-    bytes32 _requestId
-  ) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _bondSize = 1000;
-    uint256 _maxNumberOfEscalations = 3;
-    uint256 _bondEscalationDeadline = block.timestamp - 1;
-    uint256 _tyingBuffer = 1000;
-
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
-
-    uint256 numAgainstPledgers = 2;
-    uint256 numForPledgers = numAgainstPledgers + 1;
-
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
-
-    vm.mockCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)), abi.encode(999)
-    );
-    vm.expectCall(address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)));
-
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEnoughDepositedCapital.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
 
@@ -1299,17 +1205,14 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondEscalationDeadline = block.timestamp - 1;
     uint256 _tyingBuffer = 1000;
 
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
+    );
 
     uint256 numAgainstPledgers = 2;
     uint256 numForPledgers = numAgainstPledgers + 1;
 
     _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
-
-    vm.mockCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)), abi.encode(1001)
-    );
-    vm.expectCall(address(accounting), abi.encodeCall(IAccountingExtension.balanceOf, (address(this), token)));
 
     vm.mockCall(
       address(accounting),
@@ -1320,6 +1223,10 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IBondEscalationAccounting.pledge, (address(this), _requestId, _disputeId, token, _bondSize))
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalatedForProposer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
     address[] memory _pledgersAgainstDispute = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
@@ -1337,7 +1244,7 @@ contract BondEscalationModule_UnitTest is Test {
    */
   function test_settleBondEscalationRevertIfTimestampLessThanEndOfTyingBuffer(bytes32 _requestId) public {
     uint256 _bondEscalationDeadline = block.timestamp;
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
     bondEscalationModule.settleBondEscalation(_requestId);
   }
@@ -1352,7 +1259,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.None);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotSettable.selector);
     bondEscalationModule.settleBondEscalation(_requestId);
@@ -1368,7 +1275,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
@@ -1394,7 +1301,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, _bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, _bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
@@ -1403,7 +1310,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     (address[] memory _pledgersForDispute,) = _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
 
-    uint256 _amountToPay = (_numAgainstPledgers * _bondSize) / _numForPledgers;
+    uint256 _amountToPay = _bondSize + (_numAgainstPledgers * _bondSize) / _numForPledgers;
 
     vm.mockCall(
       address(accounting),
@@ -1418,6 +1325,10 @@ contract BondEscalationModule_UnitTest is Test {
         IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _pledgersForDispute, token, _amountToPay)
       )
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerWon);
 
     bondEscalationModule.settleBondEscalation(_requestId);
     assertEq(
@@ -1438,7 +1349,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
 
-    _setRequestData(_requestId, _bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(_requestId, _bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
@@ -1448,7 +1359,7 @@ contract BondEscalationModule_UnitTest is Test {
     (, address[] memory _pledgersAgainstDispute) =
       _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
 
-    uint256 _amountToPay = (_numForPledgers * _bondSize) / _numAgainstPledgers;
+    uint256 _amountToPay = _bondSize + (_numForPledgers * _bondSize) / _numAgainstPledgers;
 
     vm.mockCall(
       address(accounting),
@@ -1465,6 +1376,10 @@ contract BondEscalationModule_UnitTest is Test {
         (_requestId, _disputeId, _pledgersAgainstDispute, token, _amountToPay)
       )
     );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerLost);
 
     bondEscalationModule.settleBondEscalation(_requestId);
     assertEq(
@@ -1484,16 +1399,20 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondSize,
     uint256 _maxNumberOfEscalations,
     uint256 _bondEscalationDeadline,
-    uint256 _tyingBuffer
+    uint256 _tyingBuffer,
+    uint256 _challengePeriod
   ) public {
-    _setRequestData(_requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    _setRequestData(
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _challengePeriod
+    );
     (
       IBondEscalationAccounting _accounting,
       IERC20 _token,
       uint256 __bondSize,
       uint256 __maxNumberOfEscalations,
       uint256 __bondEscalationDeadline,
-      uint256 __tyingBuffer
+      uint256 __tyingBuffer,
+      uint256 __challengePeriod
     ) = bondEscalationModule.decodeRequestData(_requestId);
     assertEq(address(accounting), address(_accounting));
     assertEq(address(token), address(_token));
@@ -1501,6 +1420,7 @@ contract BondEscalationModule_UnitTest is Test {
     assertEq(_maxNumberOfEscalations, __maxNumberOfEscalations);
     assertEq(_bondEscalationDeadline, __bondEscalationDeadline);
     assertEq(_tyingBuffer, __tyingBuffer);
+    assertEq(_challengePeriod, __challengePeriod);
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -1551,10 +1471,12 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _bondSize,
     uint256 _maxNumberOfEscalations,
     uint256 _bondEscalationDeadline,
-    uint256 _tyingBuffer
+    uint256 _tyingBuffer,
+    uint256 _challengePeriod
   ) internal {
-    bytes memory _data =
-      abi.encode(accounting, token, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer);
+    bytes memory _data = abi.encode(
+      accounting, token, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _challengePeriod
+    );
     bondEscalationModule.forTest_setRequestData(_requestId, _data);
   }
 
@@ -1569,6 +1491,18 @@ contract BondEscalationModule_UnitTest is Test {
     });
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_dispute));
+  }
+
+  function _mockResponse(bytes32 _responseId, bytes32 _requestId) internal {
+    IOracle.Response memory _response = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: proposer,
+      requestId: _requestId,
+      disputeId: 0,
+      response: abi.encode(bytes32('response'))
+    });
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_response));
   }
 
   function _getRandomDispute(

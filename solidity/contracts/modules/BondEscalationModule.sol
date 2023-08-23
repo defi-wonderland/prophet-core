@@ -6,15 +6,12 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBondEscalationModule} from '../../interfaces/modules/IBondEscalationModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
+import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 import {Module} from '../Module.sol';
 
-// TODO: Design: define whether to include a challenging period to avoid cheap non-conclusive answer attack.
-// TODO: Optimizations
 contract BondEscalationModule is Module, IBondEscalationModule {
   mapping(bytes32 _disputeId => BondEscalationData) internal _bondEscalationData;
-
-  // Note: bondEscalationStatus can also be part of _bondEscalationData if needed
   mapping(bytes32 _requestId => BondEscalationStatus _status) public bondEscalationStatus;
   mapping(bytes32 _requestId => bytes32 _disputeId) public escalatedDispute;
 
@@ -25,12 +22,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   /**
-   * @notice Verifies that the escalated dispute has reached a tie and updates its escalation status.
-   *
-   * @dev If the bond escalation window is over and the dispute is the first dispute of the request,
-   *      It will check whether the dispute has been previously escalated, and if it hasn't, it will
-   *      check if the dispute is tied. If it's tied, it will escalate the dispute.
-   *      If it's not the first dispute of the request, it will escalate the dispute.
+   * @notice Verifies whether the dispute going through the bond escalation mechanism has reached a tie and
+   *         updates its escalation status accordingly.
    *
    * @param _disputeId The ID of the dispute to escalate.
    */
@@ -39,24 +32,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     if (_dispute.requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
 
-    (,,,, uint256 _bondEscalationDeadline, uint256 _tyingBuffer) = decodeRequestData(_dispute.requestId);
-
-    // If the bond escalation deadline is not over, no dispute can be escalated
-    if (block.timestamp <= _bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
-
-    BondEscalationStatus _status = bondEscalationStatus[_dispute.requestId];
-    BondEscalationData storage __bondEscalationData = _bondEscalationData[_disputeId];
-
-    // If we are in the tying buffer period, the dispute is active, and the dispute is not tied, then no dispute can be escalated
-    if (
-      block.timestamp > _bondEscalationDeadline && block.timestamp <= _bondEscalationDeadline + _tyingBuffer
-        && _status == BondEscalationStatus.Active
-        && __bondEscalationData.pledgersForDispute.length != __bondEscalationData.pledgersAgainstDispute.length
-    ) revert BondEscalationModule_TyingBufferNotOver();
-
-    // if we are past the deadline, and this is the first dispute of the request
     if (_disputeId == escalatedDispute[_dispute.requestId]) {
-      // revert if the dispute is not tied, or if it's not active
+      (,,,, uint256 _bondEscalationDeadline,,) = decodeRequestData(_dispute.requestId);
+      if (block.timestamp <= _bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
+
+      BondEscalationStatus _status = bondEscalationStatus[_dispute.requestId];
+      BondEscalationData storage __bondEscalationData = _bondEscalationData[_disputeId];
+
       if (
         _status != BondEscalationStatus.Active
           || __bondEscalationData.pledgersForDispute.length != __bondEscalationData.pledgersAgainstDispute.length
@@ -65,6 +47,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       }
 
       bondEscalationStatus[_dispute.requestId] = BondEscalationStatus.Escalated;
+      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
     }
   }
 
@@ -93,20 +76,21 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       ,
       uint256 _bondEscalationDeadline,
+      ,
+      uint256 _challengePeriod
     ) = decodeRequestData(_requestId);
 
-    // if the bond escalation is not over and there's an active dispute going through it, revert
-    if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.Active) {
-      revert BondEscalationModule_DisputeCurrentlyActive();
+    IOracle.Response memory _response = ORACLE.getResponse(_responseId);
+    if (block.timestamp > _response.createdAt + _challengePeriod) {
+      revert BondEscalationModule_ChallengePeriodOver();
     }
 
-    // if the bond escalation is not over and this is the first dispute of the request
     if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.None) {
-      // start the bond escalation process
       bondEscalationStatus[_requestId] = BondEscalationStatus.Active;
-      // TODO: this imitates the way _disputeId is calculated on the Oracle, it must always match
-      bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId));
+      // Note: this imitates the way _disputeId is calculated on the Oracle, it must always match
+      bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId, _responseId));
       escalatedDispute[_requestId] = _disputeId;
+      emit BondEscalationStatusUpdated(_requestId, _disputeId, BondEscalationStatus.Active);
     }
 
     _dispute = IOracle.Dispute({
@@ -122,7 +106,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external onlyOracle {
-    (IBondEscalationAccounting _accountingExtension, IERC20 _bondToken, uint256 _bondSize,,,) =
+    (IBondEscalationAccounting _accountingExtension, IERC20 _bondToken, uint256 _bondSize,,,,) =
       decodeRequestData(_dispute.requestId);
 
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
@@ -152,16 +136,18 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         return;
       }
 
-      bondEscalationStatus[_dispute.requestId] =
-        _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
+      BondEscalationStatus _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
-      // TODO: Note - No need for deletion as the data availability is useful. However, consider that the arrays can be deleted in the future for refunds if needed
+      bondEscalationStatus[_dispute.requestId] = _newStatus;
+
+      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
+
       _accountingExtension.payWinningPledgers(
         _dispute.requestId,
         _disputeId,
         _won ? __bondEscalationData.pledgersForDispute : __bondEscalationData.pledgersAgainstDispute,
         _bondToken,
-        _bondSize
+        _bondSize << 1
       );
     }
   }
@@ -197,7 +183,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       uint256 _maxNumberOfEscalations,
       uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
+      uint256 _tyingBuffer,
     ) = decodeRequestData(_dispute.requestId);
 
     if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
@@ -222,15 +208,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
-    if (_accountingExtension.balanceOf(msg.sender, _bondToken) < _bondSize) {
-      revert BondEscalationModule_NotEnoughDepositedCapital();
-    }
-
-    // TODO: this duplicates users -- see if this can be optimized with a different data structure
     _bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
 
     _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
-    emit BondEscalatedForDisputer(msg.sender, _bondSize);
+
+    emit BondEscalatedForDisputer(_disputeId, msg.sender, _bondSize);
   }
 
   /**
@@ -261,7 +243,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       uint256 _maxNumberOfEscalations,
       uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
+      uint256 _tyingBuffer,
     ) = decodeRequestData(_dispute.requestId);
 
     if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
@@ -286,15 +268,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
-    if (_accountingExtension.balanceOf(msg.sender, _bondToken) < _bondSize) {
-      revert BondEscalationModule_NotEnoughDepositedCapital();
-    }
-
-    // TODO: this duplicates users -- see if this can be optimized with a different data structure
     _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
 
     _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
-    emit BondEscalatedForProposer(msg.sender, _bondSize);
+
+    emit BondEscalatedForProposer(_disputeId, msg.sender, _bondSize);
   }
 
   /**
@@ -312,7 +290,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       ,
       uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
+      uint256 _tyingBuffer,
     ) = decodeRequestData(_requestId);
 
     if (block.timestamp <= _bondEscalationDeadline + _tyingBuffer) {
@@ -334,18 +312,20 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     bool _disputersWon = _pledgersForDispute.length > _pledgersAgainstDispute.length;
 
-    // TODO: check if there's an issue with division flooring the value
     uint256 _amountToPay = _disputersWon
-      ? (_pledgersAgainstDispute.length * _bondSize) / _pledgersForDispute.length
-      : (_pledgersForDispute.length * _bondSize) / _pledgersAgainstDispute.length;
+      ? _bondSize + FixedPointMathLib.mulDivDown(_pledgersAgainstDispute.length, _bondSize, _pledgersForDispute.length)
+      : _bondSize + FixedPointMathLib.mulDivDown(_pledgersForDispute.length, _bondSize, _pledgersAgainstDispute.length);
 
-    bondEscalationStatus[_requestId] =
+    BondEscalationStatus _newStatus =
       _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
+
+    bondEscalationStatus[_requestId] = _newStatus;
+
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, _newStatus);
 
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
     //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
     //                   Another approach is correct parameters (low number of escalations and higher amount bonded)
-    // TODO: Note - No need for deletion as the data availability is useful. However, consider that the arrays can be deleted in the future for refunds if needed
     _accountingExtension.payWinningPledgers(
       _requestId, _disputeId, _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute, _bondToken, _amountToPay
     );
@@ -378,11 +358,21 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       uint256 _bondSize,
       uint256 _maxNumberOfEscalations,
       uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer
+      uint256 _tyingBuffer,
+      uint256 _challengePeriod
     )
   {
-    (_accountingExtension, _bondToken, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer) =
-      abi.decode(requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
+    (
+      _accountingExtension,
+      _bondToken,
+      _bondSize,
+      _maxNumberOfEscalations,
+      _bondEscalationDeadline,
+      _tyingBuffer,
+      _challengePeriod
+    ) = abi.decode(
+      requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256, uint256)
+    );
   }
 
   /**

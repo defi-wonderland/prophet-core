@@ -7,7 +7,7 @@ import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 /**
- * @title ContractCallRequestModule 
+ * @title ContractCallRequestModule
  * @notice Request module for making contract calls
  */
 interface IContractCallRequestModule is IRequestModule {

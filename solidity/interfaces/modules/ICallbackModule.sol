@@ -6,7 +6,7 @@ import {IFinalityModule} from './IFinalityModule.sol';
 /**
  * @title CallbackModule
  * @notice Module allowing users to call a function on a contract
- * as a result of a request being finalized. 
+ * as a result of a request being finalized.
  */
 interface ICallbackModule is IFinalityModule {
   /*///////////////////////////////////////////////////////////////
