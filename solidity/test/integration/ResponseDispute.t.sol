@@ -104,7 +104,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     oracle.finalize(_requestId, _responseId);
 
     vm.prank(disputer);
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _responseId));
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     oracle.disputeResponse(_requestId, _responseId);
   }
 

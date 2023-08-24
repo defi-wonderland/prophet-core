@@ -139,4 +139,20 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.prank(proposer);
     oracle.deleteResponse(_responseId);
   }
+
+  function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
+    vm.assume(_timestamp > _expectedDeadline);
+
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+
+    vm.warp(_timestamp);
+    oracle.finalize(_requestId, _responseId);
+
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
+    vm.prank(proposer);
+    oracle.proposeResponse(_requestId, _responseData);
+  }
 }

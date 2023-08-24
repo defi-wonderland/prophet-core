@@ -112,6 +112,9 @@ contract Oracle is IOracle {
     Request memory _request,
     bytes calldata _responseData
   ) internal returns (bytes32 _responseId) {
+    if (_request.finalizedAt != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
+    }
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
     _responseIds[_requestId].push(_responseId);
@@ -157,18 +160,17 @@ contract Oracle is IOracle {
    * @param _responseId The id of the response being disputer
    */
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
+    Request memory _request = _requests[_requestId];
+    if (_request.finalizedAt != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
+    }
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
-    Request memory _request = _requests[_requestId];
-    Response storage _response = _responses[_responseId];
 
+    Response storage _response = _responses[_responseId];
     if (_response.requestId != _requestId || _response.createdAt == 0) {
       revert Oracle_InvalidResponseId(_responseId);
-    }
-
-    if (_finalizedResponses[_requestId].createdAt != 0) {
-      revert Oracle_AlreadyFinalized(_responseId);
     }
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
