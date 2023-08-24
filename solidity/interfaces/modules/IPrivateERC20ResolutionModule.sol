@@ -52,7 +52,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Thrown when we the dispute has not been escalated
+   * @notice Thrown when the dispute has not been escalated
    */
   error PrivateERC20ResolutionModule_DisputeNotEscalated();
 

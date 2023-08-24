@@ -11,13 +11,15 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 contract AccountingExtension is IAccountingExtension {
   using SafeERC20 for IERC20;
 
+  /// @inheritdoc IAccountingExtension
   IWETH9 public immutable WETH;
+  /// @inheritdoc IAccountingExtension
   IOracle public immutable ORACLE;
 
-  // The available balance (ie deposit - amount currently bonded in a process), per depositor and per oracle
+  /// @inheritdoc IAccountingExtension
   mapping(address _bonder => mapping(IERC20 _token => uint256 _balance)) public balanceOf;
 
-  // The amount in a bond (request, dispute)
+  /// @inheritdoc IAccountingExtension
   mapping(address _bonder => mapping(IERC20 _token => mapping(bytes32 _requestId => uint256 _amount))) public
     bondedAmountOf;
 
@@ -26,22 +28,24 @@ contract AccountingExtension is IAccountingExtension {
     ORACLE = _oracle;
   }
 
+  /**
+   * @notice Checks that the caller is ORACLE.
+   */
   modifier onlyOracle() {
     if (msg.sender != address(ORACLE)) revert AccountingExtension_OnlyOracle();
     _;
   }
 
+  /**
+   * @notice Checks that the caller is a valid module used in the request.
+   */
   modifier onlyValidModule(bytes32 _requestId) {
     if (!ORACLE.validModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
     _;
   }
 
-  // deposit transfers the funds from the caller into the contract and increases the caller’s virtual balance,
-  // thus allowing them to take part in providing responses, voting or the bond escalation processes.
-  // As the bonding module will be shared between all requests, the users will not have to constantly transfer
-  // the funds in and out to interact with OpOO.
+  /// @inheritdoc IAccountingExtension
   function deposit(IERC20 _token, uint256 _amount) external payable {
-    // If ETH, wrap:
     if (msg.value != 0) {
       _token = IERC20(address(WETH));
       _amount = msg.value;
@@ -55,13 +59,12 @@ contract AccountingExtension is IAccountingExtension {
     emit Deposited(msg.sender, _token, _amount);
   }
 
-  // withdraw returns the user’s funds, adding any payments for provided responses and subtracting the slashed amounts.
+  /// @inheritdoc IAccountingExtension
   function withdraw(IERC20 _token, uint256 _amount) external {
     uint256 _balance = balanceOf[msg.sender][_token];
 
     if (_balance < _amount) revert AccountingExtension_InsufficientFunds();
 
-    // We checked supra
     unchecked {
       balanceOf[msg.sender][_token] -= _amount;
     }
@@ -71,7 +74,7 @@ contract AccountingExtension is IAccountingExtension {
     emit Withdrew(msg.sender, _token, _amount);
   }
 
-  // pay is the function by which the user's virtual balance amount is increased, often as a result of submitting correct responses, winning disputes, etc
+  /// @inheritdoc IAccountingExtension
   function pay(
     bytes32 _requestId,
     address _payer,
@@ -88,10 +91,10 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_payer][_token][_requestId] -= _amount;
     }
 
-    emit Paid(_receiver, _payer, _token, _amount);
+    emit Paid(_requestId, _receiver, _payer, _token, _amount);
   }
 
-  // Bond an amount for a request or a dispute
+  /// @inheritdoc IAccountingExtension
   function bond(
     address _bonder,
     bytes32 _requestId,
@@ -105,10 +108,10 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_bonder][_token][_requestId] += _amount;
     }
 
-    emit Bonded(_bonder, _token, _amount);
+    emit Bonded(_requestId, _bonder, _token, _amount);
   }
 
-  // Unbond an amount after a request is finalised/dispute is resolved
+  /// @inheritdoc IAccountingExtension
   function release(
     address _bonder,
     bytes32 _requestId,
@@ -122,8 +125,6 @@ contract AccountingExtension is IAccountingExtension {
       balanceOf[_bonder][_token] += _amount;
     }
 
-    emit Released(_bonder, _token, _amount);
+    emit Released(_requestId, _bonder, _token, _amount);
   }
-
-  receive() external payable {}
 }

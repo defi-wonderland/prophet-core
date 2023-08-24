@@ -21,9 +21,11 @@ contract AccountingExtension_UnitTest is Test {
   // Events tested
   event Deposited(address indexed _depositor, IERC20 indexed token, uint256 _amount);
   event Withdrew(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Paid(address indexed _beneficiary, address indexed _payer, IERC20 indexed token, uint256 _amount);
-  event Bonded(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Released(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Paid(
+    bytes32 indexed _requestId, address indexed _beneficiary, address indexed _payer, IERC20 token, uint256 _amount
+  );
+  event Bonded(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Released(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed token, uint256 _amount);
 
   // The target contract
   AccountingExtension public module;
@@ -177,7 +179,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Paid(_receiver, _payer, token, _amount);
+    emit Paid(_requestId, _receiver, _payer, token, _amount);
 
     vm.prank(_sender);
     module.pay(_requestId, _payer, _receiver, token, _amount);
@@ -260,7 +262,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Bonded(_bonder, token, _amount);
+    emit Bonded(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
     module.bond(_bonder, _requestId, token, _amount);
@@ -337,7 +339,7 @@ contract AccountingExtension_UnitTest is Test {
 
     // check: event
     vm.expectEmit(true, true, true, true, address(module));
-    emit Released(_bonder, token, _amount);
+    emit Released(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
     module.release(_bonder, _requestId, token, _amount);
