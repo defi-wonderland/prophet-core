@@ -259,32 +259,57 @@ contract Oracle is IOracle {
   }
 
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
-    if (_finalizedResponses[_requestId].createdAt != 0) {
+    Request storage _request = _requests[_requestId];
+    if (_request.finalizedAt != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
-
-    Request memory _request = _requests[_requestId];
-    Response storage _response = _responses[_finalizedResponseId];
-
+    Response memory _response = _responses[_finalizedResponseId];
     if (_response.requestId != _requestId || _response.createdAt == 0) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
-
     DisputeStatus _disputeStatus = _disputes[disputeOf[_finalizedResponseId]].status;
     if (_disputeStatus == DisputeStatus.Active || _disputeStatus == DisputeStatus.Won) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
 
     _finalizedResponses[_requestId] = _response;
+    _request.finalizedAt = block.timestamp;
+    _finalize(_requestId, _request);
+  }
 
+  function finalize(bytes32 _requestId) external {
+    Request storage _request = _requests[_requestId];
+    if (_request.finalizedAt != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
+    }
+    uint256 _responsesAmount = _responseIds[_requestId].length;
+
+    if (_responsesAmount != 0) {
+      for (uint256 _i = 0; _i < _responsesAmount;) {
+        bytes32 _responseId = _responseIds[_requestId][_i];
+        bytes32 _disputeId = disputeOf[_responseId];
+        DisputeStatus _disputeStatus = _disputes[_disputeId].status;
+
+        if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
+          revert Oracle_CannotFinalizeWithActiveDispute();
+        }
+
+        unchecked {
+          ++_i;
+        }
+      }
+    }
+    _request.finalizedAt = block.timestamp;
+    _finalize(_requestId, _request);
+  }
+
+  function _finalize(bytes32 _requestId, Request memory _request) internal {
     if (address(_request.finalityModule) != address(0)) {
       _request.finalityModule.finalizeRequest(_requestId, msg.sender);
     }
-
     if (address(_request.resolutionModule) != address(0)) {
       _request.resolutionModule.finalizeRequest(_requestId, msg.sender);
     }
-
     _request.disputeModule.finalizeRequest(_requestId, msg.sender);
     _request.responseModule.finalizeRequest(_requestId, msg.sender);
     _request.requestModule.finalizeRequest(_requestId, msg.sender);
@@ -306,7 +331,8 @@ contract Oracle is IOracle {
       finalityModule: _request.finalityModule,
       requester: msg.sender,
       nonce: _requestNonce,
-      createdAt: block.timestamp
+      createdAt: block.timestamp,
+      finalizedAt: 0
     });
 
     _requests[_requestId] = _storedRequest;
@@ -348,6 +374,7 @@ contract Oracle is IOracle {
       requester: _storedRequest.requester,
       nonce: _storedRequest.nonce,
       createdAt: _storedRequest.createdAt,
+      finalizedAt: _storedRequest.finalizedAt,
       requestId: _requestId
     });
   }

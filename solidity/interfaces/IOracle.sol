@@ -31,8 +31,8 @@ interface IOracle {
   error Oracle_CannotDispute(bytes32 _responseId);
   error Oracle_CannotDeleteWhileDisputing(bytes32 _responseId);
   error Oracle_CannotDeleteInvalidProposer(address _proposer);
+  error Oracle_CannotFinalizeWithActiveDispute();
 
-  // stored request
   struct Request {
     bytes32 ipfsHash;
     IRequestModule requestModule;
@@ -43,6 +43,7 @@ interface IOracle {
     address requester;
     uint256 nonce;
     uint256 createdAt;
+    uint256 finalizedAt;
   }
 
   // Request as sent by users
@@ -76,6 +77,7 @@ interface IOracle {
     address requester;
     uint256 nonce;
     uint256 createdAt;
+    uint256 finalizedAt;
     bytes32 requestId;
   }
 

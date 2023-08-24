@@ -939,6 +939,53 @@ contract Oracle_UnitTest is Test {
     oracle.finalize(_requestId, _responseId);
   }
 
+  /**
+   * @notice Test finalize mocks and expects call
+   *
+   * @dev    The request might or might not use a dispute and a finality module, this is fuzzed
+   */
+  function test_finalize_withoutResponses(bool _useResolutionAndFinality, address _caller) public {
+    // Create mock request and store it
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+
+    bytes32 _requestId = _dummyRequestIds[0];
+
+    if (!_useResolutionAndFinality) {
+      disputeModule = IDisputeModule(address(0));
+      finalityModule = IFinalityModule(address(0));
+    }
+
+    // mock and expect the finalize request in requestModule
+    vm.mockCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(requestModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
+
+    // mock and expect the finalize request in responseModule
+    vm.mockCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(responseModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
+
+    // mock and expect the finalize request in resolutionModule
+    vm.mockCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+    vm.expectCall(address(resolutionModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
+
+    if (_useResolutionAndFinality) {
+      // mock and expect the call to disputeModule
+      vm.mockCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+      vm.expectCall(address(disputeModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
+
+      // mock and expect the call to finalityModule
+      vm.mockCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)), abi.encode());
+      vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
+    }
+
+    // Check: emits RequestFinalized event?
+    vm.expectEmit(true, true, true, true);
+    emit Oracle_RequestFinalized(_caller, _requestId);
+
+    // Test: finalize the request
+    vm.prank(_caller);
+    oracle.finalize(_requestId);
+  }
+
   function test_totalRequestCount(uint256 _requestsToAdd) public {
     _requestsToAdd = bound(_requestsToAdd, 1, 10);
     uint256 _initialCount = oracle.totalRequestCount();
