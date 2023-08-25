@@ -86,8 +86,8 @@ contract BondEscalationModule_UnitTest is Test {
   uint256 challengePeriod;
 
   // Events
-  event BondEscalatedForProposer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
-  event BondEscalatedForDisputer(bytes32 indexed _disputeId, address indexed _escalator, uint256 indexed _amount);
+  event PledgedInFavorOfDisputer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
+  event PledgedInFavorOfProposer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
   event BondEscalationStatusUpdated(
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
@@ -1008,7 +1008,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Expect event
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit BondEscalatedForDisputer(_disputeId, address(this), _bondSize);
+    emit PledgedInFavorOfDisputer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeForDispute(_disputeId);
     address[] memory _pledgersForDispute = bondEscalationModule.fetchPledgersForDispute(_disputeId);
@@ -1226,7 +1226,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Expect event
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit BondEscalatedForProposer(_disputeId, address(this), _bondSize);
+    emit PledgedInFavorOfProposer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
     address[] memory _pledgersAgainstDispute = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
@@ -1261,7 +1261,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod);
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.None);
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotSettable.selector);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationCantBeSettled.selector);
     bondEscalationModule.settleBondEscalation(_requestId);
   }
 

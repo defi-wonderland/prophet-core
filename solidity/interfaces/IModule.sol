@@ -9,5 +9,11 @@ interface IModule is IModuleData {
 
   function setupRequest(bytes32 _requestId, bytes calldata _data) external;
   function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+
+  /**
+   * @notice Returns the name of the module.
+   *
+   * @return _moduleName The name of the module.
+   */
   function moduleName() external view returns (string memory _moduleName);
 }
