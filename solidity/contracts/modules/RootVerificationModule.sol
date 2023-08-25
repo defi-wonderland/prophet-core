@@ -15,7 +15,10 @@ import {Module} from '../Module.sol';
 contract RootVerificationModule is Module, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;
 
-  mapping(bytes32 _requestId => bytes32 _correctRoot) public correctRoot;
+  /**
+   * @notice The calculated correct root for a given request
+   */
+  mapping(bytes32 _requestId => bytes32 _correctRoot) internal _correctRoots;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -23,6 +26,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     return 'RootVerificationModule';
   }
 
+  /// @inheritdoc IRootVerificationModule
   function decodeRequestData(bytes32 _requestId)
     public
     view
@@ -39,28 +43,31 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       abi.decode(requestData[_requestId], (bytes, bytes32[], ITreeVerifier, IAccountingExtension, IERC20, uint256));
   }
 
+  /// @inheritdoc IRootVerificationModule
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
+  /// @inheritdoc IRootVerificationModule
   function updateDisputeStatus(bytes32, IOracle.Dispute memory _dispute) external onlyOracle {
     (,,, IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
       decodeRequestData(_dispute.requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
 
-    bool _won = abi.decode(_response.response, (bytes32)) != correctRoot[_dispute.requestId];
+    bool _won = abi.decode(_response.response, (bytes32)) != _correctRoots[_dispute.requestId];
 
     if (_won) {
       _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
       bytes32 _correctResponseId =
-        ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(correctRoot[_dispute.requestId]));
+        ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctRoots[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);
     } else {
       ORACLE.finalize(_dispute.requestId, _dispute.responseId);
     }
 
-    delete correctRoot[_dispute.requestId];
+    delete _correctRoots[_dispute.requestId];
   }
 
+  /// @inheritdoc IRootVerificationModule
   function disputeResponse(
     bytes32 _requestId,
     bytes32 _responseId,
@@ -72,7 +79,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       decodeRequestData(_requestId);
 
     bytes32 _correctRoot = _treeVerifier.calculateRoot(_treeData, _leavesToInsert);
-    correctRoot[_requestId] = _correctRoot;
+    _correctRoots[_requestId] = _correctRoot;
 
     bool _won = abi.decode(_response.response, (bytes32)) != _correctRoot;
 
