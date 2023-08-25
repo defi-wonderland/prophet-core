@@ -115,6 +115,10 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
     ORACLE.finalize(_requestId, _finalizedResponseId);
   }
 
+  function finalize(bytes32 _requestId) external onlySubmodule {
+    ORACLE.finalize(_requestId);
+  }
+
   function escalateDispute(bytes32 _disputeId) external onlySubmodule {
     ORACLE.escalateDispute(_disputeId);
   }

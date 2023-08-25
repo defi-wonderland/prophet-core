@@ -7,27 +7,52 @@ import {Subset} from './libraries/Subset.sol';
 contract Oracle is IOracle {
   using Subset for mapping(uint256 => bytes32);
 
+  /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
 
+  /**
+   * @notice The list of all requests
+   */
   mapping(bytes32 _requestId => Request) internal _requests;
-
+  /**
+   * @notice The list of all responses
+   */
   mapping(bytes32 _responseId => Response) internal _responses;
-  mapping(bytes32 _requestId => bytes32[] _responseId) internal _responseIds;
 
-  mapping(bytes32 _requestId => Response) internal _finalizedResponses;
-
+  /**
+   * @notice The list of all disputes
+   */
   mapping(bytes32 _disputeId => Dispute) internal _disputes;
 
+  /**
+   * @notice The list of the response ids for each request
+   */
+  mapping(bytes32 _requestId => bytes32[] _responseId) internal _responseIds;
+
+  /**
+   * @notice The finalized response for each request
+   */
+  mapping(bytes32 _requestId => Response) internal _finalizedResponses;
+
+  /**
+   * @notice The id of each request in chronological order
+   */
   mapping(uint256 _requestNumber => bytes32 _id) internal _requestIds;
 
+  /**
+   * @notice The nonce of the last response
+   */
   uint256 internal _responseNonce;
 
+  /// @inheritdoc IOracle
   uint256 public totalRequestCount;
 
+  /// @inheritdoc IOracle
   function createRequest(NewRequest memory _request) external payable returns (bytes32 _requestId) {
     _requestId = _createRequest(_request);
   }
 
+  /// @inheritdoc IOracle
   function createRequests(NewRequest[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
@@ -40,10 +65,11 @@ contract Oracle is IOracle {
     }
   }
 
+  /// @inheritdoc IOracle
   function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list) {
     uint256 _totalRequestsCount = totalRequestCount;
 
-    // If trying to collect unexisting requests only, return empty array
+    // If trying to collect non-existent requests only, return empty array
     if (_startFrom > _totalRequestsCount) {
       return _list;
     }
@@ -68,32 +94,39 @@ contract Oracle is IOracle {
     return _list;
   }
 
+  /// @inheritdoc IOracle
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
     return _requestIds.getSubset(_startFrom, _batchSize, totalRequestCount);
   }
 
+  /// @inheritdoc IOracle
   function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
     _response = _responses[_responseId];
   }
 
+  /// @inheritdoc IOracle
   function getRequest(bytes32 _requestId) external view returns (Request memory _request) {
     _request = _requests[_requestId];
   }
 
+  /// @inheritdoc IOracle
   function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request) {
     _request = _getRequest(_requestId);
   }
 
+  /// @inheritdoc IOracle
   function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
     _dispute = _disputes[_disputeId];
   }
 
+  /// @inheritdoc IOracle
   function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
     if (_request.createdAt == 0) revert Oracle_InvalidRequestId(_requestId);
     _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData);
   }
 
+  /// @inheritdoc IOracle
   function proposeResponse(
     address _proposer,
     bytes32 _requestId,
@@ -122,6 +155,7 @@ contract Oracle is IOracle {
     emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
   }
 
+  /// @inheritdoc IOracle
   function deleteResponse(bytes32 _responseId) external {
     Response memory _response = _responses[_responseId];
     Request memory _request = _requests[_response.requestId];
@@ -130,7 +164,7 @@ contract Oracle is IOracle {
       revert Oracle_CannotDeleteWhileDisputing(_responseId);
     }
     if (msg.sender != _response.proposer) {
-      revert Oracle_CannotDeleteInvalidProposer(msg.sender);
+      revert Oracle_CannotDeleteInvalidProposer(msg.sender, _responseId);
     }
 
     _request.responseModule.deleteResponse(_response.requestId, msg.sender);
@@ -151,14 +185,7 @@ contract Oracle is IOracle {
     emit Oracle_ResponseDeleted(msg.sender, _response.requestId, _responseId);
   }
 
-  /**
-   * @notice Starts the process of disputing a response
-   * @dev If pre-dispute modules are being used, the returned dispute
-   * from `disputeModule.disputeResponse` may have a status other than `Active`,
-   * in which case the dispute is considered resolved and the dispute status updated.
-   * @param _requestId The id of the request which was responded
-   * @param _responseId The id of the response being disputer
-   */
+  /// @inheritdoc IOracle
   function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId) {
     Request memory _request = _requests[_requestId];
     if (_request.finalizedAt != 0) {
@@ -187,6 +214,7 @@ contract Oracle is IOracle {
     emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
   }
 
+  /// @inheritdoc IOracle
   function escalateDispute(bytes32 _disputeId) external {
     Dispute memory _dispute = _disputes[_disputeId];
 
@@ -212,6 +240,7 @@ contract Oracle is IOracle {
     emit Oracle_DisputeEscalated(msg.sender, _disputeId);
   }
 
+  /// @inheritdoc IOracle
   function resolveDispute(bytes32 _disputeId) external {
     Dispute memory _dispute = _disputes[_disputeId];
 
@@ -233,6 +262,7 @@ contract Oracle is IOracle {
     emit Oracle_DisputeResolved(msg.sender, _disputeId);
   }
 
+  /// @inheritdoc IOracle
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
     Request memory _request = _requests[_dispute.requestId];
@@ -245,6 +275,7 @@ contract Oracle is IOracle {
     emit Oracle_DisputeStatusUpdated(_disputeId, _status);
   }
 
+  /// @inheritdoc IOracle
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
     Request memory _request = _requests[_requestId];
     _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
@@ -252,14 +283,17 @@ contract Oracle is IOracle {
       || address(_request.finalityModule) == _module;
   }
 
+  /// @inheritdoc IOracle
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
     _response = _finalizedResponses[_requestId];
   }
 
+  /// @inheritdoc IOracle
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
     _ids = _responseIds[_requestId];
   }
 
+  /// @inheritdoc IOracle
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
     Request storage _request = _requests[_requestId];
     if (_request.finalizedAt != 0) {
@@ -279,6 +313,7 @@ contract Oracle is IOracle {
     _finalize(_requestId, _request);
   }
 
+  /// @inheritdoc IOracle
   function finalize(bytes32 _requestId) external {
     Request storage _request = _requests[_requestId];
     if (_request.finalizedAt != 0) {
@@ -293,7 +328,7 @@ contract Oracle is IOracle {
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 
         if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
-          revert Oracle_CannotFinalizeWithActiveDispute();
+          revert Oracle_CannotFinalizeWithActiveDispute(_requestId);
         }
 
         unchecked {
@@ -305,6 +340,11 @@ contract Oracle is IOracle {
     _finalize(_requestId, _request);
   }
 
+  /**
+   * @notice Executes the finalizeRequest logic on each of the modules
+   * @param _requestId The id of the request being finalized
+   * @param _request The request being finalized
+   */
   function _finalize(bytes32 _requestId, Request memory _request) internal {
     if (address(_request.finalityModule) != address(0)) {
       _request.finalityModule.finalizeRequest(_requestId, msg.sender);
@@ -319,6 +359,11 @@ contract Oracle is IOracle {
     emit Oracle_RequestFinalized(msg.sender, _requestId);
   }
 
+  /**
+   * @notice Stores a request in the contract and configures it in the modules
+   * @param _request The request to be created
+   * @return _requestId The id of the created request
+   */
   function _createRequest(NewRequest memory _request) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
@@ -354,6 +399,11 @@ contract Oracle is IOracle {
     emit Oracle_RequestCreated(msg.sender, _requestId);
   }
 
+  /**
+   * @notice Returns a FullRequest struct with all the data of a request
+   * @param _requestId The id of the request
+   * @return _fullRequest The full request
+   */
   function _getRequest(bytes32 _requestId) internal view returns (FullRequest memory _fullRequest) {
     Request memory _storedRequest = _requests[_requestId];
 

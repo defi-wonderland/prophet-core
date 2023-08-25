@@ -22,7 +22,7 @@ library Subset {
     uint256 _size,
     uint256 _maxSize
   ) internal view returns (bytes32[] memory _list) {
-    // If trying to collect unexisting items only, return empty array
+    // If trying to collect non-existent items only, return empty array
     if (_offset > _maxSize) {
       return _list;
     }
@@ -64,7 +64,7 @@ library Subset {
   ) internal view returns (bytes32[] memory _list) {
     uint256 _maxSize = _target.length;
 
-    // If trying to collect unexisting items only, return empty array
+    // If trying to collect non-existent items only, return empty array
     if (_offset > _maxSize) {
       return _list;
     }

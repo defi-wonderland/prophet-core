@@ -24,10 +24,16 @@ contract RequestFinalizerJob_UnitTest is Test {
    */
   function test_work(address _worker, bytes32 _requestId, bytes32 _finalizedResponseId) public {
     // Mock call on Oracle's `finalize`
-    vm.mockCall(address(mockOracle), abi.encodeCall(IOracle.finalize, (_requestId, _finalizedResponseId)), abi.encode());
+    vm.mockCall(
+      address(mockOracle),
+      abi.encodeWithSignature('finalize(bytes32,bytes32)', _requestId, _finalizedResponseId),
+      abi.encode()
+    );
 
     // Check: was Oracle's `finalize` called?
-    vm.expectCall(address(mockOracle), abi.encodeCall(IOracle.finalize, (_requestId, _finalizedResponseId)));
+    vm.expectCall(
+      address(mockOracle), abi.encodeWithSignature('finalize(bytes32,bytes32)', _requestId, _finalizedResponseId)
+    );
 
     // Check: was the `Worked` event emitted?
     vm.expectEmit(true, true, true, true, address(requestFinalizerJob));

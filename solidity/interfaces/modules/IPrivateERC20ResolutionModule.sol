@@ -19,7 +19,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   /**
    * @notice A commitment has been provided by a voter
    * @param _voter The user who provided a commitment of a vote
-   * @param _disputeId The id of the disputed being voted on
+   * @param _disputeId The id of the dispute being voted on
    * @param _commitment The commitment provided by the voter
    */
   event VoteCommitted(address _voter, bytes32 _disputeId, bytes32 _commitment);
@@ -28,7 +28,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @notice A vote has been revealed by a voter providing
    * the salt used to compute the commitment
    * @param _voter The user who revealed his vote
-   * @param _disputeId The id of the disputed being voted on
+   * @param _disputeId The id of the dispute being voted on
    * @param _numberOfVotes The number of votes cast
    */
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
@@ -36,7 +36,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   /**
    * @notice The phase of committing votes has started
    * @param _startTime The timestamp at which the phase started
-   * @param _disputeId The id of the disputed being voted on
+   * @param _disputeId The id of the dispute being voted on
    */
   event CommittingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
 
@@ -126,7 +126,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Returns the escalation data for a dispute
-   * @param _disputeId The id of the disputed
+   * @param _disputeId The id of the dispute
    * @return _startTime The timestamp at which the dispute was escalated
    * @return _totalVotes The total amount of votes cast for the dispute
    */
@@ -190,7 +190,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Computes a valid commitment for the revealing phase
-   * @param _disputeId The id of the disputed being voted on
+   * @param _disputeId The id of the dispute being voted on
    * @param _numberOfVotes The amount of votes being cast
    * @return _commitment The commitment computed from the provided data and the user's address
    */

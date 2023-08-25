@@ -378,8 +378,8 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   }
 
   function test_finalizeCallsOracle() public {
-    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.finalize.selector), abi.encode());
-    vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.finalize.selector, requestId, responseId));
+    vm.mockCall(address(oracle), abi.encodeWithSignature('finalize(bytes32,bytes32)'), abi.encode());
+    vm.expectCall(address(oracle), abi.encodeWithSignature('finalize(bytes32,bytes32)', requestId, responseId));
     vm.prank(address(submodule1));
     module.finalize(requestId, responseId);
   }

@@ -198,7 +198,9 @@ contract CircuitResolverModule_UnitTest is Test {
       )
     );
 
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.finalize, (_requestId, _newResponseId)), abi.encode());
+    vm.mockCall(
+      address(oracle), abi.encodeWithSignature('finalize(bytes32,bytes32)', _requestId, _newResponseId), abi.encode()
+    );
 
     // // Test: call disputeResponse
     vm.prank(address(oracle));
@@ -257,7 +259,9 @@ contract CircuitResolverModule_UnitTest is Test {
       abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
     );
 
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.finalize, (_requestId, _responseId)), abi.encode());
+    vm.mockCall(
+      address(oracle), abi.encodeWithSignature('finalize(bytes32,bytes32)', _requestId, _responseId), abi.encode()
+    );
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
