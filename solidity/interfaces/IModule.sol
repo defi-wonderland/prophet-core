@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IModuleData} from '../interfaces/IModuleData.sol';
-
-interface IModule is IModuleData {
+interface IModule {
   error Module_OnlyOracle();
   error Module_InvalidCaller();
 
@@ -16,4 +14,5 @@ interface IModule is IModuleData {
    * @return _moduleName The name of the module.
    */
   function moduleName() external view returns (string memory _moduleName);
+  function requestData(bytes32 _requestId) external view returns (bytes memory _data);
 }

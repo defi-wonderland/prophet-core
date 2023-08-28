@@ -16,7 +16,6 @@ import {
 } from '../../interfaces/IOracle.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
-import {IModuleData} from '../../interfaces/IModuleData.sol';
 
 /**
  * @dev Harness to deploy and test Oracle
@@ -1030,31 +1029,31 @@ contract Oracle_UnitTest is Test {
 
       vm.mockCall(
         address(requestModule),
-        abi.encodeCall(IModuleData.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
         abi.encode(_request.requestModuleData)
       );
 
       vm.mockCall(
         address(responseModule),
-        abi.encodeCall(IModuleData.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
         abi.encode(_request.responseModuleData)
       );
 
       vm.mockCall(
         address(disputeModule),
-        abi.encodeCall(IModuleData.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
         abi.encode(_request.disputeModuleData)
       );
 
       vm.mockCall(
         address(resolutionModule),
-        abi.encodeCall(IModuleData.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
         abi.encode(_request.resolutionModuleData)
       );
 
       vm.mockCall(
         address(finalityModule),
-        abi.encodeCall(IModuleData.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[i])),
         abi.encode(_request.finalityModuleData)
       );
     }
