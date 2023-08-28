@@ -12,6 +12,8 @@ import {Module} from '../Module.sol';
 contract CircuitResolverModule is Module, ICircuitResolverModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
+
   function moduleName() external pure returns (string memory _moduleName) {
     return 'CircuitResolverModule';
   }
@@ -32,7 +34,28 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   }
 
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
-  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {}
+
+  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
+    (,, IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
+      decodeRequestData(_dispute.requestId);
+
+    IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
+
+    bytes memory _correctResponse = _correctResponses[_dispute.requestId];
+    bool _won = _response.response.length != _correctResponse.length
+      || keccak256(_response.response) != keccak256(_correctResponse);
+
+    if (_won) {
+      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
+      bytes32 _correctResponseId =
+        ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctResponses[_dispute.requestId]));
+      ORACLE.finalize(_dispute.requestId, _correctResponseId);
+    } else {
+      ORACLE.finalize(_dispute.requestId, _dispute.responseId);
+    }
+
+    delete _correctResponses[_dispute.requestId];
+  }
 
   function disputeResponse(
     bytes32 _requestId,
@@ -41,19 +64,13 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
+    (bytes memory _callData, address _verifier,,,) = decodeRequestData(_requestId);
 
-    (
-      bytes memory _proposedResponse,
-      bytes memory _correctResponse,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    ) = _getDisputeData(_requestId, _response);
+    (, bytes memory _correctResponse) = _verifier.call(_callData);
+    _correctResponses[_requestId] = _correctResponse;
 
-    // We test length first to short circuit and don't do keccack256
-    // if lengths are different, just to optimize gas usage
-    bool _won =
-      _proposedResponse.length != _correctResponse.length || keccak256(_proposedResponse) != keccak256(_correctResponse);
+    bool _won = _response.response.length != _correctResponse.length
+      || keccak256(_response.response) != keccak256(_correctResponse);
 
     _dispute = IOracle.Dispute({
       disputer: _disputer,
@@ -63,44 +80,5 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
-
-    if (_won) {
-      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
-      _accountingExtension.release(_dispute.disputer, _dispute.requestId, _bondToken, _bondSize);
-      bytes32 _correctResponseId = ORACLE.proposeResponse(_disputer, _requestId, abi.encode(_correctResponse));
-      ORACLE.finalize(_requestId, _correctResponseId);
-    } else {
-      _accountingExtension.release(_dispute.proposer, _dispute.requestId, _bondToken, _bondSize);
-      ORACLE.finalize(_requestId, _responseId);
-    }
-  }
-
-  function _getDisputeData(
-    bytes32 _requestId,
-    IOracle.Response memory _response
-  )
-    internal
-    returns (
-      bytes memory _proposedResponse,
-      bytes memory _correctResponse,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    )
-  {
-    (
-      bytes memory _callData,
-      address _verifier,
-      IAccountingExtension __accountingExtension,
-      IERC20 __bondToken,
-      uint256 __bondSize
-    ) = decodeRequestData(_requestId);
-
-    _proposedResponse = _response.response;
-    (, _correctResponse) = _verifier.call(_callData);
-
-    _accountingExtension = __accountingExtension;
-    _bondToken = __bondToken;
-    _bondSize = __bondSize;
   }
 }
