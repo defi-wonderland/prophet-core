@@ -2,11 +2,9 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {IBondedDisputeModule} from '../../interfaces/modules/IBondedDisputeModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
-
 import {Module} from '../Module.sol';
 
 contract BondedDisputeModule is Module, IBondedDisputeModule {
@@ -16,6 +14,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     return 'BondedDisputeModule';
   }
 
+  /// @inheritdoc IBondedDisputeModule
   function decodeRequestData(bytes32 _requestId)
     public
     view
@@ -25,8 +24,10 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256));
   }
 
+  /// @inheritdoc IBondedDisputeModule
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
+  /// @inheritdoc IBondedDisputeModule
   function disputeResponse(
     bytes32 _requestId,
     bytes32 _responseId,
@@ -47,6 +48,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   // TODO: This doesn't handle the cases of unconclusive statuses
+  /// @inheritdoc IBondedDisputeModule
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
       decodeRequestData(_dispute.requestId);
