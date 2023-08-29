@@ -10,21 +10,12 @@ import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscala
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccounting {
+  /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(bytes32 _disputeId => mapping(IERC20 _token => uint256 _amount))) public pledges;
 
   constructor(IOracle _oracle, IWETH9 _weth) AccountingExtension(_oracle, _weth) {}
 
-  /**
-   * @notice Pledges the given amount of token to the provided dispute id of the provided request id.
-   *
-   * @dev This function must be called by a valid module.
-   *
-   * @param _pledger           Address of the pledger.
-   * @param _requestId         ID of the bond-escalated request.
-   * @param _disputeId         ID of the bond-escalated dispute.
-   * @param _token             Address of the token being paid as a reward for winning the bond escalation.
-   * @param _amount            Amount of token to pledge.
-   */
+  /// @inheritdoc IBondEscalationAccounting
   function pledge(
     address _pledger,
     bytes32 _requestId,
@@ -39,21 +30,10 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       pledges[_requestId][_disputeId][_token] += _amount;
     }
 
-    // TODO: [OPO-89] add _disputeId parameter
-    emit Pledge(_pledger, _requestId, _token, _amount);
+    emit Pledged(_pledger, _requestId, _disputeId, _token, _amount);
   }
 
-  /**
-   * @notice Pays the winning pledgers of a given dispute that went through the bond escalation process.
-   *
-   * @dev This function must be called by a valid module.
-   *
-   * @param _requestId         ID of the bond-escalated request.
-   * @param _disputeId         ID of the bond-escalated dispute.
-   * @param _winningPledgers   Addresses of the winning pledgers.
-   * @param _token             Address of the token being paid as a reward for winning the bond escalation.
-   * @param _amountPerPledger  Amount of token to be rewarded to each of the winning pledgers.
-   */
+  /// @inheritdoc IBondEscalationAccounting
   function payWinningPledgers(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -75,20 +55,10 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       }
     }
 
-    emit PayWinningPledgers(_requestId, _disputeId, _winningPledgers, _token, _amountPerPledger);
+    emit WinningPledgersPaid(_requestId, _disputeId, _winningPledgers, _token, _amountPerPledger);
   }
 
-  /**
-   * @notice Releases a given amount of funds to the pledger.
-   *
-   * @dev This function must be called by a valid module.
-   *
-   * @param _requestId         ID of the bond-escalated request.
-   * @param _disputeId         ID of the bond-escalated dispute.
-   * @param _pledger           Address of the pledger.
-   * @param _token             Address of the token to be released.
-   * @param _amount            Amount of token to be released to the pledger.
-   */
+  /// @inheritdoc IBondEscalationAccounting
   function releasePledge(
     bytes32 _requestId,
     bytes32 _disputeId,
@@ -103,6 +73,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       balanceOf[_pledger][_token] += _amount;
     }
 
-    emit ReleasePledge(_requestId, _disputeId, _pledger, _token, _amount);
+    emit PledgeReleased(_requestId, _disputeId, _pledger, _token, _amount);
   }
 }

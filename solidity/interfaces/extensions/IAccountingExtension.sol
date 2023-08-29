@@ -7,7 +7,7 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 
 /*
   * @title AccountingExtension 
-  * @notice Extension allowing modules to deposit and bond funds 
+  * @notice Extension allowing users to deposit and bond funds
   * to be used for payments and disputes.
   */
 interface IAccountingExtension {

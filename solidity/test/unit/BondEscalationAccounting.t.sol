@@ -57,11 +57,13 @@ contract BondEscalationAccounting_UnitTest is Test {
   // Mock EOA bonder
   address public bonder;
 
-  // Pledge Event
-  event Pledge(address indexed _pledger, bytes32 indexed _requestId, IERC20 indexed _token, uint256 _amount);
+  // Pledged Event
+  event Pledged(
+    address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, IERC20 _token, uint256 _amount
+  );
 
-  // PayWinningPledgers Event
-  event PayWinningPledgers(
+  // WinningPledgersPaid Event
+  event WinningPledgersPaid(
     bytes32 indexed _requestId,
     bytes32 indexed _disputeId,
     address[] indexed _winningPledgers,
@@ -119,7 +121,7 @@ contract BondEscalationAccounting_UnitTest is Test {
     bondEscalationAccounting.forTest_setBalanceOf(_pledger, token, _amount);
 
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
-    emit Pledge(_pledger, _requestId, token, _amount);
+    emit Pledged(_pledger, _requestId, _disputeId, token, _amount);
 
     uint256 _balanceBeforePledge = bondEscalationAccounting.balanceOf(_pledger, token);
     uint256 _pledgesBeforePledge = bondEscalationAccounting.pledges(_requestId, _disputeId, token);
@@ -199,7 +201,7 @@ contract BondEscalationAccounting_UnitTest is Test {
     }
 
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
-    emit PayWinningPledgers(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
+    emit WinningPledgersPaid(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
 
     bondEscalationAccounting.payWinningPledgers(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
 
@@ -239,7 +241,7 @@ contract BondEscalationAccounting_UnitTest is Test {
     bondEscalationAccounting.releasePledge(_requestId, _disputeId, _randomPledger, token, _underflowAmount);
   }
 
-  function test_releaseSuccessfullCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
+  function test_releaseSuccessfulCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
 
