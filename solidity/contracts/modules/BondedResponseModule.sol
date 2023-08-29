@@ -6,12 +6,16 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IBondedResponseModule} from '../../interfaces/modules/IBondedResponseModule.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
-
-import {IModule, Module} from '../Module.sol';
+import {Module} from '../Module.sol';
 
 contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  function moduleName() public pure returns (string memory _moduleName) {
+    _moduleName = 'BondedResponseModule';
+  }
+
+  /// @inheritdoc IBondedResponseModule
   function decodeRequestData(bytes32 _requestId)
     public
     view
@@ -21,6 +25,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256));
   }
 
+  /// @inheritdoc IBondedResponseModule
   function propose(
     bytes32 _requestId,
     address _proposer,
@@ -56,6 +61,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
   }
 
+  /// @inheritdoc IBondedResponseModule
   function deleteResponse(bytes32 _requestId, address _proposer) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
       decodeRequestData(_requestId);
@@ -65,7 +71,11 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     _accountingExtension.release(_proposer, _requestId, _bondToken, _bondSize);
   }
 
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external override(IModule, Module) onlyOracle {
+  /// @inheritdoc IBondedResponseModule
+  function finalizeRequest(
+    bytes32 _requestId,
+    address _finalizer
+  ) external override(IBondedResponseModule, Module) onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
       decodeRequestData(_requestId);
 
@@ -79,9 +89,5 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     if (_response.createdAt != 0) {
       _accountingExtension.release(_response.proposer, _requestId, _bondToken, _bondSize);
     }
-  }
-
-  function moduleName() public pure returns (string memory _moduleName) {
-    _moduleName = 'BondedResponseModule';
   }
 }

@@ -8,11 +8,12 @@ import {
   BondedResponseModule,
   IBondedResponseModule,
   Module,
-  IModule,
   IOracle,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/BondedResponseModule.sol';
+
+import {IModule} from '../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
