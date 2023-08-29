@@ -7,21 +7,16 @@ import {ISparseMerkleTreeRequestModule} from '../../interfaces/modules/ISparseMe
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
-import {IModule, Module} from '../Module.sol';
+import {Module} from '../Module.sol';
 
 contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  /**
-   * @notice Decodes the request data for a Merkle tree request.
-   * @param _requestId The ID of the request.
-   * @return _treeData The encoded Merkle tree data parameters for the tree verifier.
-   * @return _leavesToInsert The array of leaves to insert into the Merkle tree.
-   * @return _treeVerifier The tree verifier to calculate the root.
-   * @return _accountingExtension The accounting extension to use for the request.
-   * @return _paymentToken The payment token to use for the request.
-   * @return _paymentAmount The payment amount to use for the request.
-   */
+  function moduleName() public pure returns (string memory _moduleName) {
+    _moduleName = 'SparseMerkleTreeRequestModule';
+  }
+
+  /// @inheritdoc ISparseMerkleTreeRequestModule
   function decodeRequestData(bytes32 _requestId)
     public
     view
@@ -38,14 +33,22 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
       abi.decode(requestData[_requestId], (bytes, bytes32[], ITreeVerifier, IAccountingExtension, IERC20, uint256));
   }
 
-  function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal override {
+  /**
+   * @notice Hook triggered after setting up a request. Bonds the requester's payment amount
+   * @param _requestId The ID of the request being setup
+   */
+  function _afterSetupRequest(bytes32 _requestId, bytes calldata) internal override {
     (,,, IAccountingExtension _accountingExtension, IERC20 _paymentToken, uint256 _paymentAmount) =
       decodeRequestData(_requestId);
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     _accountingExtension.bond(_request.requester, _requestId, _paymentToken, _paymentAmount);
   }
 
-  function finalizeRequest(bytes32 _requestId, address) external override(IModule, Module) onlyOracle {
+  /// @inheritdoc ISparseMerkleTreeRequestModule
+  function finalizeRequest(
+    bytes32 _requestId,
+    address
+  ) external override(ISparseMerkleTreeRequestModule, Module) onlyOracle {
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     (,,, IAccountingExtension _accountingExtension, IERC20 _paymentToken, uint256 _paymentAmount) =
@@ -55,9 +58,5 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
     } else {
       _accountingExtension.release(_request.requester, _requestId, _paymentToken, _paymentAmount);
     }
-  }
-
-  function moduleName() public pure returns (string memory _moduleName) {
-    _moduleName = 'SparseMerkleTreeRequestModule';
   }
 }

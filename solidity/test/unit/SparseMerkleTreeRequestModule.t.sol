@@ -7,15 +7,15 @@ import 'forge-std/Test.sol';
 import {
   SparseMerkleTreeRequestModule,
   IOracle,
-  IModule,
   ITreeVerifier,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
-
+import {IModule} from '../../interfaces/IModule.sol';
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
+
 contract ForTest_SparseMerkleTreeRequestModule is SparseMerkleTreeRequestModule {
   constructor(IOracle _oracle) SparseMerkleTreeRequestModule(_oracle) {}
 

@@ -5,13 +5,11 @@ import './IntegrationBase.sol';
 import {
   SparseMerkleTreeRequestModule,
   IOracle,
-  IModule,
   ITreeVerifier,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
-
 import {RootVerificationModule} from '../../contracts/modules/RootVerificationModule.sol';
 
 contract Integration_RootVerification is IntegrationBase {
