@@ -21,10 +21,11 @@ FOUNDRY_PROFILE=docs forge doc --out "$temp_folder"
 # edit the SUMMARY after the Interfaces section
 # https://stackoverflow.com/questions/67086574/no-such-file-or-directory-when-using-sed-in-combination-with-find
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i '' -e '/\[Interfaces\]/q' docs/src/SUMMARY.md
+  sed -i '' -e '/# Technical Documentation/q' docs/src/SUMMARY.md
 else
-  sed -i -e '/\[Interfaces\]/q' docs/src/SUMMARY.md
+  sed -i -e '/# Technical Documentation/q' docs/src/SUMMARY.md
 fi
+
 # copy the generated SUMMARY, from the tmp directory, without the first 5 lines
 # and paste them after the Interfaces section on the original SUMMARY
 tail -n +5 $temp_folder/src/SUMMARY.md >> docs/src/SUMMARY.md
@@ -44,7 +45,11 @@ rm -rf $temp_folder
 replace_text() {
     for file in "$1"/*; do
         if [ -f "$file" ]; then
-            sed -i "s|$temp_folder/src/||g" "$file"
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+              sed -i '' "s|$temp_folder/src/||g" "$file"
+            else
+              sed -i "s|$temp_folder/src/||g" "$file"
+            fi
         elif [ -d "$file" ]; then
             replace_text "$file"
         fi
