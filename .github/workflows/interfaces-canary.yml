@@ -38,10 +38,10 @@ jobs:
         with:
           out_dir: "out"
           publish_type: "${{ matrix.publish_type }}"
-          package_name: "opoo-core-${{ matrix.publish_type }}"
-          destination_dir: "exported-interfaces/opoo-core-${{ matrix.publish_type }}"
+          package_name: "prophet-core-${{ matrix.publish_type }}"
+          destination_dir: "exported-interfaces/prophet-core-${{ matrix.publish_type }}"
 
       - name: Publish
-        run: cd exported-interfaces/opoo-core-${{ matrix.publish_type }} && npm publish --access public --tag canary
+        run: cd exported-interfaces/prophet-core-${{ matrix.publish_type }} && npm publish --access public --tag canary
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -21,9 +21,9 @@ FOUNDRY_PROFILE=docs forge doc --out "$temp_folder"
 # edit the SUMMARY after the Interfaces section
 # https://stackoverflow.com/questions/67086574/no-such-file-or-directory-when-using-sed-in-combination-with-find
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  sed -i '' -e '/# Technical Documentation/q' docs/src/SUMMARY.md
+  sed -i '' -e '/Interfaces/q' docs/src/SUMMARY.md
 else
-  sed -i -e '/# Technical Documentation/q' docs/src/SUMMARY.md
+  sed -i -e '/Interfaces/q' docs/src/SUMMARY.md
 fi
 
 # copy the generated SUMMARY, from the tmp directory, without the first 5 lines

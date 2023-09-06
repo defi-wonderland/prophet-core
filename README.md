@@ -1,19 +1,19 @@
-# Optimistic Oracle Core
+# Prophet Core
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/opoo-core/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/prophet-core/blob/main/LICENSE)
 
 ⚠️ The code has not been audited yet, tread with caution.
 
 ## Overview
 
-OpOO presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules. With its emphasis on complete control and modularity across all aspects of the system, OpOO is an open-source public good for the Optimism community.
+Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules. With its emphasis on complete control and modularity across all aspects of the system, Prophet is an open-source public good for the Optimism community.
 
 ## Setup
 
 This project uses [Foundry](https://book.getfoundry.sh/). To build it locally, run:
 
 ```sh
-git clone git@github.com:defi-wonderland/opoo-core.git
+git clone git@github.com:defi-wonderland/prophet-core.git
 cd
 yarn install
 yarn build
@@ -25,7 +25,7 @@ Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end t
 
 | Yarn Command              | Description                                                                                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `yarn build`              | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/opoo-core-interfaces). |
+| `yarn build`              | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/prophet-core-interfaces). |
 | `yarn docs:build`         | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).                                |
 | `yarn docs:run`           | Start the documentation server.                                                                                                 |
 | `yarn test`               | Run all unit and integration tests.                                                                                             |
@@ -35,11 +35,11 @@ Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end t
 
 ## Licensing
 
-The primary license for OpOO contracts is MIT, see [`LICENSE`](./LICENSE).
+The primary license for Prophet contracts is MIT, see [`LICENSE`](./LICENSE).
 
 ## Contributors
 
-Optimistic Oracle was built with ❤️ by [Wonderland](https://defi.sucks).
+Prophet was built with ❤️ by [Wonderland](https://defi.sucks).
 
 Wonderland is a team of top Web3 researchers, developers, and operators who believe that the future needs to be open-source, permissionless, and decentralized.
 

@@ -1,20 +1,15 @@
 {
-  "name": "opoo-core",
+  "name": "prophet-core",
   "version": "1.0.0",
   "private": true,
-  "description": "OpOO presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
-  "homepage": "https://github.com/defi-wonderland/opoo-private",
+  "description": "Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
+  "homepage": "https://github.com/defi-wonderland/prophet-core-private",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defi-wonderland/opoo-private.git"
+    "url": "git+https://github.com/defi-wonderland/prophet-core-private.git"
   },
   "license": "MIT",
   "author": "Wonderland",
-  "contributors": [
-    "DrGorilla_md (https://github.com/drgorillamd)",
-    "0xng (https://github.com/0xng)",
-    "gas1cent (https://github.com/gas1cent)"
-  ],
   "scripts": {
     "build": "yarn compile",
     "build:optimized": "FOUNDRY_PROFILE=optimized forge build",

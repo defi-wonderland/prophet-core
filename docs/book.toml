@@ -1,16 +1,16 @@
 [book]
 src = 'src'
-title = 'Optimistic Oracle'
-authors = ['Optimistic Oracle', 'Wonderland']
+title = 'Prophet'
+authors = ['Prophet', 'Wonderland']
 description = ''
 language = 'en'
 
 [output.html]
 copy-fonts = false # avoid copying default fonts to book
-theme = 'src/opoo-theme'
-additional-css = ['src/opoo-theme/css/fonts.css', 'src/opoo-theme/css/colors.css', 'src/opoo-theme/css/base.css']
-additional-js = ['src/opoo-theme/js/theme.js', 'src/opoo-theme/js/base.js', 'src/opoo-theme/js/solidity.min.js']
-git-repository-url = 'https://github.com/defi-wonderland/opoo'
+theme = 'src/prophet-theme'
+additional-css = ['src/prophet-theme/css/fonts.css', 'src/prophet-theme/css/colors.css', 'src/prophet-theme/css/base.css']
+additional-js = ['src/prophet-theme/js/theme.js', 'src/prophet-theme/js/base.js', 'src/prophet-theme/js/solidity.min.js']
+git-repository-url = 'https://github.com/defi-wonderland/prophet'
 git-repository-icon = 'fa-github'
 no-section-label = true
 mathjax-support = true

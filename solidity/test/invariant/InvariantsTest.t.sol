@@ -32,17 +32,17 @@ contract InvariantsTest is Test {
   using stdStorage for StdStorage;
 
   Oracle public oracle;
-  HandlerOpoo public handler;
+  HandlerProphet public handler;
 
   function setUp() public {
     oracle = new Oracle();
-    handler = new HandlerOpoo(oracle);
+    handler = new HandlerProphet(oracle);
 
     targetContract(address(handler));
   }
 }
 
-contract HandlerOpoo is Test {
+contract HandlerProphet is Test {
   Oracle public oracle;
 
   HttpRequestModule public httpRequestModule;
