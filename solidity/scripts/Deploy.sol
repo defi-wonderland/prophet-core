@@ -24,8 +24,6 @@ import {SparseMerkleTreeRequestModule} from '../contracts/modules/SparseMerkleTr
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
 
-import {RequestFinalizerJob} from '../contracts/jobs/RequestFinalizerJob.sol';
-
 import {IResolutionModule} from '../interfaces/modules/IResolutionModule.sol';
 
 // solhint-disable no-console
@@ -53,8 +51,6 @@ contract Deploy is Script {
 
   AccountingExtension accountingExtension;
   BondEscalationAccounting bondEscalationAccounting;
-
-  RequestFinalizerJob requestFinalizerJob;
 
   IResolutionModule[] resolutionModules = new IResolutionModule[](3);
 
@@ -130,10 +126,6 @@ contract Deploy is Script {
     // Deploy bond escalation accounting
     bondEscalationAccounting = new BondEscalationAccounting(oracle, WETH);
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
-
-    // Deploy request finalizer job
-    requestFinalizerJob = new RequestFinalizerJob();
-    console.log('REQUEST_FINALIZER_JOB:', address(requestFinalizerJob));
 
     // Deploy multiple callbacks module
     sequentialResolutionModule = new SequentialResolutionModule(oracle, resolutionModules);
