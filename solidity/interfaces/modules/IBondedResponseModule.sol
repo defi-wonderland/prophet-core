@@ -70,9 +70,10 @@ interface IBondedResponseModule is IResponseModule {
   /**
    * @notice Allows a user to delete an undisputed response they proposed before the deadline, releasing the bond
    * @param _requestId The ID of the request to delete the response from
+   * @param _responseId The ID of the response to delete
    * @param _proposer The user who proposed the response
    */
-  function deleteResponse(bytes32 _requestId, address _proposer) external;
+  function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external;
 
   /**
    * @notice Finalizes the request by releasing the bond of the proposer

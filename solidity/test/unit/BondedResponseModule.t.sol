@@ -128,7 +128,13 @@ contract BondedResponseModule_UnitTest is Test {
   /**
    * @notice Test that the delete response function triggers bond release.
    */
-  function test_deleteResponse(bytes32 _requestId, uint256 _bondSize, uint256 _deadline, uint256 _timestamp) public {
+  function test_deleteResponse(
+    bytes32 _requestId,
+    bytes32 _responseId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _timestamp
+  ) public {
     vm.assume(_timestamp > 0);
     // Create and set some mock request data
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
@@ -152,7 +158,7 @@ contract BondedResponseModule_UnitTest is Test {
     }
 
     vm.prank(address(oracle));
-    bondedResponseModule.deleteResponse(_requestId, proposer);
+    bondedResponseModule.deleteResponse(_requestId, _responseId, proposer);
   }
 
   /**

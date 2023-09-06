@@ -62,7 +62,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function deleteResponse(bytes32 _requestId, address _proposer) external onlyOracle {
+  function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
       decodeRequestData(_requestId);
 

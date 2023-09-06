@@ -167,7 +167,7 @@ contract Oracle is IOracle {
       revert Oracle_CannotDeleteInvalidProposer(msg.sender, _responseId);
     }
 
-    _request.responseModule.deleteResponse(_response.requestId, msg.sender);
+    _request.responseModule.deleteResponse(_response.requestId, _responseId, msg.sender);
 
     delete _responses[_responseId];
 

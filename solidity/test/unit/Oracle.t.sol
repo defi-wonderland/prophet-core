@@ -595,9 +595,13 @@ contract Oracle_UnitTest is Test {
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response'));
 
     vm.mockCall(
-      address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, sender)), abi.encode()
+      address(responseModule),
+      abi.encodeCall(IResponseModule.deleteResponse, (_requestId, _responseId, sender)),
+      abi.encode()
     );
-    vm.expectCall(address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, sender)));
+    vm.expectCall(
+      address(responseModule), abi.encodeCall(IResponseModule.deleteResponse, (_requestId, _responseId, sender))
+    );
 
     bytes32[] memory _responsesIds = oracle.getResponseIds(_requestId);
     assertEq(_responsesIds.length, 1);
