@@ -128,7 +128,8 @@ contract Deploy is Script {
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
 
     // Deploy multiple callbacks module
-    sequentialResolutionModule = new SequentialResolutionModule(oracle, resolutionModules);
+    sequentialResolutionModule = new SequentialResolutionModule(oracle);
     console.log('SEQUENTIAL_RESOLUTION_MODULE:', address(sequentialResolutionModule));
+    sequentialResolutionModule.addResolutionModuleSequence(resolutionModules);
   }
 }

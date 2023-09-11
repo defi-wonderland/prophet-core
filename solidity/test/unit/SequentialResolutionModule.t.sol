@@ -43,6 +43,10 @@ contract Base is Test {
   bytes32 public disputeId = bytes32(uint256(1));
   bytes32 public responseId = bytes32(uint256(2));
   bytes32 public requestId = bytes32(uint256(3));
+
+  bytes32 public disputeId2 = bytes32(uint256(4));
+  bytes32 public requestId2 = bytes32(uint256(5));
+
   address public proposer = makeAddr('proposer');
   address public disputer = makeAddr('disputer');
   bytes public responseData = abi.encode('responseData');
@@ -50,6 +54,10 @@ contract Base is Test {
   ForTest_ResolutionModule public submodule1;
   ForTest_ResolutionModule public submodule2;
   ForTest_ResolutionModule public submodule3;
+  IResolutionModule[] public resolutionModules;
+  IResolutionModule[] public resolutionModules2;
+  uint256 public sequenceId;
+  uint256 public sequenceId2;
 
   function setUp() public {
     oracle = IOracle(makeAddr('Oracle'));
@@ -57,27 +65,54 @@ contract Base is Test {
 
     vm.mockCall(
       address(oracle),
-      abi.encodeWithSelector(IOracle.getDispute.selector),
+      abi.encodeWithSelector(IOracle.getDispute.selector, disputeId),
       abi.encode(
         IOracle.Dispute(block.timestamp, disputer, proposer, responseId, requestId, IOracle.DisputeStatus.Escalated)
       )
     );
 
+    vm.mockCall(
+      address(oracle),
+      abi.encodeWithSelector(IOracle.getDispute.selector, disputeId2),
+      abi.encode(
+        IOracle.Dispute(block.timestamp, disputer, proposer, responseId, requestId2, IOracle.DisputeStatus.Escalated)
+      )
+    );
+
     vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.updateDisputeStatus.selector), abi.encode());
 
-    uint256 _nonce = vm.getNonce(address(this));
-    module = SequentialResolutionModule(computeCreateAddress(address(this), _nonce + 3));
+    module = new SequentialResolutionModule(oracle);
 
     submodule1 = new ForTest_ResolutionModule(module, 'module1');
     submodule2 = new ForTest_ResolutionModule(module, 'module2');
     submodule3 = new ForTest_ResolutionModule(module, 'module3');
 
-    IResolutionModule[] memory _resolutionModules = new IResolutionModule[](3);
-    _resolutionModules[0] = IResolutionModule(address(submodule1));
-    _resolutionModules[1] = IResolutionModule(address(submodule2));
-    _resolutionModules[2] = IResolutionModule(address(submodule3));
+    vm.mockCall(address(submodule1), abi.encodeWithSelector(IModule.setupRequest.selector), abi.encode());
+    vm.mockCall(address(submodule2), abi.encodeWithSelector(IModule.setupRequest.selector), abi.encode());
+    vm.mockCall(address(submodule3), abi.encodeWithSelector(IModule.setupRequest.selector), abi.encode());
 
-    module = new SequentialResolutionModule(oracle, _resolutionModules);
+    resolutionModules.push(IResolutionModule(address(submodule1)));
+    resolutionModules.push(IResolutionModule(address(submodule2)));
+    resolutionModules.push(IResolutionModule(address(submodule3)));
+
+    sequenceId = module.addResolutionModuleSequence(resolutionModules);
+
+    bytes[] memory _submoduleData = new bytes[](3);
+    _submoduleData[0] = abi.encode('submodule1Data');
+    _submoduleData[1] = abi.encode('submodule2Data');
+    _submoduleData[2] = abi.encode('submodule3Data');
+
+    vm.prank(address(oracle));
+    module.setupRequest(requestId, abi.encode(sequenceId, _submoduleData));
+
+    resolutionModules2.push(IResolutionModule(address(submodule2)));
+    resolutionModules2.push(IResolutionModule(address(submodule3)));
+    resolutionModules2.push(IResolutionModule(address(submodule1)));
+
+    sequenceId2 = module.addResolutionModuleSequence(resolutionModules2);
+
+    vm.prank(address(oracle));
+    module.setupRequest(requestId2, abi.encode(sequenceId2, _submoduleData));
   }
 }
 
@@ -85,28 +120,28 @@ contract Base is Test {
  * @title SequentialResolutionModule Unit tests
  */
 contract SequentialResolutionModule_UnitTest is Base {
-  function test_setupRequestCallsAllSubmodules() public {
+  function test_setupRequestCallsAllSubmodules(bytes32 _newReqId) public {
     bytes memory _submodule1Data = abi.encode('submodule1Data');
     bytes memory _submodule2Data = abi.encode('submodule2Data');
     bytes memory _submodule3Data = abi.encode('submodule3Data');
 
-    bytes[] memory _data = new bytes[](3);
-    _data[0] = _submodule1Data;
-    _data[1] = _submodule2Data;
-    _data[2] = _submodule3Data;
+    bytes[] memory _submoduleData = new bytes[](3);
+    _submoduleData[0] = _submodule1Data;
+    _submoduleData[1] = _submodule2Data;
+    _submoduleData[2] = _submodule3Data;
 
     vm.expectCall(
-      address(submodule1), abi.encodeWithSelector(IModule.setupRequest.selector, requestId, _submodule1Data)
+      address(submodule1), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule1Data)
     );
     vm.expectCall(
-      address(submodule2), abi.encodeWithSelector(IModule.setupRequest.selector, requestId, _submodule2Data)
+      address(submodule2), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule2Data)
     );
     vm.expectCall(
-      address(submodule3), abi.encodeWithSelector(IModule.setupRequest.selector, requestId, _submodule3Data)
+      address(submodule3), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule3Data)
     );
 
     vm.prank(address(oracle));
-    module.setupRequest(requestId, abi.encode(_data));
+    module.setupRequest(_newReqId, abi.encode(sequenceId, _submoduleData));
   }
 
   function test_setupRequestRevertsIfNotOracle() public {
@@ -116,10 +151,12 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_moduleName() public {
-    assertEq(module.moduleName(), 'SequentialResolutionModule[module1, module2, module3]');
+    assertEq(module.moduleName(), 'SequentialResolutionModule');
   }
 
   function test_getDisputeCallsManager(bytes32 _disputeId) public {
+    IOracle.Dispute memory _dispute;
+    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.getDispute.selector), abi.encode(_dispute));
     vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.getDispute.selector, _disputeId));
     module.getDispute(_disputeId);
   }
@@ -137,6 +174,13 @@ contract SequentialResolutionModule_UnitTest is Base {
     module.startResolution(disputeId);
   }
 
+  function test_startResolutionCallsFirstModuleSequence2() public {
+    vm.expectCall(address(submodule2), abi.encodeWithSelector(IResolutionModule.startResolution.selector, disputeId2));
+
+    vm.prank(address(oracle));
+    module.startResolution(disputeId2);
+  }
+
   function testReverts_resolveDisputeIfNotOracle() public {
     vm.prank(makeAddr('other_sender'));
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
@@ -144,6 +188,8 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_resolveDisputeCallsFirstModuleAndResolvesIfWon() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     submodule1.forTest_setResponseStatus(IOracle.DisputeStatus.Won);
 
     vm.expectCall(
@@ -161,6 +207,8 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_resolveDisputeCallsFirstModuleAndResolvesIfLost() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     submodule1.forTest_setResponseStatus(IOracle.DisputeStatus.Lost);
 
     vm.expectCall(
@@ -178,16 +226,18 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_resolveDisputeGoesToTheNextResolutionModule() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     submodule1.forTest_setResponseStatus(IOracle.DisputeStatus.NoResolution);
 
     vm.expectCall(address(submodule2), abi.encodeWithSelector(IResolutionModule.startResolution.selector, disputeId));
 
-    assertEq(module.currentModuleIndex(), 0);
+    assertEq(address(module.getCurrentResolutionModule(disputeId)), address(submodule1));
 
     vm.prank(address(oracle));
     module.resolveDispute(disputeId);
 
-    assertEq(module.currentModuleIndex(), 1);
+    assertEq(address(module.getCurrentResolutionModule(disputeId)), address(submodule2));
 
     vm.expectCall(address(submodule2), abi.encodeWithSelector(IResolutionModule.resolveDispute.selector, disputeId));
     vm.prank(address(oracle));
@@ -195,6 +245,8 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_resolveDisputeCallsTheManagerWhenThereAreNoMoreSubmodulesLeft() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     submodule1.forTest_setResponseStatus(IOracle.DisputeStatus.NoResolution);
     vm.prank(address(oracle));
     module.resolveDispute(disputeId);
@@ -214,6 +266,8 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function testReverts_updateDisputeStatusNotValidSubmodule() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.prank(makeAddr('other_sender'));
     vm.expectRevert(
       abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
@@ -221,23 +275,51 @@ contract SequentialResolutionModule_UnitTest is Base {
     module.updateDisputeStatus(disputeId, IOracle.DisputeStatus.NoResolution);
   }
 
-  function testReverts_updateDisputeStatusNotCurrentSubmodule() public {
-    vm.prank(address(submodule2));
+  function testReverts_updateDisputeStatusNotSubmodule() public {
+    address _caller = address(bytes20(bytes('caller')));
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
+    vm.prank(_caller);
     vm.expectRevert(
       abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
     );
     module.updateDisputeStatus(disputeId, IOracle.DisputeStatus.NoResolution);
   }
 
+  function testReverts_updateDisputeStatusNotSubmoduleSequence2() public {
+    address _caller = address(bytes20(bytes('caller')));
+    vm.prank(address(oracle));
+    module.startResolution(disputeId2);
+    vm.prank(_caller);
+    vm.expectRevert(
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+    );
+    module.updateDisputeStatus(disputeId2, IOracle.DisputeStatus.NoResolution);
+  }
+
   function test_updateDisputeStatusChangesCurrentIndex() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.expectCall(address(submodule2), abi.encodeWithSelector(IResolutionModule.startResolution.selector, disputeId));
-    assertEq(module.currentModuleIndex(), 0);
+    assertEq(address(module.getCurrentResolutionModule(disputeId)), address(submodule1));
     vm.prank(address(submodule1));
     module.updateDisputeStatus(disputeId, IOracle.DisputeStatus.NoResolution);
-    assertEq(module.currentModuleIndex(), 1);
+    assertEq(address(module.getCurrentResolutionModule(disputeId)), address(submodule2));
+  }
+
+  function test_updateDisputeStatusChangesCurrentIndexSequence2() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId2);
+    vm.expectCall(address(submodule3), abi.encodeWithSelector(IResolutionModule.startResolution.selector, disputeId2));
+    assertEq(address(module.getCurrentResolutionModule(disputeId2)), address(submodule2));
+    vm.prank(address(submodule2));
+    module.updateDisputeStatus(disputeId2, IOracle.DisputeStatus.NoResolution);
+    assertEq(address(module.getCurrentResolutionModule(disputeId2)), address(submodule3));
   }
 
   function test_updateDisputeStatusCallsManagerWhenResolved() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.expectCall(
       address(oracle),
       abi.encodeWithSelector(IOracle.updateDisputeStatus.selector, disputeId, IOracle.DisputeStatus.Won)
@@ -246,7 +328,20 @@ contract SequentialResolutionModule_UnitTest is Base {
     module.updateDisputeStatus(disputeId, IOracle.DisputeStatus.Won);
   }
 
+  function test_updateDisputeStatusCallsManagerWhenResolvedSequence2() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId2);
+    vm.expectCall(
+      address(oracle),
+      abi.encodeWithSelector(IOracle.updateDisputeStatus.selector, disputeId2, IOracle.DisputeStatus.Won)
+    );
+    vm.prank(address(submodule2));
+    module.updateDisputeStatus(disputeId2, IOracle.DisputeStatus.Won);
+  }
+
   function test_finalizeRequestFinalizesAllSubmodules() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.expectCall(address(submodule1), abi.encodeWithSelector(IModule.finalizeRequest.selector, requestId));
     vm.expectCall(address(submodule2), abi.encodeWithSelector(IModule.finalizeRequest.selector, requestId));
     vm.expectCall(address(submodule3), abi.encodeWithSelector(IModule.finalizeRequest.selector, requestId));
@@ -262,15 +357,23 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_listSubmodulesFullList() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 3);
+    IResolutionModule[] memory submodules = module.listSubmodules(0, 3, 1);
     assertEq(submodules.length, 3);
     assertEq(address(submodules[0]), address(submodule1));
     assertEq(address(submodules[1]), address(submodule2));
     assertEq(address(submodules[2]), address(submodule3));
   }
 
+  function test_listSubmodulesFullListSequence2() public {
+    IResolutionModule[] memory submodules = module.listSubmodules(0, 3, sequenceId2);
+    assertEq(submodules.length, 3);
+    assertEq(address(submodules[0]), address(submodule2));
+    assertEq(address(submodules[1]), address(submodule3));
+    assertEq(address(submodules[2]), address(submodule1));
+  }
+
   function test_listSubmodulesMoreThanExist() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 200);
+    IResolutionModule[] memory submodules = module.listSubmodules(0, 200, 1);
     assertEq(submodules.length, 3);
     assertEq(address(submodules[0]), address(submodule1));
     assertEq(address(submodules[1]), address(submodule2));
@@ -278,17 +381,40 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_listSubmodulesPartialListMiddle() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(1, 2);
+    IResolutionModule[] memory submodules = module.listSubmodules(1, 2, 1);
     assertEq(submodules.length, 2);
     assertEq(address(submodules[0]), address(submodule2));
     assertEq(address(submodules[1]), address(submodule3));
   }
 
   function test_listSubmodulesPartialListStart() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 2);
+    IResolutionModule[] memory submodules = module.listSubmodules(0, 2, sequenceId);
     assertEq(submodules.length, 2);
     assertEq(address(submodules[0]), address(submodule1));
     assertEq(address(submodules[1]), address(submodule2));
+  }
+
+  function test_startResolutionNewDispute() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
+
+    vm.prank(address(submodule1));
+    module.updateDisputeStatus(disputeId, IOracle.DisputeStatus.NoResolution);
+    assertEq(address(module.getCurrentResolutionModule(disputeId)), address(submodule2));
+
+    bytes32 _dispute3 = bytes32(uint256(6969));
+
+    vm.mockCall(
+      address(oracle),
+      abi.encodeWithSelector(IOracle.getDispute.selector, _dispute3),
+      abi.encode(
+        IOracle.Dispute(block.timestamp, disputer, proposer, responseId, requestId, IOracle.DisputeStatus.Escalated)
+      )
+    );
+
+    vm.prank(address(oracle));
+    module.startResolution(_dispute3);
+    assertEq(address(module.getCurrentResolutionModule(_dispute3)), address(submodule1));
   }
 }
 
@@ -364,7 +490,7 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   function testReverts_createRequestNotSubmodule() public {
     IOracle.NewRequest memory _request;
     vm.expectRevert(
-      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
     module.createRequest(_request);
   }
@@ -372,7 +498,7 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   function testReverts_createRequestsNotSubmodule() public {
     IOracle.NewRequest[] memory _requests;
     vm.expectRevert(
-      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
     module.createRequests(_requests);
   }
@@ -385,6 +511,8 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   }
 
   function testReverts_finalizeNotSubmodule() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.expectRevert(
       abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
     );
@@ -392,6 +520,8 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   }
 
   function test_escalateDisputeCallsOracle() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.escalateDispute.selector), abi.encode());
     vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.escalateDispute.selector, disputeId));
     vm.prank(address(submodule1));
@@ -399,6 +529,8 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
   }
 
   function testReverts_escalateDisputeNotSubmodule() public {
+    vm.prank(address(oracle));
+    module.startResolution(disputeId);
     vm.expectRevert(
       abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
     );
@@ -407,21 +539,21 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
 
   function testReverts_disputeResponseNotSubmodule() public {
     vm.expectRevert(
-      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
     module.disputeResponse(requestId, responseId);
   }
 
   function testReverts_proposeResponseNotSubmodule() public {
     vm.expectRevert(
-      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
     module.proposeResponse(requestId, responseData);
   }
 
   function testReverts_proposeResponseWithProposerNotSubmodule() public {
     vm.expectRevert(
-      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_OnlySubmodule.selector)
+      abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
     module.proposeResponse(proposer, requestId, responseData);
   }
