@@ -102,7 +102,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     // 6. Return tokens
     for (uint256 _i; _i < _votersLength;) {
-      _token.safeTransfer(__voters[_i], votes[_disputeId][__voters[_i]]);
+      address _voter = __voters[_i];
+      _token.safeTransfer(_voter, votes[_disputeId][_voter]);
       unchecked {
         ++_i;
       }

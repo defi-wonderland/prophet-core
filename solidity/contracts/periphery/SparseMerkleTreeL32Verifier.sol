@@ -21,7 +21,7 @@ contract SparseMerkleTreeL32Verifier is ITreeVerifier {
   function calculateRoot(
     bytes memory _treeData,
     bytes32[] memory _leavesToInsert
-  ) external override returns (bytes32 _calculatedRoot) {
+  ) external returns (bytes32 _calculatedRoot) {
     bytes32[_TREE_DEPTH] memory _treeBranches;
     uint256 _treeCount;
 

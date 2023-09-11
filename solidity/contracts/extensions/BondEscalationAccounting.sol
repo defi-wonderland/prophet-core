@@ -25,9 +25,10 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   ) external onlyValidModule(_requestId) {
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
+    pledges[_requestId][_disputeId][_token] += _amount;
+
     unchecked {
       balanceOf[_pledger][_token] -= _amount;
-      pledges[_requestId][_disputeId][_token] += _amount;
     }
 
     emit Pledged(_pledger, _requestId, _disputeId, _token, _amount);
@@ -48,8 +49,9 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     }
 
     for (uint256 i; i < _winningPledgersLength;) {
+      balanceOf[_winningPledgers[i]][_token] += _amountPerPledger;
+
       unchecked {
-        balanceOf[_winningPledgers[i]][_token] += _amountPerPledger;
         pledges[_requestId][_disputeId][_token] -= _amountPerPledger;
         ++i;
       }
@@ -68,9 +70,10 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   ) external onlyValidModule(_requestId) {
     if (pledges[_requestId][_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
+    balanceOf[_pledger][_token] += _amount;
+
     unchecked {
       pledges[_requestId][_disputeId][_token] -= _amount;
-      balanceOf[_pledger][_token] += _amount;
     }
 
     emit PledgeReleased(_requestId, _disputeId, _pledger, _token, _amount);

@@ -68,11 +68,6 @@ interface IAccountingExtension {
   error AccountingExtension_InsufficientFunds();
 
   /**
-   * @notice Thrown when an `onlyOracle` function is called by something else than the Oracle
-   */
-  error AccountingExtension_OnlyOracle();
-
-  /**
    * @notice Thrown when an `onlyValidModule` function is called by something
    * else than a module being used in the corresponding request
    */

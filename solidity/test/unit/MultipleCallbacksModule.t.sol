@@ -7,7 +7,7 @@ import 'forge-std/Test.sol';
 import {
   MultipleCallbacksModule,
   IOracle,
-  IMultipleCallbackModule
+  IMultipleCallbacksModule
 } from '../../contracts/modules/MultipleCallbacksModule.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
@@ -101,7 +101,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes memory _requestData = abi.encode(_targets, _data);
 
     vm.prank(address(oracle));
-    vm.expectRevert(IMultipleCallbackModule.MultipleCallbackModule_InvalidParameters.selector);
+    vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_InvalidParameters.selector);
 
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
@@ -118,7 +118,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes memory _requestData = abi.encode(_targets, _targetData);
 
     vm.prank(address(oracle));
-    vm.expectRevert(IMultipleCallbackModule.MultipleCallbackModule_TargetHasNoCode.selector);
+    vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_TargetHasNoCode.selector);
 
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }

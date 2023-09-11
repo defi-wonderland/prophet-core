@@ -48,7 +48,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
   // call the arbitrator with the dispute to arbitrate (it might or might not answer atomically -> eg queue a snapshot
   // vote vs a chainlink call) -> atomically should happen during a callback to storeAnswer
   //
-  // arbitrator can either be an EOA (or contract) which sends dispute resolution to this contract (ie offchain vote later sent)
+  // arbitrator can either be a contract which sends dispute resolution to this contract (ie offchain vote later sent)
   // or a contract which implements IArbitrator
   // or a contract which resolve as soon as being called (ie chainlink wrapper), in a callback
   function startResolution(bytes32 _disputeId) external onlyOracle {

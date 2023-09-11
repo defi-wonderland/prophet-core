@@ -183,7 +183,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlySurpassByOnePledge();
     }
 
-    if (block.timestamp > _bondEscalationDeadline && _numPledgersForDispute >= _numPledgersAgainstDispute) {
+    if (block.timestamp > _bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
@@ -228,7 +228,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlySurpassByOnePledge();
     }
 
-    if (block.timestamp > _bondEscalationDeadline && _numPledgersAgainstDispute >= _numPledgersForDispute) {
+    if (block.timestamp > _bondEscalationDeadline && _numPledgersAgainstDispute == _numPledgersForDispute) {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 

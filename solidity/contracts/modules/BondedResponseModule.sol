@@ -39,8 +39,10 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     // Cannot propose to a request with a response, unless the response is being disputed
     bytes32[] memory _responseIds = ORACLE.getResponseIds(_requestId);
-    if (_responseIds.length > 0) {
-      bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responseIds.length - 1]).disputeId;
+    uint256 _responsesLength = _responseIds.length;
+
+    if (_responsesLength != 0) {
+      bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responsesLength - 1]).disputeId;
 
       // Allowing one undisputed response at a time
       if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();

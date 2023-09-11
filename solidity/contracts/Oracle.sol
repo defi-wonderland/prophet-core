@@ -196,19 +196,20 @@ contract Oracle is IOracle {
     }
 
     Response storage _response = _responses[_responseId];
-    if (_response.requestId != _requestId || _response.createdAt == 0) {
+    if (_response.requestId != _requestId) {
       revert Oracle_InvalidResponseId(_responseId);
     }
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
-    _disputes[_disputeId] =
-      _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _responses[_responseId].proposer);
+    Dispute memory _dispute =
+      _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _response.proposer);
+    _disputes[_disputeId] = _dispute;
     disputeOf[_responseId] = _disputeId;
 
     _response.disputeId = _disputeId;
 
-    if (_disputes[_disputeId].status != DisputeStatus.Active) {
-      _request.disputeModule.updateDisputeStatus(_disputeId, _disputes[_disputeId]);
+    if (_dispute.status != DisputeStatus.Active) {
+      _request.disputeModule.updateDisputeStatus(_disputeId, _dispute);
     }
 
     emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
@@ -216,7 +217,7 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function escalateDispute(bytes32 _disputeId) external {
-    Dispute memory _dispute = _disputes[_disputeId];
+    Dispute storage _dispute = _disputes[_disputeId];
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     if (_dispute.status != DisputeStatus.Active) {
@@ -225,7 +226,6 @@ contract Oracle is IOracle {
 
     // Change the dispute status
     _dispute.status = DisputeStatus.Escalated;
-    _disputes[_disputeId] = _dispute;
 
     Request memory _request = _requests[_dispute.requestId];
 
@@ -300,7 +300,7 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
     Response memory _response = _responses[_finalizedResponseId];
-    if (_response.requestId != _requestId || _response.createdAt == 0) {
+    if (_response.requestId != _requestId) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
     DisputeStatus _disputeStatus = _disputes[disputeOf[_finalizedResponseId]].status;
@@ -319,11 +319,13 @@ contract Oracle is IOracle {
     if (_request.finalizedAt != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
-    uint256 _responsesAmount = _responseIds[_requestId].length;
+
+    bytes32[] memory _requestResponseIds = _responseIds[_requestId];
+    uint256 _responsesAmount = _requestResponseIds.length;
 
     if (_responsesAmount != 0) {
       for (uint256 _i = 0; _i < _responsesAmount;) {
-        bytes32 _responseId = _responseIds[_requestId][_i];
+        bytes32 _responseId = _requestResponseIds[_i];
         bytes32 _disputeId = disputeOf[_responseId];
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 

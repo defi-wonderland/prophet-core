@@ -29,14 +29,6 @@ contract AccountingExtension is IAccountingExtension {
   }
 
   /**
-   * @notice Checks that the caller is ORACLE.
-   */
-  modifier onlyOracle() {
-    if (msg.sender != address(ORACLE)) revert AccountingExtension_OnlyOracle();
-    _;
-  }
-
-  /**
    * @notice Checks that the caller is a valid module used in the request.
    */
   modifier onlyValidModule(bytes32 _requestId) {
@@ -87,6 +79,7 @@ contract AccountingExtension is IAccountingExtension {
     }
 
     balanceOf[_receiver][_token] += _amount;
+
     unchecked {
       bondedAmountOf[_payer][_token][_requestId] -= _amount;
     }
@@ -103,9 +96,10 @@ contract AccountingExtension is IAccountingExtension {
   ) external onlyValidModule(_requestId) {
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();
 
+    bondedAmountOf[_bonder][_token][_requestId] += _amount;
+
     unchecked {
       balanceOf[_bonder][_token] -= _amount;
-      bondedAmountOf[_bonder][_token][_requestId] += _amount;
     }
 
     emit Bonded(_requestId, _bonder, _token, _amount);
@@ -120,9 +114,10 @@ contract AccountingExtension is IAccountingExtension {
   ) external onlyValidModule(_requestId) {
     if (bondedAmountOf[_bonder][_token][_requestId] < _amount) revert AccountingExtension_InsufficientFunds();
 
+    balanceOf[_bonder][_token] += _amount;
+
     unchecked {
       bondedAmountOf[_bonder][_token][_requestId] -= _amount;
-      balanceOf[_bonder][_token] += _amount;
     }
 
     emit Released(_requestId, _bonder, _token, _amount);

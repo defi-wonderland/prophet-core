@@ -2,13 +2,13 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from '../../interfaces/IOracle.sol';
-import {IMultipleCallbackModule} from '../../interfaces/modules/IMultipleCallbackModule.sol';
+import {IMultipleCallbacksModule} from '../../interfaces/modules/IMultipleCallbacksModule.sol';
 import {Module} from '../Module.sol';
 
-contract MultipleCallbacksModule is Module, IMultipleCallbackModule {
+contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  /// @inheritdoc IMultipleCallbackModule
+  /// @inheritdoc IMultipleCallbacksModule
   function decodeRequestData(bytes32 _requestId) public view returns (address[] memory _targets, bytes[] memory _data) {
     (_targets, _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
   }
@@ -34,8 +34,8 @@ contract MultipleCallbacksModule is Module, IMultipleCallbackModule {
     }
   }
 
-  /// @inheritdoc IMultipleCallbackModule
-  function finalizeRequest(bytes32 _requestId, address) external override(IMultipleCallbackModule, Module) onlyOracle {
+  /// @inheritdoc IMultipleCallbacksModule
+  function finalizeRequest(bytes32 _requestId, address) external override(IMultipleCallbacksModule, Module) onlyOracle {
     (address[] memory _targets, bytes[] memory _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
     uint256 _length = _targets.length;
 
