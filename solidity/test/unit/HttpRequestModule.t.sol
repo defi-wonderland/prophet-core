@@ -7,15 +7,15 @@ import 'forge-std/Test.sol';
 import {
   HttpRequestModule,
   IHttpRequestModule,
-  IModule,
   IOracle,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/HttpRequestModule.sol';
-
+import {IModule} from '../../interfaces/IModule.sol';
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
+
 contract ForTest_HttpRequestModule is HttpRequestModule {
   constructor(IOracle _oracle) HttpRequestModule(_oracle) {}
 
