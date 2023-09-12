@@ -16,7 +16,6 @@
 
   - [Request](content/modules/request.md)
 
-    - [CircuitResolverRequestModule](content/modules/request/circuit_resolver_request_module.md)
     - [ContractCallRequestModule](content/modules/request/contract_call_request_module.md)
     - [HttpRequestModule](content/modules/request/http_request_module.md)
     - [SparseMerkleTreeRequestModule](content/modules/request/sparse_merkle_tree_request_module.md)
