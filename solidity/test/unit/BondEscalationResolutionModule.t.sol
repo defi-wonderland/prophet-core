@@ -111,9 +111,9 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
   uint256 timeToBreakInequality;
 
   // Events
-  event DisputeResolved(bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
+  event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
 
-  event DisputeEscalated(bytes32 indexed _disputeId, bytes32 indexed requestId);
+  event ResolutionStarted(bytes32 indexed _requestId, bytes32 indexed _disputeId);
 
   event PledgedForDispute(
     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
@@ -203,7 +203,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     module.startResolution(_disputeId);
 
     vm.expectEmit(true, true, true, true, address(module));
-    emit DisputeEscalated(_disputeId, _requestId);
+    emit ResolutionStarted(_requestId, _disputeId);
 
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
@@ -840,7 +840,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit DisputeResolved(_disputeId, IOracle.DisputeStatus.NoResolution);
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
 
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
@@ -881,7 +881,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit DisputeResolved(_disputeId, IOracle.DisputeStatus.NoResolution);
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
 
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
@@ -920,7 +920,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
 
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
@@ -961,7 +961,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
 
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);

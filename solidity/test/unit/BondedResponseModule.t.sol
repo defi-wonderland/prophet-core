@@ -45,6 +45,9 @@ contract BondedResponseModule_UnitTest is Test {
   // Mock EOA proposer
   address public proposer;
 
+  event ProposeResponse(bytes32 _requestId, address _proposer, bytes _responseData);
+  event RequestFinalized(bytes32 _requestId, address _finalizer);
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -123,6 +126,35 @@ contract BondedResponseModule_UnitTest is Test {
     assertEq(_responseReturned.disputeId, _responseExpected.disputeId);
     assertEq(_responseReturned.proposer, _responseExpected.proposer);
     assertEq(_responseReturned.response, _responseExpected.response);
+  }
+
+  function test_proposeEmitsEvent(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    bytes calldata _responseData
+  ) public {
+    vm.assume(_deadline > block.timestamp);
+    // Create and set some mock request data
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    // Mock getting the request's responses to verify that the caller can propose
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
+
+    // Mock and expect the call to the accounting extension to bond the bondSize
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.bond, (proposer, _requestId, token, _bondSize)),
+      abi.encode()
+    );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
+    emit ProposeResponse(_requestId, proposer, _responseData);
+
+    vm.prank(address(oracle));
+    bondedResponseModule.propose(_requestId, proposer, _responseData);
   }
 
   /**
@@ -215,6 +247,45 @@ contract BondedResponseModule_UnitTest is Test {
     vm.expectCall(
       address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
     );
+
+    bondedResponseModule.finalizeRequest(_requestId, address(this));
+  }
+
+  function test_finalizeRequestEmitsEvent(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+    vm.assume(_deadline > block.timestamp);
+    vm.startPrank(address(oracle));
+
+    // Check revert if deadline has not passed
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
+
+    // Check correct calls are made if deadline has passed
+    _deadline = block.timestamp;
+
+    _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      requestId: _requestId,
+      disputeId: bytes32(''),
+      proposer: proposer,
+      response: bytes('bleh')
+    });
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId), abi.encode(_mockResponse));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize)),
+      abi.encode(true)
+    );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
+    emit RequestFinalized(_requestId, address(this));
 
     bondedResponseModule.finalizeRequest(_requestId, address(this));
   }

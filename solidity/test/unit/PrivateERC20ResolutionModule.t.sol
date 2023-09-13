@@ -68,7 +68,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   event CommittingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event VoteCommitted(address _voter, bytes32 _disputeId, bytes32 _commitment);
   event VoteRevealed(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
-  event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
+  event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -506,7 +506,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)), abi.encode());
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)));
     vm.expectEmit(true, true, true, true);
-    emit DisputeResolved(_disputeId, _newStatus);
+    emit DisputeResolved(_requestId, _disputeId, _newStatus);
 
     // Check: does revert if called by address != oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);

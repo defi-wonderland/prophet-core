@@ -61,6 +61,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     });
 
     _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
+
+    emit ProposeResponse(_requestId, _proposer, _responseData);
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -91,5 +93,6 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     if (_response.createdAt != 0) {
       _accountingExtension.release(_response.proposer, _requestId, _bondToken, _bondSize);
     }
+    emit RequestFinalized(_requestId, _finalizer);
   }
 }

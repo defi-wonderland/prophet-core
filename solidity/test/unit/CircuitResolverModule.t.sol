@@ -62,6 +62,11 @@ contract CircuitResolverModule_UnitTest is Test {
 
   bytes internal _callData = abi.encodeWithSignature('test(uint256)', 123);
 
+  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event DisputeStatusUpdated(
+    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  );
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -177,6 +182,42 @@ contract CircuitResolverModule_UnitTest is Test {
     assertEq(_dispute.requestId, _requestId, 'Mismatch: requestId');
     assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Won), 'Mismatch: status');
     assertEq(_dispute.createdAt, block.timestamp, 'Mismatch: createdAt');
+  }
+
+  function test_disputeResponse_emitsEvent(uint256 _bondSize) public {
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+    bool _correctResponse = false;
+
+    // Mock request data
+    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Create new Response memory struct with random values
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: _proposer,
+      requestId: _requestId,
+      disputeId: mockId,
+      response: abi.encode(true)
+    });
+
+    // Mock and expect the call to the oracle, getting the response
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
+
+    // Mock and expect the call to the verifier
+    vm.mockCall(circuitVerifier, _callData, abi.encode(_correctResponse));
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(circuitResolverModule));
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
+
+    // // Test: call disputeResponse
+    vm.prank(address(oracle));
+    circuitResolverModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
   }
 
   /**
@@ -354,6 +395,50 @@ contract CircuitResolverModule_UnitTest is Test {
     mockDispute.requestId = _requestId;
     mockDispute.disputer = _disputer;
     mockDispute.proposer = _proposer;
+
+    // Test: call updateDisputeStatus
+    vm.prank(address(oracle));
+    circuitResolverModule.updateDisputeStatus(bytes32(0), mockDispute);
+  }
+
+  function test_updateDisputeStatus_eventEmitted(uint256 _bondSize) public {
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+    bytes memory _encodedCorrectResponse = abi.encode(true);
+
+    // Mock request data
+    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
+    circuitResolverModule.forTest_setCorrectResponse(_requestId, _encodedCorrectResponse);
+
+    // Create new Response memory struct with random values
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: _proposer,
+      requestId: _requestId,
+      disputeId: mockId,
+      response: _encodedCorrectResponse
+    });
+
+    // Mock and expect the call to the oracle, getting the response
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
+
+    // Mock and expect the call to the oracle, finalizing the request
+    vm.mockCall(
+      address(oracle), abi.encodeWithSignature('finalize(bytes32,bytes32)', _requestId, _responseId), abi.encode()
+    );
+
+    // Populate the mock dispute with the correct values
+    mockDispute.status = IOracle.DisputeStatus.Lost;
+    mockDispute.responseId = _responseId;
+    mockDispute.requestId = _requestId;
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(circuitResolverModule));
+    emit DisputeStatusUpdated(_requestId, _responseId, mockDispute.disputer, mockDispute.proposer, false);
 
     // Test: call updateDisputeStatus
     vm.prank(address(oracle));

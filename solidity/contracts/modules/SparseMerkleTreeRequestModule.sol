@@ -47,7 +47,7 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
   /// @inheritdoc ISparseMerkleTreeRequestModule
   function finalizeRequest(
     bytes32 _requestId,
-    address
+    address _finalizer
   ) external override(ISparseMerkleTreeRequestModule, Module) onlyOracle {
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
@@ -58,5 +58,6 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
     } else {
       _accountingExtension.release(_request.requester, _requestId, _paymentToken, _paymentAmount);
     }
+    emit RequestFinalized(_requestId, _finalizer);
   }
 }

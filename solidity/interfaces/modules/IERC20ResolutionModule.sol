@@ -16,7 +16,6 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   event VoteCast(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event VotingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
-  event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
 
   error ERC20ResolutionModule_OnlyDisputeModule();
   error ERC20ResolutionModule_DisputeNotEscalated();

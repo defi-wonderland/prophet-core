@@ -97,6 +97,8 @@ contract RootVerificationModule_UnitTest is Test {
 
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
+  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -228,6 +230,46 @@ contract RootVerificationModule_UnitTest is Test {
     assertEq(_dispute.requestId, _requestId, 'Mismatch: requestId');
     assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Won), 'Mismatch: status');
     assertEq(_dispute.createdAt, block.timestamp, 'Mismatch: createdAt');
+  }
+
+  function test_disputeResponse_emitsEvent(uint256 _bondSize) public {
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+
+    // Mock request data
+    bytes memory _requestData =
+      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Create new Response memory struct with random values
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: block.timestamp,
+      proposer: _proposer,
+      requestId: _requestId,
+      disputeId: mockId,
+      response: abi.encode(bytes32('randomRoot'))
+    });
+
+    // Mock and expect the call to the oracle, getting the response
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
+
+    // Mock and expect the call to the tree verifier, calculating the root
+    vm.mockCall(
+      address(treeVerifier),
+      abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
+      abi.encode(bytes32('randomRoot2'))
+    );
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(rootVerificationModule));
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
+
+    // Test: call disputeResponse
+    vm.prank(address(oracle));
+    rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
   }
 
   /**

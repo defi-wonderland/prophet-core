@@ -91,6 +91,10 @@ contract BondEscalationModule_UnitTest is Test {
   event BondEscalationStatusUpdated(
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
+  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event DisputeStatusUpdated(
+    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  );
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -491,6 +495,29 @@ contract BondEscalationModule_UnitTest is Test {
     assertEq(bondEscalationModule.escalatedDispute(_requestId), _expectedDisputeId);
   }
 
+  function test_disputeResponseEmitsEvent(bytes32 _requestId, bytes32 _responseId) public {
+    //  Set deadline to timestamp so we are still in the bond escalation period
+    uint256 _bondEscalationDeadline = block.timestamp;
+
+    // Set the request data for the given requestId
+    _setRequestData(_requestId, bondSize, maxEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod);
+    _mockResponse(_responseId, _requestId);
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+
+    vm.prank(address(oracle));
+
+    // Expect event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit ResponseDisputed(_requestId, _responseId, disputer, proposer);
+
+    bondEscalationModule.disputeResponse(_requestId, _responseId, disputer, proposer);
+  }
+
   ////////////////////////////////////////////////////////////////////
   //                  Tests for updateDisputeStatus
   ////////////////////////////////////////////////////////////////////
@@ -574,6 +601,40 @@ contract BondEscalationModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
     );
+
+    vm.prank(address(oracle));
+    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+  }
+
+  function test_updateDisputeStatusEmitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
+    IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
+    IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
+
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize))
+    );
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
+      abi.encode(true)
+    );
+    vm.expectCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize))
+    );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit DisputeStatusUpdated(_requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, true);
 
     vm.prank(address(oracle));
     bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);

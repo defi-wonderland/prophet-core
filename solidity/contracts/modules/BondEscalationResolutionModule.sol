@@ -72,7 +72,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   function startResolution(bytes32 _disputeId) external onlyOracle {
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
     escalationData[_disputeId].startTime = uint128(block.timestamp);
-    emit DisputeEscalated(_disputeId, _requestId);
+    emit ResolutionStarted(_requestId, _disputeId);
   }
 
   /**
@@ -289,7 +289,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     }
 
     ORACLE.updateDisputeStatus(_disputeId, _disputeStatus);
-    emit DisputeResolved(_disputeId, _disputeStatus);
+    emit DisputeResolved(_requestId, _disputeId, _disputeStatus);
   }
 
   /**

@@ -95,6 +95,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     });
 
     _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
+
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -143,6 +145,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _bondSize << 1
       );
     }
+    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
   }
 
   ////////////////////////////////////////////////////////////////////

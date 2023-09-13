@@ -55,6 +55,8 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     }
 
     delete _correctResponses[_dispute.requestId];
+
+    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
   }
 
   function disputeResponse(
@@ -80,5 +82,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
+
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 }

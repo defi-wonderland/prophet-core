@@ -46,7 +46,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
   /// @inheritdoc IContractCallRequestModule
   function finalizeRequest(
     bytes32 _requestId,
-    address
+    address _finalizer
   ) external override(IContractCallRequestModule, Module) onlyOracle {
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
@@ -57,5 +57,6 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
     } else {
       _accountingExtension.release(_request.requester, _requestId, _paymentToken, _paymentAmount);
     }
+    emit RequestFinalized(_requestId, _finalizer);
   }
 }

@@ -37,8 +37,6 @@ interface IBondEscalationResolutionModule is IResolutionModule {
     uint256 pledgesAgainst;
   }
 
-  // TODO: [OPO-89] should I add requestId as a param?
-  event DisputeResolved(bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
   event DisputeEscalated(bytes32 indexed _disputeId, bytes32 indexed requestId);
   event PledgedForDispute(
     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount

@@ -48,6 +48,8 @@ contract ArbitratorModule is Module, IArbitratorModule {
 
     _disputeData[_disputeId] = 1;
     IArbitrator(_arbitrator).resolve(_disputeId);
+
+    emit ResolutionStarted(_dispute.requestId, _disputeId);
   }
 
   /// @inheritdoc IArbitratorModule
@@ -60,7 +62,9 @@ contract ArbitratorModule is Module, IArbitratorModule {
 
     uint256 _requestDataUpdated = 2 | uint256(_valid ? 1 : 0) << 2;
     _disputeData[_disputeId] = _requestDataUpdated;
+    IOracle.DisputeStatus _resolution = _valid ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
+    ORACLE.updateDisputeStatus(_disputeId, _resolution);
 
-    ORACLE.updateDisputeStatus(_disputeId, _valid ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost);
+    emit DisputeResolved(_dispute.requestId, _disputeId, _resolution);
   }
 }

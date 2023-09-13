@@ -15,6 +15,16 @@ interface IBondedResponseModule is IResponseModule {
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
+  /**
+   * @notice Emitted when a response is proposed
+   * @param _requestId The ID of the request that the response was proposed
+   * @param _proposer The user that proposed the response
+   * @param _responseData The data for the response
+   */
+  event ProposeResponse(bytes32 _requestId, address _proposer, bytes _responseData);
+  /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Thrown when trying to finalize a request before the deadline

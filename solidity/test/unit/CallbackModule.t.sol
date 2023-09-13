@@ -23,6 +23,7 @@ contract ForTest_CallbackModule is CallbackModule {
  */
 contract CallbackModule_UnitTest is Test {
   event Callback(address indexed _target, bytes32 indexed _request, bytes _data);
+  event RequestFinalized(bytes32 _requestId, address _finalizer);
 
   // The target contract
   ForTest_CallbackModule public callbackModule;
@@ -93,6 +94,22 @@ contract CallbackModule_UnitTest is Test {
     // Check: correct event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
     emit Callback(_target, _requestId, _data);
+
+    vm.prank(address(oracle));
+    callbackModule.finalizeRequest(_requestId, address(oracle));
+  }
+
+  function test_finalizeRequestEmitsEvent(bytes32 _requestId, address _target, bytes calldata _data) public {
+    assumeNoPrecompiles(_target);
+    vm.assume(_target != address(vm));
+
+    // Create and set some mock request data
+    bytes memory _requestData = abi.encode(_target, _data);
+    callbackModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Check: correct event emitted?
+    vm.expectEmit(true, true, true, true, address(callbackModule));
+    emit RequestFinalized(_requestId, address(oracle));
 
     vm.prank(address(oracle));
     callbackModule.finalizeRequest(_requestId, address(oracle));

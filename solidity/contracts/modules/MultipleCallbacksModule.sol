@@ -35,7 +35,10 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   }
 
   /// @inheritdoc IMultipleCallbacksModule
-  function finalizeRequest(bytes32 _requestId, address) external override(IMultipleCallbacksModule, Module) onlyOracle {
+  function finalizeRequest(
+    bytes32 _requestId,
+    address _finalizer
+  ) external override(IMultipleCallbacksModule, Module) onlyOracle {
     (address[] memory _targets, bytes[] memory _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
     uint256 _length = _targets.length;
 
@@ -47,5 +50,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
         ++_i;
       }
     }
+
+    emit RequestFinalized(_requestId, _finalizer);
   }
 }

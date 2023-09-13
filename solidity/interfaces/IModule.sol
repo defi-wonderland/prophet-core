@@ -10,6 +10,16 @@ pragma solidity ^0.8.19;
  */
 interface IModule {
   /*///////////////////////////////////////////////////////////////
+                              EVENTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Emitted when a request is finalized
+   * @param _requestId The ID of the request that was finalized
+   * @param _finalizer The address that initiated the finalization
+   */
+  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
 

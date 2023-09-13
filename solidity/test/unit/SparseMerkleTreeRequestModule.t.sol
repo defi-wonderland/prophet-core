@@ -79,6 +79,8 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
+  event RequestFinalized(bytes32 _requestId, address _finalizer);
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -250,6 +252,66 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
       address(accounting),
       abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount))
     );
+
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(this));
+  }
+
+  function test_finalizeRequestEmitsEvent(
+    bytes32 _requestId,
+    address _requester,
+    address _proposer,
+    IERC20 _paymentToken,
+    uint256 _paymentAmount
+  ) public {
+    vm.assume(_requestId != bytes32(0));
+    vm.assume(_requester != address(0));
+    vm.assume(_proposer != address(0));
+    vm.assume(address(_paymentToken) != address(0));
+    vm.assume(_paymentAmount > 0);
+
+    // Use the correct accounting parameters
+    bytes memory _requestData =
+      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
+
+    IOracle.Request memory _fullRequest;
+    _fullRequest.requester = _requester;
+
+    IOracle.Response memory _fullResponse;
+    _fullResponse.proposer = _proposer;
+    _fullResponse.createdAt = block.timestamp;
+
+    // Set the request data
+    sparseMerkleTreeRequestModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock and assert the calls
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _paymentToken, _paymentAmount)),
+      abi.encode()
+    );
+
+    vm.startPrank(address(oracle));
+    sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(oracle));
+
+    // Test the release flow
+    _fullResponse.createdAt = 0;
+
+    // Update mock call to return the response with createdAt = 0
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+
+    vm.mockCall(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount)),
+      abi.encode(true)
+    );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(sparseMerkleTreeRequestModule));
+    emit RequestFinalized(_requestId, address(this));
 
     sparseMerkleTreeRequestModule.finalizeRequest(_requestId, address(this));
   }

@@ -92,10 +92,10 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     // 5. Update status
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Won);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
       ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Lost);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 
     uint256 _votersLength = __voters.length;

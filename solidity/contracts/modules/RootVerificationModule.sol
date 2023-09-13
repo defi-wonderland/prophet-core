@@ -65,6 +65,8 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     }
 
     delete _correctRoots[_dispute.requestId];
+
+    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
   }
 
   /// @inheritdoc IRootVerificationModule
@@ -91,5 +93,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
+
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 }

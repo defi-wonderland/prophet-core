@@ -34,6 +34,10 @@ contract BondedDisputeModule_UnitTest is Test {
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
+  event DisputeStatusUpdated(
+    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  );
+
   /**
    * @notice Deploy the target and mock oracle
    */
@@ -247,6 +251,59 @@ contract BondedDisputeModule_UnitTest is Test {
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
     );
+
+    vm.prank(address(oracle));
+    bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);
+  }
+
+  function test_updateDisputeStatus_emitsEvent() public {
+    // Mock addresses
+    IERC20 _token = IERC20(makeAddr('token'));
+    address _disputer = makeAddr('disputer');
+    address _proposer = makeAddr('proposer');
+
+    uint256 _bondSize = 69;
+
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+
+    // Mock request data
+    bytes memory _requestData = abi.encode(accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    bondedDisputeModule.forTest_setRequestData(mockId, _requestData);
+
+    // ------------------------------------
+    //   Scenario: dispute won by proposer
+    // ------------------------------------
+
+    mockDispute = IOracle.Dispute({
+      createdAt: 1,
+      disputer: _disputer,
+      proposer: _proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.Won
+    });
+
+    // mock and expect the call to pay, from¨*proposer to disputer*
+    vm.mockCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize)),
+      abi.encode()
+    );
+
+    // mock and expect the call to release, to the disputer
+    vm.mockCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
+      abi.encode()
+    );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit DisputeStatusUpdated(_requestId, _responseId, _disputer, _proposer, true);
 
     vm.prank(address(oracle));
     bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);

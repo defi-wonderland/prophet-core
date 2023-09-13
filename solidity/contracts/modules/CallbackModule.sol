@@ -27,10 +27,14 @@ contract CallbackModule is Module, ICallbackModule {
   }
 
   /// @inheritdoc ICallbackModule
-  function finalizeRequest(bytes32 _requestId, address) external override(Module, ICallbackModule) onlyOracle {
+  function finalizeRequest(
+    bytes32 _requestId,
+    address _finalizer
+  ) external override(Module, ICallbackModule) onlyOracle {
     (address _target, bytes memory _data) = abi.decode(requestData[_requestId], (address, bytes));
     // solhint-disable-next-line
     _target.call(_data);
     emit Callback(_target, _requestId, _data);
+    emit RequestFinalized(_requestId, _finalizer);
   }
 }

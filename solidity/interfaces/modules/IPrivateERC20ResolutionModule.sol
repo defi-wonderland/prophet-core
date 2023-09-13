@@ -40,13 +40,6 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    */
   event CommittingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
 
-  /**
-   * @notice The dispute has been resolved
-   * @param _disputeId The dispute being voted on
-   * @param _status The new status of the dispute
-   */
-  event DisputeResolved(bytes32 _disputeId, IOracle.DisputeStatus _status);
-
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/

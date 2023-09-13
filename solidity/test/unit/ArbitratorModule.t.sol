@@ -38,6 +38,9 @@ contract ArbitratorModule_UnitTest is Test {
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
+  event ResolutionStarted(bytes32 indexed _requestId, bytes32 indexed _disputeId);
+  event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
+
   /**
    * @notice Deploy the target and mock oracle
    */
@@ -166,6 +169,36 @@ contract ArbitratorModule_UnitTest is Test {
     assertEq(arbitratorModule.isValid(_disputeId), _valid);
   }
 
+  function test_resolveDisputeEmitsEvent(bytes32 _disputeId, bytes32 _requestId, bool _valid) public {
+    // Store the mock dispute
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock and expect the dummy dispute
+    mockDispute.requestId = _requestId;
+    mockDispute.status = IOracle.DisputeStatus.Escalated;
+
+    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    // Check: the arbitrator is called?
+    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_valid));
+
+    // Mock the oracle function
+    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    IOracle.DisputeStatus _status = _valid ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
+
+    vm.mockCall(address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _status)), abi.encode());
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(arbitratorModule));
+    emit DisputeResolved(_requestId, _disputeId, _status);
+
+    // Test: resolve the dispute
+    vm.prank(address(oracle));
+    arbitratorModule.resolveDispute(_disputeId);
+  }
+
   /**
    * @notice resolve dispute reverts if the dispute status isn't Active
    */
@@ -242,6 +275,27 @@ contract ArbitratorModule_UnitTest is Test {
 
     // Check: status is now Escalated?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
+  }
+
+  function test_startResolutionEmitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
+    // Mock and expect the dummy dispute
+    mockDispute.requestId = _requestId;
+    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    // Store the requestData
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock and expect the callback to the arbitrator
+    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(arbitratorModule));
+    emit ResolutionStarted(_requestId, _disputeId);
+
+    // Test: escalate the dispute
+    vm.prank(address(oracle));
+    arbitratorModule.startResolution(_disputeId);
   }
 
   // Revert if caller isn't the oracle

@@ -125,10 +125,10 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Won);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
       ORACLE.updateDisputeStatus(_disputeId, IOracle.DisputeStatus.Lost);
-      emit DisputeResolved(_disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 
     uint256 _length = __voters.length;

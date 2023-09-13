@@ -45,6 +45,8 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
 
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) = decodeRequestData(_requestId);
     _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
+
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 
   // TODO: This doesn't handle the cases of unconclusive statuses
@@ -65,5 +67,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     _accountingExtension.release(
       _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
     );
+
+    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
   }
 }
