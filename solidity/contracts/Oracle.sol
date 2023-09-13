@@ -139,6 +139,14 @@ contract Oracle is IOracle {
     _responseId = _proposeResponse(_proposer, _requestId, _request, _responseData);
   }
 
+  /**
+   * @notice Creates a new response for a given request
+   * @param _proposer The address of the proposer
+   * @param _requestId The id of the request
+   * @param _request The request data
+   * @param _responseData The response data
+   * @return _responseId The id of the created response
+   */
   function _proposeResponse(
     address _proposer,
     bytes32 _requestId,
