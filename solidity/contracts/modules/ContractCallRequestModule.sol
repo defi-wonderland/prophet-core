@@ -21,7 +21,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
   }
 
   /**
-   * @notice Bonds the requester's funds through the accounting extenison
+   * @notice Bonds the requester's funds through the accounting extension
    * @param _requestId The id of the request being set up
    */
   function _afterSetupRequest(bytes32 _requestId, bytes calldata) internal override {
