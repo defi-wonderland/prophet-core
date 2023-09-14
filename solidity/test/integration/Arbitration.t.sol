@@ -6,10 +6,6 @@ import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {MockAtomicArbitrator} from '../mocks/MockAtomicArbitrator.sol';
 
 contract Integration_Arbitration is IntegrationBase {
-  // bytes32 _requestId;
-  // bytes32 _responseId;
-  // bytes32 _disputeId;
-
   MockAtomicArbitrator _mockAtomicArbitrator;
 
   function setUp() public override {
