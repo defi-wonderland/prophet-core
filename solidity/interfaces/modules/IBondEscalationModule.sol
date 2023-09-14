@@ -169,7 +169,7 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _dispute    The full dispute object.
    *
    */
-  function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external override;
+  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external override;
 
   /**
    * @notice Verifies whether the dispute going through the bond escalation mechanism has reached a tie and

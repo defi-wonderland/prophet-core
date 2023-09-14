@@ -10,7 +10,7 @@ The Bonded Dispute Module is a contract that allows users to dispute a proposed 
 
 - `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
 - `disputeResponse(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer)`: Starts a dispute.
-- `updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute)`: Is a hook called by the oracle when a dispute status has been updated.
+- `onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute)`: Is a hook called by the oracle when a dispute status has been updated.
 - `disputeEscalated(bytes32 _disputeId)`: Called by the oracle when a dispute has been escalated. Not implemented in this module.
 
 ### Request Parameters

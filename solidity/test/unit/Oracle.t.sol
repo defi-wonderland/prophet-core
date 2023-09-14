@@ -730,14 +730,14 @@ contract Oracle_UnitTest is Test {
         // The mocked call is done with the new status
         mockDispute.status = IOracle.DisputeStatus(_newStatus);
 
-        // Mock&expect the disputeModule updateDisputeStatus call
+        // Mock&expect the disputeModule onDisputeStatusChange call
         vm.mockCall(
           address(disputeModule),
-          abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, mockDispute)),
+          abi.encodeCall(IDisputeModule.onDisputeStatusChange, (_disputeId, mockDispute)),
           abi.encode()
         );
         vm.expectCall(
-          address(disputeModule), abi.encodeCall(IDisputeModule.updateDisputeStatus, (_disputeId, mockDispute))
+          address(disputeModule), abi.encodeCall(IDisputeModule.onDisputeStatusChange, (_disputeId, mockDispute))
         );
 
         // Check: emits DisputeStatusUpdated event?

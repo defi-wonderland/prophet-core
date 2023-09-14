@@ -24,7 +24,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
-  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
+  function onDisputeStatusChange(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);

@@ -353,9 +353,9 @@ contract CircuitResolverModule_UnitTest is Test {
     mockDispute.responseId = _responseId;
     mockDispute.requestId = _requestId;
 
-    // Test: call updateDisputeStatus
+    // Test: call onDisputeStatusChange
     vm.prank(address(oracle));
-    circuitResolverModule.updateDisputeStatus(bytes32(0), mockDispute);
+    circuitResolverModule.onDisputeStatusChange(bytes32(0), mockDispute);
   }
 
   /**
@@ -436,12 +436,12 @@ contract CircuitResolverModule_UnitTest is Test {
     mockDispute.disputer = _disputer;
     mockDispute.proposer = _proposer;
 
-    // Test: call updateDisputeStatus
+    // Test: call onDisputeStatusChange
     vm.prank(address(oracle));
-    circuitResolverModule.updateDisputeStatus(bytes32(0), mockDispute);
+    circuitResolverModule.onDisputeStatusChange(bytes32(0), mockDispute);
   }
 
-  function test_updateDisputeStatus_eventEmitted(uint256 _bondSize) public {
+  function test_onDisputeStatusChange_eventEmitted(uint256 _bondSize) public {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
@@ -488,9 +488,9 @@ contract CircuitResolverModule_UnitTest is Test {
     vm.expectEmit(true, true, true, true, address(circuitResolverModule));
     emit DisputeStatusUpdated(_requestId, _responseId, mockDispute.disputer, mockDispute.proposer, false);
 
-    // Test: call updateDisputeStatus
+    // Test: call onDisputeStatusChange
     vm.prank(address(oracle));
-    circuitResolverModule.updateDisputeStatus(bytes32(0), mockDispute);
+    circuitResolverModule.onDisputeStatusChange(bytes32(0), mockDispute);
   }
 
   /**

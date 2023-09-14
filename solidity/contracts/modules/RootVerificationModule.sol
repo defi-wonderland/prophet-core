@@ -35,7 +35,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
   /// @inheritdoc IRootVerificationModule
-  function updateDisputeStatus(bytes32, IOracle.Dispute memory _dispute) external onlyOracle {
+  function onDisputeStatusChange(bytes32, IOracle.Dispute memory _dispute) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);

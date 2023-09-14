@@ -162,9 +162,9 @@ contract BondedDisputeModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test if updateDisputeStatus correctly handle proposer or disputer win
+   * @notice Test if onDisputeStatusChange correctly handle proposer or disputer win
    */
-  function test_updateDisputeStatus_correctWinnerPaid() public {
+  function test_onDisputeStatusChange_correctWinnerPaid() public {
     // Mock addresses
     IERC20 _token = IERC20(makeAddr('token'));
     address _disputer = makeAddr('disputer');
@@ -218,7 +218,7 @@ contract BondedDisputeModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
 
     // ------------------------------------
     //   Scenario: dispute loss by proposer
@@ -256,10 +256,10 @@ contract BondedDisputeModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
-  function test_updateDisputeStatus_emitsEvent() public {
+  function test_onDisputeStatusChange_emitsEvent() public {
     // Mock addresses
     IERC20 _token = IERC20(makeAddr('token'));
     address _disputer = makeAddr('disputer');
@@ -309,13 +309,13 @@ contract BondedDisputeModule_UnitTest is Test {
     emit DisputeStatusUpdated(_requestId, _responseId, _disputer, _proposer, true);
 
     vm.prank(address(oracle));
-    bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
   /**
-   * @notice Test if updateDisputeStatus reverts when called by caller who's not the oracle
+   * @notice Test if onDisputeStatusChange reverts when called by caller who's not the oracle
    */
-  function test_updateDisputeStatus_revertWrongCaller(address _randomCaller) public {
+  function test_onDisputeStatusChange_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
@@ -323,7 +323,7 @@ contract BondedDisputeModule_UnitTest is Test {
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);
-    bondedDisputeModule.updateDisputeStatus(mockId, mockDispute);
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
   /**

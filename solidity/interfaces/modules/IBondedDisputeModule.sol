@@ -63,7 +63,7 @@ interface IBondedDisputeModule is IDisputeModule {
    * @param _disputeId The ID of the dispute being updated
    * @param _dispute The dispute object
    */
-  function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
+  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
 
   /**
    * @notice Called by the oracle when a dispute has been escalated. Not implemented in this module

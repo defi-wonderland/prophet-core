@@ -217,7 +217,7 @@ contract Oracle is IOracle {
     _response.disputeId = _disputeId;
 
     if (_dispute.status != DisputeStatus.Active) {
-      _request.disputeModule.updateDisputeStatus(_disputeId, _dispute);
+      _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
     }
 
     emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
@@ -278,7 +278,7 @@ contract Oracle is IOracle {
       revert Oracle_NotResolutionModule(msg.sender);
     }
     _dispute.status = _status;
-    _request.disputeModule.updateDisputeStatus(_disputeId, _dispute);
+    _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
 
     emit Oracle_DisputeStatusUpdated(_disputeId, _status);
   }

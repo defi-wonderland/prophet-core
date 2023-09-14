@@ -72,7 +72,7 @@ interface IRootVerificationModule is IDisputeModule {
    * If the dispute is won, the disputer is paid. In both cases, the request is finalized.
    * @param _dispute The dispute of the current response
    */
-  function updateDisputeStatus(bytes32, IOracle.Dispute memory _dispute) external;
+  function onDisputeStatusChange(bytes32, IOracle.Dispute memory _dispute) external;
 
   /**
    * @dev This function is present to comply with the module interface but it

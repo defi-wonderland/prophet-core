@@ -519,13 +519,13 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   ////////////////////////////////////////////////////////////////////
-  //                  Tests for updateDisputeStatus
+  //                  Tests for onDisputeStatusChange
   ////////////////////////////////////////////////////////////////////
 
   /**
-   * @notice Tests that updateDisputeStatus reverts
+   * @notice Tests that onDisputeStatusChange reverts
    */
-  function test_updateDisputeStatusRevertIfCallerIsNotOracle(
+  function test_onDisputeStatusChangeRevertIfCallerIsNotOracle(
     bytes32 _disputeId,
     bytes32 _requestId,
     address _caller,
@@ -537,13 +537,13 @@ contract BondEscalationModule_UnitTest is Test {
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _disputeStatus);
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     vm.prank(_caller);
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
   }
 
   /**
-   * @notice Tests that updateDisputeStatus pays the proposer if the disputer lost
+   * @notice Tests that onDisputeStatusChange pays the proposer if the disputer lost
    */
-  function test_updateDisputeStatusCallPayIfNormalDisputeLost(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_onDisputeStatusChangeCallPayIfNormalDisputeLost(bytes32 _disputeId, bytes32 _requestId) public {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
@@ -570,13 +570,13 @@ contract BondEscalationModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
   }
 
   /**
-   * @notice Tests that updateDisputeStatus pays the disputer if the disputer won
+   * @notice Tests that onDisputeStatusChange pays the disputer if the disputer won
    */
-  function test_updateDisputeStatusCallPayIfNormalDisputeWon(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_onDisputeStatusChangeCallPayIfNormalDisputeWon(bytes32 _disputeId, bytes32 _requestId) public {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
@@ -603,10 +603,10 @@ contract BondEscalationModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
   }
 
-  function test_updateDisputeStatusEmitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_onDisputeStatusChangeEmitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
@@ -637,14 +637,14 @@ contract BondEscalationModule_UnitTest is Test {
     emit DisputeStatusUpdated(_requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, true);
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
   }
 
   /**
-   * @notice Tests that updateDisputeStatus returns early if the dispute has gone through the bond
+   * @notice Tests that onDisputeStatusChange returns early if the dispute has gone through the bond
    *         escalation mechanism but no one pledged
    */
-  function test_updateDisputeStatusEarlyReturnIfBondEscalatedDisputeHashNoPledgers(
+  function test_onDisputeStatusChangeEarlyReturnIfBondEscalatedDisputeHashNoPledgers(
     bytes32 _disputeId,
     bytes32 _requestId
   ) public {
@@ -688,7 +688,7 @@ contract BondEscalationModule_UnitTest is Test {
     );
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
 
     // If it remains at escalated it means it returned early as it didn't update the bond escalation status
     assertEq(
@@ -698,12 +698,12 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that updateDisputeStatus changes the status of the bond escalation if the
+   * @notice Tests that onDisputeStatusChange changes the status of the bond escalation if the
    *         dispute went through the bond escalation process, as well as testing that it calls
    *         payPledgersWon with the correct arguments. In the Won case, this would be, passing
    *         the users that pledged in favor of the dispute, as they have won.
    */
-  function test_updateDisputeStatusShouldChangeBondEscalationStatusAndCallPayPledgersWon(
+  function test_onDisputeStatusChangeShouldChangeBondEscalationStatusAndCallPayPledgersWon(
     bytes32 _disputeId,
     bytes32 _requestId
   ) public {
@@ -772,7 +772,7 @@ contract BondEscalationModule_UnitTest is Test {
     emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerWon);
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
 
     assertEq(
       uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
@@ -781,12 +781,12 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that updateDisputeStatus changes the status of the bond escalation if the
+   * @notice Tests that onDisputeStatusChange changes the status of the bond escalation if the
    *         dispute went through the bond escalation process, as well as testing that it calls
    *         payPledgersWon with the correct arguments. In the Lost case, this would be, passing
    *         the users that pledged against the dispute, as those that pledged in favor have lost .
    */
-  function test_updateDisputeStatusShouldChangeBondEscalationStatusAndCallPayPledgersLost(
+  function test_onDisputeStatusChangeShouldChangeBondEscalationStatusAndCallPayPledgersLost(
     bytes32 _disputeId,
     bytes32 _requestId
   ) public {
@@ -857,7 +857,7 @@ contract BondEscalationModule_UnitTest is Test {
     emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerLost);
 
     vm.prank(address(oracle));
-    bondEscalationModule.updateDisputeStatus(_disputeId, _dispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
 
     assertEq(
       uint256(bondEscalationModule.bondEscalationStatus(_requestId)),

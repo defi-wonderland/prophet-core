@@ -46,7 +46,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
 
   // TODO: This doesn't handle the cases of inconclusive statuses
   /// @inheritdoc IBondedDisputeModule
-  function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
+  function onDisputeStatusChange(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
