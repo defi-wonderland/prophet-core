@@ -32,7 +32,7 @@ contract Oracle is IOracle {
   /**
    * @notice The finalized response for each request
    */
-  mapping(bytes32 _requestId => Response) internal _finalizedResponses;
+  mapping(bytes32 _requestId => bytes32 _finalizedResponseId) internal _finalizedResponses;
 
   /**
    * @notice The id of each request in chronological order
@@ -292,8 +292,13 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
+  function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId) {
+    _finalizedResponseId = _finalizedResponses[_requestId];
+  }
+
+  /// @inheritdoc IOracle
   function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
-    _response = _finalizedResponses[_requestId];
+    _response = _responses[_finalizedResponses[_requestId]];
   }
 
   /// @inheritdoc IOracle
@@ -316,7 +321,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
 
-    _finalizedResponses[_requestId] = _response;
+    _finalizedResponses[_requestId] = _finalizedResponseId;
     _request.finalizedAt = block.timestamp;
     _finalize(_requestId, _request);
   }

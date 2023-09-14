@@ -157,6 +157,11 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   }
 
   /// @inheritdoc IOracle
+  function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId) {
+    _finalizedResponseId = ORACLE.getFinalizedResponseId(_requestId);
+  }
+
+  /// @inheritdoc IOracle
   function getFinalizedResponse(bytes32 _requestId) external view returns (IOracle.Response memory _response) {
     _response = ORACLE.getFinalizedResponse(_requestId);
   }

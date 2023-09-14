@@ -458,6 +458,13 @@ interface IOracle {
   function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule);
 
   /**
+   * @notice Returns the finalized response ID for a given request
+   * @param _requestId The id of the request
+   * @return _finalizedResponseId The ID of the finalized response
+   */
+  function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
+
+  /**
    * @notice Returns the finalized response for a given request
    * @param _requestId The id of the request
    * @return _response The finalized response
