@@ -28,18 +28,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     return 'ERC20ResolutionModule';
   }
 
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      IAccountingExtension _accountingExtension,
-      IERC20 _token,
-      uint256 _minVotesForQuorum,
-      uint256 _timeUntilDeadline
-    )
-  {
-    (_accountingExtension, _token, _minVotesForQuorum, _timeUntilDeadline) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   function startResolution(bytes32 _disputeId) external onlyOracle {
@@ -57,8 +47,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token,, uint256 _timeUntilDeadline) = decodeRequestData(_requestId);
-    uint256 _deadline = _escalationData.startTime + _timeUntilDeadline;
+    RequestParameters memory _params = decodeRequestData(_requestId);
+    uint256 _deadline = _escalationData.startTime + _params.timeUntilDeadline;
     if (block.timestamp >= _deadline) revert ERC20ResolutionModule_VotingPhaseOver();
 
     votes[_disputeId][msg.sender] += _numberOfVotes;
@@ -66,7 +56,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
-    _token.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
+    _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
@@ -81,11 +71,11 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
     // 2. Check that voting deadline is over
-    (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _timeUntilDeadline) = decodeRequestData(_dispute.requestId);
-    uint256 _deadline = _escalationData.startTime + _timeUntilDeadline;
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
+    uint256 _deadline = _escalationData.startTime + _params.timeUntilDeadline;
     if (block.timestamp < _deadline) revert ERC20ResolutionModule_OnGoingVotingPhase();
 
-    uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
+    uint256 _quorumReached = _escalationData.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
     address[] memory __voters = _voters[_disputeId].values();
 
@@ -103,7 +93,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     // 6. Return tokens
     for (uint256 _i; _i < _votersLength;) {
       address _voter = __voters[_i];
-      _token.safeTransfer(_voter, votes[_disputeId][_voter]);
+      _params.votingToken.safeTransfer(_voter, votes[_disputeId][_voter]);
       unchecked {
         ++_i;
       }

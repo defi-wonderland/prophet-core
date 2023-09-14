@@ -21,26 +21,32 @@ interface IRootVerificationModule is IDisputeModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Returns the decoded data for a request
-   * @param _requestId The id of the request
-   * @return _treeData The data of the tree
-   * @return _leavesToInsert The leaves to insert in the tree
-   * @return _treeVerifier The tree verifier to use to calculate the correct root
-   * @return _accountingExtension The accounting extension to use for bonds and payments
-   * @return _bondToken The token to use for bonds and payments
-   * @return _bondSize The size of the bond to participate in the request
+   * @notice Parameters of the request as stored in the module
+   * @param treeData The data of the tree
+   * @param leavesToInsert The leaves to insert in the tree
+   * @param treeVerifier The tree verifier to use to calculate the correct root
+   * @param accountingExtension The accounting extension to use for bonds and payments
+   * @param bondToken The token to use for bonds and payments
+   * @param bondSize The size of the bond to participate in the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      bytes memory _treeData,
-      bytes32[] memory _leavesToInsert,
-      ITreeVerifier _treeVerifier,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    );
+  struct RequestParameters {
+    bytes treeData;
+    bytes32[] leavesToInsert;
+    ITreeVerifier treeVerifier;
+    IAccountingExtension accountingExtension;
+    IERC20 bondToken;
+    uint256 bondSize;
+  }
+  /*///////////////////////////////////////////////////////////////
+                              LOGIC
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Returns the decoded data for a request
+   * @param _requestId The ID of the request
+   * @return _params The struct containing the parameters for the request
+   */
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Calculates the correct root and compares it to the proposed one.

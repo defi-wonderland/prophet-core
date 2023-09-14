@@ -18,26 +18,14 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     return 'CircuitResolverModule';
   }
 
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      bytes memory _callData,
-      address _verifier,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    )
-  {
-    (_callData, _verifier, _accountingExtension, _bondToken, _bondSize) =
-      abi.decode(requestData[_requestId], (bytes, address, IAccountingExtension, IERC20, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
-    (,, IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
 
@@ -46,7 +34,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       || keccak256(_response.response) != keccak256(_correctResponse);
 
     if (_won) {
-      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
+      _params.accountingExtension.pay(
+        _dispute.requestId, _dispute.proposer, _dispute.disputer, _params.bondToken, _params.bondSize
+      );
       bytes32 _correctResponseId =
         ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctResponses[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);
@@ -66,9 +56,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
-    (bytes memory _callData, address _verifier,,,) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
-    (, bytes memory _correctResponse) = _verifier.call(_callData);
+    (, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
     _correctResponses[_requestId] = _correctResponse;
 
     bool _won = _response.response.length != _correctResponse.length

@@ -44,17 +44,17 @@ contract CallbackModule_UnitTest is Test {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(bytes32 _requestId, address _target, bytes calldata _data) public {
+  function test_decodeRequestData(bytes32 _requestId, address _target, bytes memory _data) public {
     // Create and set some mock request data
-    bytes memory _requestData = abi.encode(_target, _data);
+    bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     callbackModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
-    (address _decodedTarget, bytes memory _decodedData) = callbackModule.decodeRequestData(_requestId);
+    ICallbackModule.RequestParameters memory _params = callbackModule.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(_decodedTarget, _target);
-    assertEq(_decodedData, _data);
+    assertEq(_params.target, _target);
+    assertEq(_params.data, _data);
   }
   /**
    * @notice Test that _afterSetupRequest checks if the target address is a contract.
@@ -68,7 +68,7 @@ contract CallbackModule_UnitTest is Test {
   ) public {
     assumeNoPrecompiles(_target);
     vm.assume(_target.code.length == 0);
-    bytes memory _requestData = abi.encode(_target, _data);
+    bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
 
     if (_hasCode) {
       vm.etch(_target, hex'069420');
@@ -88,7 +88,7 @@ contract CallbackModule_UnitTest is Test {
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
-    bytes memory _requestData = abi.encode(_target, _data);
+    bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     callbackModule.forTest_setRequestData(_requestId, _requestData);
 
     // Check: correct event emitted?
@@ -104,7 +104,7 @@ contract CallbackModule_UnitTest is Test {
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
-    bytes memory _requestData = abi.encode(_target, _data);
+    bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     callbackModule.forTest_setRequestData(_requestId, _requestData);
 
     // Check: correct event emitted?

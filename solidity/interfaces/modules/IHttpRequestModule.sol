@@ -11,6 +11,28 @@ import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExten
   */
 interface IHttpRequestModule is IRequestModule {
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param url The url to make the request to
+   * @param The HTTP method to use for the request
+   * @param body The HTTP body to use for the request
+   * @param accountingExtension The accounting extension used to bond and release tokens
+   * @param paymentToken The token used to pay for the request
+   * @param paymentAmount The amount of tokens to pay for the request
+   */
+  struct RequestParameters {
+    string url;
+    HttpMethod method;
+    string body;
+    IAccountingExtension accountingExtension;
+    IERC20 paymentToken;
+    uint256 paymentAmount;
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
 
@@ -29,24 +51,9 @@ interface IHttpRequestModule is IRequestModule {
   /**
    * @notice Returns the decoded data for a request
    * @param _requestId The ID of the request
-   * @return _url The url to make the request to
-   * @return _method The HTTP method to use for the request
-   * @return _body The HTTP body to use for the request
-   * @return _accountingExtension The accounting extension used to bond and release tokens
-   * @return _paymentToken The token used to pay for the request
-   * @return _paymentAmount The amount of tokens to pay for the request
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      string memory _url,
-      HttpMethod _method,
-      string memory _body,
-      IAccountingExtension _accountingExtension,
-      IERC20 _paymentToken,
-      uint256 _paymentAmount
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Finalizes a request by paying the proposer if there is a valid response

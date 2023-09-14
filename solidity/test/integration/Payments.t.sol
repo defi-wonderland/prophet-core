@@ -207,12 +207,34 @@ contract Integration_Payments is IntegrationBase {
   ) internal view returns (IOracle.NewRequest memory _request) {
     _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, _paymentToken, _rewardSize
+        IHttpRequestModule.RequestParameters({
+          url: _expectedUrl,
+          method: _expectedMethod,
+          body: _expectedBody,
+          accountingExtension: _accountingExtension,
+          paymentToken: _paymentToken,
+          paymentAmount: _rewardSize
+        })
         ),
-      responseModuleData: abi.encode(_accountingExtension, _paymentToken, _bondSize, _expectedDeadline),
-      disputeModuleData: abi.encode(_accountingExtension, _paymentToken, _bondSize, _expectedDeadline, _mockArbitrator),
+      responseModuleData: abi.encode(
+        IBondedResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: _paymentToken,
+          bondSize: _bondSize,
+          deadline: _expectedDeadline
+        })
+        ),
+      disputeModuleData: abi.encode(
+        IBondedDisputeModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: _paymentToken,
+          bondSize: _bondSize
+        })
+        ),
       resolutionModuleData: abi.encode(_mockArbitrator),
-      finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
+      finalityModuleData: abi.encode(
+        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        ),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,

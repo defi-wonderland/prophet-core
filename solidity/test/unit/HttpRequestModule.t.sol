@@ -67,28 +67,29 @@ contract HttpRequestModule_UnitTest is Test {
    * @notice Test that the decodeRequestData function returns the correct values
    */
   function test_decodeRequestData(bytes32 _requestId, uint256 _amount) public {
-    bytes memory _requestData = abi.encode(URL, METHOD, BODY, accounting, TOKEN, _amount);
-
+    bytes memory _requestData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: URL,
+        method: METHOD,
+        body: BODY,
+        accountingExtension: accounting,
+        paymentToken: TOKEN,
+        paymentAmount: _amount
+      })
+    );
     // Set the request data
     httpRequestModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
-    (
-      string memory _decodedUrl,
-      IHttpRequestModule.HttpMethod _decodedMethod,
-      string memory _decodedBody,
-      IAccountingExtension _decodedAccountingExtension,
-      IERC20 _decodedPaymentToken,
-      uint256 _decodedPaymentAmount
-    ) = httpRequestModule.decodeRequestData(_requestId);
+    IHttpRequestModule.RequestParameters memory _params = httpRequestModule.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(_decodedUrl, URL);
-    assertEq(uint256(_decodedMethod), uint256(METHOD));
-    assertEq(_decodedBody, BODY);
-    assertEq(address(_decodedAccountingExtension), address(accounting));
-    assertEq(address(_decodedPaymentToken), address(TOKEN));
-    assertEq(_decodedPaymentAmount, _amount);
+    assertEq(_params.url, URL);
+    assertEq(uint256(_params.method), uint256(METHOD));
+    assertEq(_params.body, BODY);
+    assertEq(address(_params.accountingExtension), address(accounting));
+    assertEq(address(_params.paymentToken), address(TOKEN));
+    assertEq(_params.paymentAmount, _amount);
   }
 
   /**
@@ -98,7 +99,16 @@ contract HttpRequestModule_UnitTest is Test {
    *          - calls the bond function on the accounting extension
    */
   function test_afterSetupRequestTriggered(bytes32 _requestId, address _requester, uint256 _amount) public {
-    bytes memory _requestData = abi.encode(URL, METHOD, BODY, accounting, TOKEN, _amount);
+    bytes memory _requestData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: URL,
+        method: METHOD,
+        body: BODY,
+        accountingExtension: accounting,
+        paymentToken: TOKEN,
+        paymentAmount: _amount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -137,7 +147,16 @@ contract HttpRequestModule_UnitTest is Test {
     uint256 _amount
   ) public {
     // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(URL, METHOD, BODY, accounting, TOKEN, _amount);
+    bytes memory _requestData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: URL,
+        method: METHOD,
+        body: BODY,
+        accountingExtension: accounting,
+        paymentToken: TOKEN,
+        paymentAmount: _amount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -197,7 +216,16 @@ contract HttpRequestModule_UnitTest is Test {
     uint256 _amount
   ) public {
     // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(URL, METHOD, BODY, accounting, TOKEN, _amount);
+    bytes memory _requestData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: URL,
+        method: METHOD,
+        body: BODY,
+        accountingExtension: accounting,
+        paymentToken: TOKEN,
+        paymentAmount: _amount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;

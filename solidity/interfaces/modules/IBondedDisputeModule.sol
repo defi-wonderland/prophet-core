@@ -14,19 +14,31 @@ import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
   */
 interface IBondedDisputeModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param ipfsHash The hash of the CID from IPFS
+   * @param requestModule The address of the request module
+   * @param responseModule The address of the response module
+   */
+  struct RequestParameters {
+    IAccountingExtension accountingExtension;
+    IERC20 bondToken;
+    uint256 bondSize;
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Returns the decoded data for a request
-   * @param _accountingExtension The accounting extension used to bond and release tokens
-   * @param _bondToken The token used to bond for disputing
-   * @param _bondSize The amount of `_bondToken` to bond to dispute a response
+   * @param _requestId The ID of the request
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize);
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Called by the oracle when a dispute has been made on a response.

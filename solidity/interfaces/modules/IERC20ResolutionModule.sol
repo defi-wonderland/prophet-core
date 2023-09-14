@@ -9,6 +9,13 @@ import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
 import {IOracle} from '../IOracle.sol';
 
 interface IERC20ResolutionModule is IResolutionModule {
+  struct RequestParameters {
+    IAccountingExtension accountingExtension;
+    IERC20 votingToken;
+    uint256 minVotesForQuorum;
+    uint256 timeUntilDeadline;
+  }
+
   struct EscalationData {
     uint256 startTime;
     uint256 totalVotes;
@@ -30,13 +37,5 @@ interface IERC20ResolutionModule is IResolutionModule {
   function votes(bytes32 _disputeId, address _voter) external view returns (uint256 _votes);
   function resolveDispute(bytes32 _disputeId) external;
   function getVoters(bytes32 _disputeId) external view returns (address[] memory _voters);
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      IAccountingExtension _accountingExtension,
-      IERC20 _token,
-      uint256 _minVotesForQuorum,
-      uint256 _timeUntilDeadline
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 }

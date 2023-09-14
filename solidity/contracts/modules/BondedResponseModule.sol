@@ -16,13 +16,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline)
-  {
-    (_accountingExtension, _bondToken, _bondSize, _deadline) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -31,11 +26,10 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     address _proposer,
     bytes calldata _responseData
   ) external onlyOracle returns (IOracle.Response memory _response) {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     // Cannot propose after the deadline
-    if (block.timestamp >= _deadline) revert BondedResponseModule_TooLateToPropose();
+    if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
 
     // Cannot propose to a request with a response, unless the response is being disputed
     bytes32[] memory _responseIds = ORACLE.getResponseIds(_requestId);
@@ -60,19 +54,18 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       createdAt: block.timestamp
     });
 
-    _accountingExtension.bond(_response.proposer, _requestId, _bondToken, _bondSize);
+    _params.accountingExtension.bond(_response.proposer, _requestId, _params.bondToken, _params.bondSize);
 
     emit ProposeResponse(_requestId, _proposer, _responseData);
   }
 
   /// @inheritdoc IBondedResponseModule
-  function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external onlyOracle {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      decodeRequestData(_requestId);
+  function deleteResponse(bytes32 _requestId, bytes32, address _proposer) external onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
-    if (block.timestamp > _deadline) revert BondedResponseModule_TooLateToDelete();
+    if (block.timestamp > _params.deadline) revert BondedResponseModule_TooLateToDelete();
 
-    _accountingExtension.release(_proposer, _requestId, _bondToken, _bondSize);
+    _params.accountingExtension.release(_proposer, _requestId, _params.bondToken, _params.bondSize);
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -80,18 +73,17 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     bytes32 _requestId,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     bool _isModule = ORACLE.validModule(_requestId, _finalizer);
 
-    if (!_isModule && block.timestamp < _deadline) {
+    if (!_isModule && block.timestamp < _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     if (_response.createdAt != 0) {
-      _accountingExtension.release(_response.proposer, _requestId, _bondToken, _bondSize);
+      _params.accountingExtension.release(_response.proposer, _requestId, _params.bondToken, _params.bondSize);
     }
     emit RequestFinalized(_requestId, _finalizer);
   }

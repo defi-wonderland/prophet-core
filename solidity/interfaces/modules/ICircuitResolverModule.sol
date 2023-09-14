@@ -9,14 +9,13 @@ import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
 interface ICircuitResolverModule is IDisputeModule {
   error CircuitResolverModule_DisputingCorrectHash(bytes32 _proposedHash);
 
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      bytes memory _callData,
-      address _verifier,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    );
+  struct RequestParameters {
+    bytes callData;
+    address verifier;
+    IAccountingExtension accountingExtension;
+    IERC20 bondToken;
+    uint256 bondSize;
+  }
+
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 }

@@ -149,12 +149,34 @@ contract Integration_Arbitration is IntegrationBase {
   {
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedReward
+        IHttpRequestModule.RequestParameters({
+          url: _expectedUrl,
+          method: _expectedMethod,
+          body: _expectedBody,
+          accountingExtension: _accountingExtension,
+          paymentToken: IERC20(USDC_ADDRESS),
+          paymentAmount: _expectedReward
+        })
         ),
-      responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
-      disputeModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _arbitrator),
+      responseModuleData: abi.encode(
+        IBondedResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize,
+          deadline: _expectedDeadline
+        })
+        ),
+      disputeModuleData: abi.encode(
+        IBondedDisputeModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize
+        })
+        ),
       resolutionModuleData: abi.encode(_arbitrator),
-      finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
+      finalityModuleData: abi.encode(
+        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        ),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,

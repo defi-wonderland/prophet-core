@@ -5,7 +5,11 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {
-  BondedDisputeModule, IOracle, IAccountingExtension, IERC20
+  BondedDisputeModule,
+  IBondedDisputeModule,
+  IOracle,
+  IAccountingExtension,
+  IERC20
 } from '../../contracts/modules/BondedDisputeModule.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
@@ -76,13 +80,12 @@ contract BondedDisputeModule_UnitTest is Test {
     bondedDisputeModule.forTest_setRequestData(_requestId, _requestData);
 
     // Test: decode the given request data
-    (IAccountingExtension _accountingExtensionStored, IERC20 _tokenStored, uint256 _bondSizeStored) =
-      bondedDisputeModule.decodeRequestData(_requestId);
+    IBondedDisputeModule.RequestParameters memory _storedParams = bondedDisputeModule.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(address(_accountingExtensionStored), _accountingExtension);
-    assertEq(address(_tokenStored), _token);
-    assertEq(_bondSizeStored, _bondSize);
+    assertEq(address(_storedParams.accountingExtension), _accountingExtension);
+    assertEq(address(_storedParams.bondToken), _token);
+    assertEq(_storedParams.bondSize, _bondSize);
   }
 
   /**

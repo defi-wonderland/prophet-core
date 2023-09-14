@@ -102,6 +102,28 @@ interface IBondEscalationModule is IDisputeModule {
   }
 
   /**
+   * @notice Parameters of the request as stored in the module
+   * @param _accountingExtension         Address of the accounting extension associated with the given request
+   * @param _bondToken                   Address of the token associated with the given request
+   * @param _bondSize                    Amount to bond to dispute or propose an answer for the given request
+   * @param _numberOfEscalations         Maximum allowed escalations or pledges for each side during the bond
+   *                                      escalation process
+   * @param _bondEscalationDeadline      Timestamp at which bond escalation process finishes when pledges are not tied
+   * @param _tyingBuffer                 Number of seconds to extend the bond escalation process to allow the losing
+   *                                      party to tie if at the end of the initial deadline the pledges weren't tied.
+   * @param _challengePeriod             Number of seconds disputers have to challenge the proposed response since its creation.
+   */
+  struct RequestParameters {
+    IBondEscalationAccounting accountingExtension;
+    IERC20 bondToken;
+    uint256 bondSize;
+    uint256 maxNumberOfEscalations;
+    uint256 bondEscalationDeadline;
+    uint256 tyingBuffer;
+    uint256 challengePeriod;
+  }
+
+  /**
    * @notice Struct containing an array of the pledgers in favor of a dispute and another containing those against it.
    */
   struct BondEscalationData {
@@ -196,32 +218,10 @@ interface IBondEscalationModule is IDisputeModule {
 
   /**
    * @notice Decodes the request data associated to a request id.
-   *
    * @param _requestId id of the request to decode.
-   *
-   * @return _accountingExtension         Address of the accounting extension associated with the given request
-   * @return _bondToken                   Address of the token associated with the given request
-   * @return _bondSize                    Amount to bond to dispute or propose an answer for the given request
-   * @return _numberOfEscalations         Maximum allowed escalations or pledges for each side during the bond
-   *                                      escalation process
-   * @return _bondEscalationDeadline      Timestamp at which bond escalation process finishes when pledges are not tied
-   * @return _tyingBuffer                 Number of seconds to extend the bond escalation process to allow the losing
-   *                                      party to tie if at the end of the initial deadline the pledges weren't tied.
-   * @return _challengePeriod             Number of seconds disputers have to challenge the proposed response since its creation.
+   * @return _params The struct containing the parameters for the request
    */
-
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      uint256 _numberOfEscalations,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer,
-      uint256 _challengePeriod
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Fetches the addresses that pledged in favor of a dispute during the bond escalation process

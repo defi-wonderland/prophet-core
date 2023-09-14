@@ -14,30 +14,37 @@ import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExten
   */
 interface ISparseMerkleTreeRequestModule is IRequestModule {
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param treeData The encoded Merkle tree data parameters for the tree verifier
+   * @param leavesToInsert The array of leaves to insert into the Merkle tree
+   * @param treeVerifier The tree verifier to calculate the root
+   * @param accountingExtension The accounting extension to use for the request
+   * @param paymentToken The payment token to use for the request
+   * @param paymentAmount The payment amount to use for the request
+   */
+  struct RequestParameters {
+    bytes treeData;
+    bytes32[] leavesToInsert;
+    ITreeVerifier treeVerifier;
+    IAccountingExtension accountingExtension;
+    IERC20 paymentToken;
+    uint256 paymentAmount;
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Decodes the request data for a Merkle tree request
+   * @notice Returns the decoded data for a request
    * @param _requestId The ID of the request
-   * @return _treeData The encoded Merkle tree data parameters for the tree verifier
-   * @return _leavesToInsert The array of leaves to insert into the Merkle tree
-   * @return _treeVerifier The tree verifier to calculate the root
-   * @return _accountingExtension The accounting extension to use for the request
-   * @return _paymentToken The payment token to use for the request
-   * @return _paymentAmount The payment amount to use for the request
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      bytes memory _treeData,
-      bytes32[] memory _leavesToInsert,
-      ITreeVerifier _treeVerifier,
-      IAccountingExtension _accountingExtension,
-      IERC20 _paymentToken,
-      uint256 _paymentAmount
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Called by the Oracle to finalize the request by paying the proposer for the response

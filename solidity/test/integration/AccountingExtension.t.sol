@@ -108,7 +108,14 @@ contract Integration_AccountingExtension is IntegrationBase {
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        '', IHttpRequestModule.HttpMethod.GET, '', _accountingExtension, address(usdc), _bondAmount
+        IHttpRequestModule.RequestParameters({
+          url: '',
+          method: IHttpRequestModule.HttpMethod.GET,
+          body: '',
+          accountingExtension: _accountingExtension,
+          paymentToken: usdc,
+          paymentAmount: _bondAmount
+        })
         ),
       responseModuleData: abi.encode(),
       disputeModuleData: abi.encode(),

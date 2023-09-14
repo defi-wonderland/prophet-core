@@ -15,13 +15,8 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   /// @inheritdoc IBondedDisputeModule
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize)
-  {
-    (_accountingExtension, _bondToken, _bondSize) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IBondedDisputeModule
@@ -43,8 +38,8 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       createdAt: block.timestamp
     });
 
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) = decodeRequestData(_requestId);
-    _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
+    RequestParameters memory _params = decodeRequestData(_requestId);
+    _params.accountingExtension.bond(_disputer, _requestId, _params.bondToken, _params.bondSize);
 
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
@@ -52,20 +47,19 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   // TODO: This doesn't handle the cases of inconclusive statuses
   /// @inheritdoc IBondedDisputeModule
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
-    (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
-    _accountingExtension.pay(
+    _params.accountingExtension.pay(
       _dispute.requestId,
       _won ? _dispute.proposer : _dispute.disputer,
       _won ? _dispute.disputer : _dispute.proposer,
-      _bondToken,
-      _bondSize
+      _params.bondToken,
+      _params.bondSize
     );
 
-    _accountingExtension.release(
-      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
+    _params.accountingExtension.release(
+      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _params.bondToken, _params.bondSize
     );
 
     emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);

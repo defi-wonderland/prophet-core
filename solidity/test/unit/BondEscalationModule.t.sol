@@ -1466,22 +1466,14 @@ contract BondEscalationModule_UnitTest is Test {
     _setRequestData(
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _challengePeriod
     );
-    (
-      IBondEscalationAccounting _accounting,
-      IERC20 _token,
-      uint256 __bondSize,
-      uint256 __maxNumberOfEscalations,
-      uint256 __bondEscalationDeadline,
-      uint256 __tyingBuffer,
-      uint256 __challengePeriod
-    ) = bondEscalationModule.decodeRequestData(_requestId);
-    assertEq(address(accounting), address(_accounting));
-    assertEq(address(token), address(_token));
-    assertEq(_bondSize, __bondSize);
-    assertEq(_maxNumberOfEscalations, __maxNumberOfEscalations);
-    assertEq(_bondEscalationDeadline, __bondEscalationDeadline);
-    assertEq(_tyingBuffer, __tyingBuffer);
-    assertEq(_challengePeriod, __challengePeriod);
+    IBondEscalationModule.RequestParameters memory _params = bondEscalationModule.decodeRequestData(_requestId);
+    assertEq(address(accounting), address(_params.accountingExtension));
+    assertEq(address(token), address(_params.bondToken));
+    assertEq(_bondSize, _params.bondSize);
+    assertEq(_maxNumberOfEscalations, _params.maxNumberOfEscalations);
+    assertEq(_bondEscalationDeadline, _params.bondEscalationDeadline);
+    assertEq(_tyingBuffer, _params.tyingBuffer);
+    assertEq(_challengePeriod, _params.challengePeriod);
   }
 
   ////////////////////////////////////////////////////////////////////

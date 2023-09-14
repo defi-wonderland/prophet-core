@@ -32,19 +32,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   /// @inheritdoc IPrivateERC20ResolutionModule
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      IAccountingExtension _accountingExtension,
-      IERC20 _token,
-      uint256 _minVotesForQuorum,
-      uint256 _committingTimeWindow,
-      uint256 _revealingTimeWindow
-    )
-  {
-    (_accountingExtension, _token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow) =
-      abi.decode(requestData[_requestId], (IAccountingExtension, IERC20, uint256, uint256, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IPrivateERC20ResolutionModule
@@ -62,8 +51,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     uint256 _startTime = escalationData[_disputeId].startTime;
     if (_startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (,,, uint256 _committingTimeWindow,) = decodeRequestData(_requestId);
-    uint256 _committingDeadline = _startTime + _committingTimeWindow;
+    RequestParameters memory _params = decodeRequestData(_requestId);
+    uint256 _committingDeadline = _startTime + _params.committingTimeWindow;
     if (block.timestamp >= _committingDeadline) revert PrivateERC20ResolutionModule_CommittingPhaseOver();
 
     if (_commitment == bytes32('')) revert PrivateERC20ResolutionModule_EmptyCommitment();
@@ -77,10 +66,10 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token,, uint256 _committingTimeWindow, uint256 _revealingTimeWindow) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
     (uint256 _revealStartTime, uint256 _revealEndTime) = (
-      _escalationData.startTime + _committingTimeWindow,
-      _escalationData.startTime + _committingTimeWindow + _revealingTimeWindow
+      _escalationData.startTime + _params.committingTimeWindow,
+      _escalationData.startTime + _params.committingTimeWindow + _params.revealingTimeWindow
     );
     if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
@@ -96,7 +85,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     _voters[_disputeId].add(msg.sender);
     escalationData[_disputeId].totalVotes += _numberOfVotes;
 
-    _token.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
+    _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
 
     emit VoteRevealed(msg.sender, _disputeId, _numberOfVotes);
   }
@@ -110,16 +99,16 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     EscalationData memory _escalationData = escalationData[_disputeId];
     if (_escalationData.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
-    (, IERC20 _token, uint256 _minVotesForQuorum, uint256 _committingTimeWindow, uint256 _revealingTimeWindow) =
-      decodeRequestData(_dispute.requestId);
-    if (block.timestamp < _escalationData.startTime + _committingTimeWindow) {
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
+
+    if (block.timestamp < _escalationData.startTime + _params.committingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp < _escalationData.startTime + _committingTimeWindow + _revealingTimeWindow) {
+    if (block.timestamp < _escalationData.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
-    uint256 _quorumReached = _escalationData.totalVotes >= _minVotesForQuorum ? 1 : 0;
+    uint256 _quorumReached = _escalationData.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
     address[] memory __voters = _voters[_disputeId].values();
 
@@ -133,7 +122,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     uint256 _length = __voters.length;
     for (uint256 _i; _i < _length;) {
-      _token.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
+      _params.votingToken.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
       unchecked {
         ++_i;
       }

@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   CircuitResolverModule,
+  ICircuitResolverModule,
   IOracle,
   IAccountingExtension,
   IERC20
@@ -101,25 +102,27 @@ contract CircuitResolverModule_UnitTest is Test {
     uint256 _bondSize
   ) public {
     // Mock data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, _accountingExtension, _randomtoken, _bondSize);
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: IAccountingExtension(_accountingExtension),
+        bondToken: IERC20(_randomtoken),
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
 
     // Test: decode the given request data
-    (
-      bytes memory _callDataStored,
-      address _verifierStored,
-      IAccountingExtension _accountingExtensionStored,
-      IERC20 _tokenStored,
-      uint256 _bondSizeStored
-    ) = circuitResolverModule.decodeRequestData(_requestId);
+    ICircuitResolverModule.RequestParameters memory _params = circuitResolverModule.decodeRequestData(_requestId);
 
-    assertEq(_callDataStored, _callData, 'Mismatch: decoded calldata');
-    assertEq(_verifierStored, circuitVerifier, 'Mismatch: decoded circuit verifier');
-    assertEq(address(_accountingExtensionStored), _accountingExtension, 'Mismatch: decoded accounting extension');
-    assertEq(address(_tokenStored), _randomtoken, 'Mismatch: decoded token');
-    assertEq(_bondSizeStored, _bondSize, 'Mismatch: decoded bond size');
+    assertEq(_params.callData, _callData, 'Mismatch: decoded calldata');
+    assertEq(_params.verifier, circuitVerifier, 'Mismatch: decoded circuit verifier');
+    assertEq(address(_params.accountingExtension), _accountingExtension, 'Mismatch: decoded accounting extension');
+    assertEq(address(_params.bondToken), _randomtoken, 'Mismatch: decoded token');
+    assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
 
   /**
@@ -148,8 +151,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bool _correctResponse = false;
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
-
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
 
@@ -191,7 +201,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bool _correctResponse = false;
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
@@ -230,7 +248,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bytes memory _encodedCorrectResponse = abi.encode(true);
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
@@ -290,8 +316,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bytes memory _encodedCorrectResponse = abi.encode(true);
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
-
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
     circuitResolverModule.forTest_setCorrectResponse(_requestId, _encodedCorrectResponse);
@@ -336,8 +369,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bytes memory _encodedCorrectResponse = abi.encode(true);
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
-
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
     // Store the mock request and correct response
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);
     circuitResolverModule.forTest_setCorrectResponse(_requestId, _encodedCorrectResponse);
@@ -408,7 +448,15 @@ contract CircuitResolverModule_UnitTest is Test {
     bytes memory _encodedCorrectResponse = abi.encode(true);
 
     // Mock request data
-    bytes memory _requestData = abi.encode(_callData, circuitVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: circuitVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: IERC20(_token),
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     circuitResolverModule.forTest_setRequestData(_requestId, _requestData);

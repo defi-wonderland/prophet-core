@@ -4,13 +4,14 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 import {
   SparseMerkleTreeRequestModule,
+  ISparseMerkleTreeRequestModule,
   IOracle,
   ITreeVerifier,
   IAccountingExtension,
   IERC20
 } from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
-import {RootVerificationModule} from '../../contracts/modules/RootVerificationModule.sol';
+import {RootVerificationModule, IRootVerificationModule} from '../../contracts/modules/RootVerificationModule.sol';
 
 contract Integration_RootVerification is IntegrationBase {
   SparseMerkleTreeL32Verifier _treeVerifier;
@@ -69,14 +70,37 @@ contract Integration_RootVerification is IntegrationBase {
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        _treeData, _leavesToInsert, ITreeVerifier(_treeVerifier), _accountingExtension, USDC_ADDRESS, _expectedReward
+        ISparseMerkleTreeRequestModule.RequestParameters({
+          treeData: _treeData,
+          leavesToInsert: _leavesToInsert,
+          treeVerifier: ITreeVerifier(_treeVerifier),
+          accountingExtension: _accountingExtension,
+          paymentToken: IERC20(USDC_ADDRESS),
+          paymentAmount: _expectedReward
+        })
         ),
-      responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
+      responseModuleData: abi.encode(
+        IBondedResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize,
+          deadline: _expectedDeadline
+        })
+        ),
       disputeModuleData: abi.encode(
-        _treeData, _leavesToInsert, ITreeVerifier(_treeVerifier), _accountingExtension, USDC_ADDRESS, _expectedBondSize
+        IRootVerificationModule.RequestParameters({
+          treeData: _treeData,
+          leavesToInsert: _leavesToInsert,
+          treeVerifier: ITreeVerifier(_treeVerifier),
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize
+        })
         ),
       resolutionModuleData: abi.encode(_mockArbitrator),
-      finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
+      finalityModuleData: abi.encode(
+        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        ),
       requestModule: _sparseMerkleTreeModule,
       responseModule: _responseModule,
       disputeModule: _rootVerificationModule,

@@ -37,8 +37,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     if (_dispute.requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
 
     if (_disputeId == escalatedDispute[_dispute.requestId]) {
-      (,,,, uint256 _bondEscalationDeadline,,) = decodeRequestData(_dispute.requestId);
-      if (block.timestamp <= _bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
+      RequestParameters memory _params = decodeRequestData(_dispute.requestId);
+      if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
       BondEscalationStatus _status = bondEscalationStatus[_dispute.requestId];
       BondEscalationData storage __bondEscalationData = _bondEscalationData[_disputeId];
@@ -62,22 +62,16 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     address _disputer,
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      ,
-      uint256 _bondEscalationDeadline,
-      ,
-      uint256 _challengePeriod
-    ) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
-    if (block.timestamp > _response.createdAt + _challengePeriod) {
+    if (block.timestamp > _response.createdAt + _params.challengePeriod) {
       revert BondEscalationModule_ChallengePeriodOver();
     }
 
-    if (block.timestamp <= _bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.None) {
+    if (
+      block.timestamp <= _params.bondEscalationDeadline && bondEscalationStatus[_requestId] == BondEscalationStatus.None
+    ) {
       bondEscalationStatus[_requestId] = BondEscalationStatus.Active;
       // Note: this imitates the way _disputeId is calculated on the Oracle, it must always match
       bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId, _responseId));
@@ -94,28 +88,27 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       createdAt: block.timestamp
     });
 
-    _accountingExtension.bond(_disputer, _requestId, _bondToken, _bondSize);
+    _params.accountingExtension.bond(_disputer, _requestId, _params.bondToken, _params.bondSize);
 
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 
   /// @inheritdoc IBondEscalationModule
   function updateDisputeStatus(bytes32 _disputeId, IOracle.Dispute memory _dispute) external onlyOracle {
-    (IBondEscalationAccounting _accountingExtension, IERC20 _bondToken, uint256 _bondSize,,,,) =
-      decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
-    _accountingExtension.pay(
+    _params.accountingExtension.pay(
       _dispute.requestId,
       _won ? _dispute.proposer : _dispute.disputer,
       _won ? _dispute.disputer : _dispute.proposer,
-      _bondToken,
-      _bondSize
+      _params.bondToken,
+      _params.bondSize
     );
 
-    _accountingExtension.release(
-      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _bondToken, _bondSize
+    _params.accountingExtension.release(
+      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _params.bondToken, _params.bondSize
     );
 
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
@@ -137,12 +130,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
 
-      _accountingExtension.payWinningPledgers(
+      _params.accountingExtension.payWinningPledgers(
         _dispute.requestId,
         _disputeId,
         _won ? __bondEscalationData.pledgersForDispute : __bondEscalationData.pledgersAgainstDispute,
-        _bondToken,
-        _bondSize << 1
+        _params.bondToken,
+        _params.bondSize << 1
       );
     }
     emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
@@ -162,23 +155,18 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_DisputeNotEscalated();
     }
 
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      uint256 _maxNumberOfEscalations,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer,
-    ) = decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
-    if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
+    if (_params.maxNumberOfEscalations == 0 || _params.bondSize == 0) revert BondEscalationModule_ZeroValue();
 
-    if (block.timestamp > _bondEscalationDeadline + _tyingBuffer) revert BondEscalationModule_BondEscalationOver();
+    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
+      revert BondEscalationModule_BondEscalationOver();
+    }
 
     uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
     uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
 
-    if (_numPledgersForDispute == _maxNumberOfEscalations) {
+    if (_numPledgersForDispute == _params.maxNumberOfEscalations) {
       revert BondEscalationModule_MaxNumberOfEscalationsReached();
     }
 
@@ -186,15 +174,15 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlySurpassByOnePledge();
     }
 
-    if (block.timestamp > _bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
+    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
     _bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
 
-    _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
+    _params.accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _params.bondToken, _params.bondSize);
 
-    emit PledgedInFavorOfDisputer(_disputeId, msg.sender, _bondSize);
+    emit PledgedInFavorOfDisputer(_disputeId, msg.sender, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -207,23 +195,18 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_DisputeNotEscalated();
     }
 
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      uint256 _maxNumberOfEscalations,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer,
-    ) = decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
-    if (_maxNumberOfEscalations == 0 || _bondSize == 0) revert BondEscalationModule_ZeroValue();
+    if (_params.maxNumberOfEscalations == 0 || _params.bondSize == 0) revert BondEscalationModule_ZeroValue();
 
-    if (block.timestamp > _bondEscalationDeadline + _tyingBuffer) revert BondEscalationModule_BondEscalationOver();
+    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
+      revert BondEscalationModule_BondEscalationOver();
+    }
 
     uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
     uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
 
-    if (_numPledgersAgainstDispute == _maxNumberOfEscalations) {
+    if (_numPledgersAgainstDispute == _params.maxNumberOfEscalations) {
       revert BondEscalationModule_MaxNumberOfEscalationsReached();
     }
 
@@ -231,29 +214,22 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_CanOnlySurpassByOnePledge();
     }
 
-    if (block.timestamp > _bondEscalationDeadline && _numPledgersAgainstDispute == _numPledgersForDispute) {
+    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersAgainstDispute == _numPledgersForDispute) {
       revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
     }
 
     _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
 
-    _accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _bondToken, _bondSize);
+    _params.accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _params.bondToken, _params.bondSize);
 
-    emit PledgedInFavorOfProposer(_disputeId, msg.sender, _bondSize);
+    emit PledgedInFavorOfProposer(_disputeId, msg.sender, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
   function settleBondEscalation(bytes32 _requestId) external {
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      ,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer,
-    ) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
-    if (block.timestamp <= _bondEscalationDeadline + _tyingBuffer) {
+    if (block.timestamp <= _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
     }
 
@@ -273,8 +249,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     bool _disputersWon = _pledgersForDispute.length > _pledgersAgainstDispute.length;
 
     uint256 _amountToPay = _disputersWon
-      ? _bondSize + FixedPointMathLib.mulDivDown(_pledgersAgainstDispute.length, _bondSize, _pledgersForDispute.length)
-      : _bondSize + FixedPointMathLib.mulDivDown(_pledgersForDispute.length, _bondSize, _pledgersAgainstDispute.length);
+      ? _params.bondSize
+        + FixedPointMathLib.mulDivDown(_pledgersAgainstDispute.length, _params.bondSize, _pledgersForDispute.length)
+      : _params.bondSize
+        + FixedPointMathLib.mulDivDown(_pledgersForDispute.length, _params.bondSize, _pledgersAgainstDispute.length);
 
     BondEscalationStatus _newStatus =
       _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
@@ -286,8 +264,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
     //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
     //                   Another approach is correct parameters (low number of escalations and higher amount bonded)
-    _accountingExtension.payWinningPledgers(
-      _requestId, _disputeId, _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute, _bondToken, _amountToPay
+    _params.accountingExtension.payWinningPledgers(
+      _requestId,
+      _disputeId,
+      _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute,
+      _params.bondToken,
+      _amountToPay
     );
   }
 
@@ -296,30 +278,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   ////////////////////////////////////////////////////////////////////
 
   /// @inheritdoc IBondEscalationModule
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize,
-      uint256 _maxNumberOfEscalations,
-      uint256 _bondEscalationDeadline,
-      uint256 _tyingBuffer,
-      uint256 _challengePeriod
-    )
-  {
-    (
-      _accountingExtension,
-      _bondToken,
-      _bondSize,
-      _maxNumberOfEscalations,
-      _bondEscalationDeadline,
-      _tyingBuffer,
-      _challengePeriod
-    ) = abi.decode(
-      requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256, uint256)
-    );
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IBondEscalationModule

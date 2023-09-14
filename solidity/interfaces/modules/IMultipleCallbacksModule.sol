@@ -36,19 +36,28 @@ interface IMultipleCallbacksModule is IFinalityModule {
   error MultipleCallbackModule_InvalidParameters();
 
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS 
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param targets The target addresses for the callback
+   * @param data The calldata forwarded to the targets
+   */
+  struct RequestParameters {
+    address[] targets;
+    bytes[] data;
+  }
+  /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Returns the decoded data for a request
    * @param _requestId The id of the request
-   * @return _targets The target addresses for the callback
-   * @return _data The calldata forwarded to the targets
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (address[] memory _targets, bytes[] memory _data);
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Finalizes the request by executing the callback calls on the targets

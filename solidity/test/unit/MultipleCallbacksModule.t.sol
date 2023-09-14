@@ -19,7 +19,7 @@ contract ForTest_MultipleCallbacksModule is MultipleCallbacksModule {
   constructor(IOracle _oracle) MultipleCallbacksModule(_oracle) {}
 
   function forTest_setRequestData(bytes32 _requestId, address[] calldata _targets, bytes[] calldata _data) public {
-    requestData[_requestId] = abi.encode(_targets, _data);
+    requestData[_requestId] = abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
   }
 }
 
@@ -103,7 +103,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
   function test_Revert_InvalidParameters(bytes32 _requestId, address[] memory _targets, bytes[] memory _data) public {
     vm.assume(_targets.length != _data.length);
 
-    bytes memory _requestData = abi.encode(_targets, _data);
+    bytes memory _requestData = abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
 
     vm.prank(address(oracle));
     vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_InvalidParameters.selector);
@@ -120,7 +120,8 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
       _targetData[i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
     }
 
-    bytes memory _requestData = abi.encode(_targets, _targetData);
+    bytes memory _requestData =
+      abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _targetData}));
 
     vm.prank(address(oracle));
     vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_TargetHasNoCode.selector);

@@ -7,6 +7,15 @@ import {IModule} from '../IModule.sol';
 
 interface ISequentialResolutionModule is IOracle, IResolutionModule {
   /*///////////////////////////////////////////////////////////////
+                              EVENTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Emitted when a new resolution sequence is added
+   */
+  event SequentialResolutionModule_ResolutionSequenceAdded(uint256 _sequenceId, IResolutionModule[] _modules);
+
+  /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
   /**
@@ -24,15 +33,6 @@ interface ISequentialResolutionModule is IOracle, IResolutionModule {
    * @param _sequenceId The sequenceId that was already used
    */
   error SequentialResolutionModule_SequenceIdAlreadyUsed(uint256 _sequenceId);
-
-  /*///////////////////////////////////////////////////////////////
-                              EVENTS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Emitted when a new resolution sequence is added
-   */
-  event SequentialResolutionModule_ResolutionSequenceAdded(uint256 _sequenceId, IResolutionModule[] _modules);
 
   /*///////////////////////////////////////////////////////////////
                               VARIABLES

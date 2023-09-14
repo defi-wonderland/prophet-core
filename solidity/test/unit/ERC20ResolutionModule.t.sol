@@ -98,18 +98,13 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     module.forTest_setRequestData(_requestId, _requestData);
 
     // Test: decode the given request data
-    (
-      IAccountingExtension _accountingExtensionStored,
-      IERC20 _tokenStored,
-      uint256 _minVotesForQuorumStored,
-      uint256 _votingTimeWindowStored
-    ) = module.decodeRequestData(_requestId);
+    IERC20ResolutionModule.RequestParameters memory _params = module.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(address(_accountingExtensionStored), _accountingExtension);
-    assertEq(address(_tokenStored), _token);
-    assertEq(_minVotesForQuorumStored, _minVotesForQuorum);
-    assertEq(_votingTimeWindowStored, _votingTimeWindow);
+    assertEq(address(_params.accountingExtension), _accountingExtension);
+    assertEq(address(_params.votingToken), _token);
+    assertEq(_params.minVotesForQuorum, _minVotesForQuorum);
+    assertEq(_params.timeUntilDeadline, _votingTimeWindow);
   }
 
   /**

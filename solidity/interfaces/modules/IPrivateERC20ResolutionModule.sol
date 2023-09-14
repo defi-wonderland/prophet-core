@@ -94,10 +94,27 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Parameters of the request as stored in the module
+   * @param accountingExtension The accounting extension used to bond and release tokens
+   * @param token The token used to vote
+   * @param minVotesForQuorum The minimum amount of votes to win the dispute
+   * @param committingTimeWindow The amount of time to commit votes from the escalation of the dispute
+   * @param revealingTimeWindow The amount of time to reveal votes from the committing phase
+   */
+  struct RequestParameters {
+    IAccountingExtension accountingExtension;
+    IERC20 votingToken;
+    uint256 minVotesForQuorum;
+    uint256 committingTimeWindow;
+    uint256 revealingTimeWindow;
+  }
+
+  /**
    * @notice Escalation data for a dispute
    * @param startTime The timestamp at which the dispute was escalated
    * @param totalVotes The total amount of votes cast for the dispute
    */
+
   struct EscalationData {
     uint256 startTime;
     uint256 totalVotes;
@@ -164,22 +181,10 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Returns the decoded data for a request
-   * @param _accountingExtension The accounting extension used to bond and release tokens
-   * @param _token The token used to vote
-   * @param _minVotesForQuorum The minimum amount of votes to win the dispute
-   * @param _committingTimeWindow The amount of time to commit votes from the escalation of the dispute
-   * @param _revealingTimeWindow The amount of time to reveal votes from the committing phase
+   * @param _requestId The ID of the request
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      IAccountingExtension _accountingExtension,
-      IERC20 _token,
-      uint256 _minVotesForQuorum,
-      uint256 _committingTimeWindow,
-      uint256 _revealingTimeWindow
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Computes a valid commitment for the revealing phase

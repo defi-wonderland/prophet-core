@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   ContractCallRequestModule,
+  IContractCallRequestModule,
   IOracle,
   IAccountingExtension,
   IERC20
@@ -74,29 +75,31 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(address(_paymentToken) != address(0));
     vm.assume(_paymentAmount > 0);
 
-    bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      IContractCallRequestModule.RequestParameters({
+        target: _targetContract,
+        functionSelector: _functionSelector,
+        data: _dataParams,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     // Set the request data
     contractCallRequestModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
-    (
-      address _decodedTarget,
-      bytes4 _decodedFunctionSelector,
-      bytes memory _decodedData,
-      IAccountingExtension _decodedAccountingExtension,
-      IERC20 _decodedPaymentToken,
-      uint256 _decodedPaymentAmount
-    ) = contractCallRequestModule.decodeRequestData(_requestId);
+    IContractCallRequestModule.RequestParameters memory _params =
+      contractCallRequestModule.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(_decodedTarget, _targetContract, 'Mismatch: decoded target');
-    assertEq(_decodedFunctionSelector, _functionSelector, 'Mismatch: decoded function selector');
-    assertEq(_decodedData, _dataParams, 'Mismatch: decoded data');
-    assertEq(address(_decodedAccountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
-    assertEq(address(_decodedPaymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
-    assertEq(_decodedPaymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
+    assertEq(_params.target, _targetContract, 'Mismatch: decoded target');
+    assertEq(_params.functionSelector, _functionSelector, 'Mismatch: decoded function selector');
+    assertEq(_params.data, _dataParams, 'Mismatch: decoded data');
+    assertEq(address(_params.accountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
+    assertEq(address(_params.paymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
+    assertEq(_params.paymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
   }
 
   /**
@@ -116,8 +119,16 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(address(_paymentToken) != address(0));
     vm.assume(_paymentAmount > 0);
 
-    bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      IContractCallRequestModule.RequestParameters({
+        target: _targetContract,
+        functionSelector: _functionSelector,
+        data: _dataParams,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -171,8 +182,16 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     // Use the correct accounting parameters
-    bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      IContractCallRequestModule.RequestParameters({
+        target: _targetContract,
+        functionSelector: _functionSelector,
+        data: _dataParams,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -239,8 +258,16 @@ contract ContractCallRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     // Use the correct accounting parameters
-    bytes memory _requestData =
-      abi.encode(_targetContract, _functionSelector, _dataParams, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      IContractCallRequestModule.RequestParameters({
+        target: _targetContract,
+        functionSelector: _functionSelector,
+        data: _dataParams,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;

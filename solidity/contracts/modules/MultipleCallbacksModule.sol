@@ -9,8 +9,8 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IMultipleCallbacksModule
-  function decodeRequestData(bytes32 _requestId) public view returns (address[] memory _targets, bytes[] memory _data) {
-    (_targets, _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   function moduleName() public pure returns (string memory _moduleName) {
@@ -22,12 +22,12 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
    * @param _data The ABI encoded address of the target contracts and the calldata to be executed
    */
   function _afterSetupRequest(bytes32, bytes calldata _data) internal view override {
-    (address[] memory _targets, bytes[] memory _calldata) = abi.decode(_data, (address[], bytes[]));
-    uint256 _length = _targets.length;
-    if (_length != _calldata.length) revert MultipleCallbackModule_InvalidParameters();
+    RequestParameters memory _params = abi.decode(_data, (RequestParameters));
+    uint256 _length = _params.targets.length;
+    if (_length != _params.data.length) revert MultipleCallbackModule_InvalidParameters();
 
     for (uint256 _i; _i < _length;) {
-      if (_targets[_i].code.length == 0) revert MultipleCallbackModule_TargetHasNoCode();
+      if (_params.targets[_i].code.length == 0) revert MultipleCallbackModule_TargetHasNoCode();
       unchecked {
         ++_i;
       }
@@ -39,13 +39,13 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     bytes32 _requestId,
     address _finalizer
   ) external override(IMultipleCallbacksModule, Module) onlyOracle {
-    (address[] memory _targets, bytes[] memory _data) = abi.decode(requestData[_requestId], (address[], bytes[]));
-    uint256 _length = _targets.length;
+    RequestParameters memory _params = decodeRequestData(_requestId);
+    uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
       // solhint-disable-next-line
-      _targets[_i].call(_data[_i]);
-      emit Callback(_targets[_i], _requestId, _data[_i]);
+      _params.targets[_i].call(_params.data[_i]);
+      emit Callback(_params.targets[_i], _requestId, _params.data[_i]);
       unchecked {
         ++_i;
       }

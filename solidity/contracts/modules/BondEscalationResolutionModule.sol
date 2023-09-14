@@ -34,34 +34,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     return 'BondEscalationResolutionModule';
   }
 
-  /**
-   * @notice Decodes the module data the requester provided at the time of creating the request.
-   *
-   * @param _requestId The ID of the request to decode.
-   *
-   * @return _accountingExtension   The accounting extension to use for this request.
-   * @return _token                 The token to use for this request.
-   * @return _percentageDiff        The percentage difference between the for and against pledges that triggers the change in voting turns.
-   *                                This value should be between 1 and 100.
-   * @return _pledgeThreshold       The amount of pledges that must be reached to achieve quorum and start triggering voting turns.
-   * @return _timeUntilDeadline     The amount of time in seconds past the start time of the escalation until the resolution process is over.
-   * @return _timeToBreakInequality The amount of time the pledgers in favor or against a dispute have to break the pledge inequality once the percentage
-   *                                difference has been surpassed.
-   */
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _token,
-      uint256 _percentageDiff,
-      uint256 _pledgeThreshold,
-      uint256 _timeUntilDeadline,
-      uint256 _timeToBreakInequality
-    )
-  {
-    (_accountingExtension, _token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality) =
-      abi.decode(requestData[_requestId], (IBondEscalationAccounting, IERC20, uint256, uint256, uint256, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /**
@@ -90,22 +64,15 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _token,
-      uint256 _percentageDiff,
-      uint256 _pledgeThreshold,
-      uint256 _timeUntilDeadline,
-      uint256 _timeToBreakInequality
-    ) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     {
-      uint256 _pledgingDeadline = _escalationData.startTime + _timeUntilDeadline;
+      uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
 
       if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
 
       // Revert if the inequality timer has passed
-      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _timeToBreakInequality) {
+      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _params.timeToBreakInequality) {
         revert BondEscalationResolutionModule_MustBeResolved();
       }
 
@@ -119,7 +86,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
 
-    _accountingExtension.pledge(msg.sender, _requestId, _disputeId, _token, _pledgeAmount);
+    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _pledgeAmount);
     emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     /*
@@ -134,7 +101,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
                                 If the timer runs out without the status changing, then the dispute is considered finalized and the for party wins.
       3) ForTurnToEqualize:     The same as AgainsTurnToEqualize but for the parties that wish to pledge in favor a given dispute.
     */
-    if (_updatedTotalVotes >= _pledgeThreshold) {
+    if (_updatedTotalVotes >= _params.pledgeThreshold) {
       uint256 _updatedForVotes = _escalationData.pledgesFor;
       uint256 _againstVotes = _escalationData.pledgesAgainst;
 
@@ -144,7 +111,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       int256 _forPercentageDifference = int256(_newForVotesPercentage) - int256(_againstVotesPercentage);
       int256 _againstPercentageDifference = int256(_againstVotesPercentage) - int256(_newForVotesPercentage);
 
-      int256 _scaledPercentageDiffAsInt = int256(_percentageDiff * BASE / 100);
+      int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
 
       if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
         return;
@@ -174,22 +141,15 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
-    (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _token,
-      uint256 _percentageDiff,
-      uint256 _pledgeThreshold,
-      uint256 _timeUntilDeadline,
-      uint256 _timeToBreakInequality
-    ) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     {
-      uint256 _pledgingDeadline = _escalationData.startTime + _timeUntilDeadline;
+      uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
 
       if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
 
       // Revert if the inequality timer has passed
-      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _timeToBreakInequality) {
+      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _params.timeToBreakInequality) {
         revert BondEscalationResolutionModule_MustBeResolved();
       }
 
@@ -203,7 +163,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
 
-    _accountingExtension.pledge(msg.sender, _requestId, _disputeId, _token, _pledgeAmount);
+    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _pledgeAmount);
     emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     /*
@@ -218,7 +178,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
                                 If the timer runs out without the status changing, then the dispute is considered finalized and the for party wins.
       3) ForTurnToEqualize:     The same as AgainsTurnToEqualize but for the parties that wish to pledge in favor a given dispute.
     */
-    if (_updatedTotalVotes >= _pledgeThreshold) {
+    if (_updatedTotalVotes >= _params.pledgeThreshold) {
       uint256 _updatedAgainstVotes = _escalationData.pledgesAgainst;
       uint256 _forVotes = _escalationData.pledgesFor;
 
@@ -227,7 +187,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       int256 _forPercentageDifference = int256(_forVotesPercentage) - int256(_newAgainstVotesPercentage);
       int256 _againstPercentageDifference = int256(_newAgainstVotesPercentage) - int256(_forVotesPercentage);
 
-      int256 _scaledPercentageDiffAsInt = int256(_percentageDiff * BASE / 100);
+      int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
 
       if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
         return;
@@ -257,14 +217,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
 
-    (,,, uint256 _pledgeThreshold, uint256 _timeUntilDeadline, uint256 _timeToBreakInequality) =
-      decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
-    uint256 _inequalityTimerDeadline = _inequalityData.time + _timeToBreakInequality;
+    uint256 _inequalityTimerDeadline = _inequalityData.time + _params.timeToBreakInequality;
 
-    uint256 _pledgingDeadline = _escalationData.startTime + _timeUntilDeadline;
+    uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
 
     // Revert if we have not yet reached the deadline and the timer has not passed
     if (block.timestamp < _pledgingDeadline && block.timestamp < _inequalityTimerDeadline) {
@@ -277,7 +236,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     IOracle.DisputeStatus _disputeStatus;
 
-    if (_totalPledges < _pledgeThreshold || _pledgesFor == _pledgesAgainst) {
+    if (_totalPledges < _params.pledgeThreshold || _pledgesFor == _pledgesAgainst) {
       _escalationData.resolution = Resolution.NoResolution;
       _disputeStatus = IOracle.DisputeStatus.NoResolution;
     } else if (_pledgesFor > _pledgesAgainst) {
@@ -306,7 +265,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     if (_escalationData.resolution == Resolution.Unresolved) revert BondEscalationResolutionModule_NotResolved();
 
-    (IBondEscalationAccounting _accountingExtension, IERC20 _token,,,,) = decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
     uint256 _pledgerBalanceBefore;
     uint256 _pledgerProportion;
     uint256 _amountToRelease;
@@ -319,8 +278,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesFor);
       _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _token, _amountToRelease);
-      emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _token, _amountToRelease);
+      _params.accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
       return;
     }
 
@@ -331,8 +290,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesAgainst);
       _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _token, _amountToRelease);
-      emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _token, _amountToRelease);
+      _params.accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
       return;
     }
 
@@ -342,13 +301,17 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     if (_pledgerBalanceFor > 0) {
       pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
-      _accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _token, _pledgerBalanceFor);
-      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _token, _pledgerBalanceFor);
+      _params.accountingExtension.releasePledge(
+        _requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor
+      );
+      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor);
     }
     if (_pledgerBalanceAgainst > 0) {
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
-      _accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _token, _pledgerBalanceAgainst);
-      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _token, _pledgerBalanceAgainst);
+      _params.accountingExtension.releasePledge(
+        _requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst
+      );
+      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst);
     }
   }
 }

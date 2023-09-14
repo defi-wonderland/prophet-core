@@ -27,20 +27,8 @@ contract RootVerificationModule is Module, IRootVerificationModule {
   }
 
   /// @inheritdoc IRootVerificationModule
-  function decodeRequestData(bytes32 _requestId)
-    public
-    view
-    returns (
-      bytes memory _treeData,
-      bytes32[] memory _leavesToInsert,
-      ITreeVerifier _treeVerifier,
-      IAccountingExtension _accountingExtension,
-      IERC20 _bondToken,
-      uint256 _bondSize
-    )
-  {
-    (_treeData, _leavesToInsert, _treeVerifier, _accountingExtension, _bondToken, _bondSize) =
-      abi.decode(requestData[_requestId], (bytes, bytes32[], ITreeVerifier, IAccountingExtension, IERC20, uint256));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IRootVerificationModule
@@ -48,15 +36,16 @@ contract RootVerificationModule is Module, IRootVerificationModule {
 
   /// @inheritdoc IRootVerificationModule
   function updateDisputeStatus(bytes32, IOracle.Dispute memory _dispute) external onlyOracle {
-    (,,, IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
-      decodeRequestData(_dispute.requestId);
+    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
 
     bool _won = abi.decode(_response.response, (bytes32)) != _correctRoots[_dispute.requestId];
 
     if (_won) {
-      _accountingExtension.pay(_dispute.requestId, _dispute.proposer, _dispute.disputer, _bondToken, _bondSize);
+      _params.accountingExtension.pay(
+        _dispute.requestId, _dispute.proposer, _dispute.disputer, _params.bondToken, _params.bondSize
+      );
       bytes32 _correctResponseId =
         ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctRoots[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);
@@ -77,10 +66,9 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
-    (bytes memory _treeData, bytes32[] memory _leavesToInsert, ITreeVerifier _treeVerifier,,,) =
-      decodeRequestData(_requestId);
+    RequestParameters memory _params = decodeRequestData(_requestId);
 
-    bytes32 _correctRoot = _treeVerifier.calculateRoot(_treeData, _leavesToInsert);
+    bytes32 _correctRoot = _params.treeVerifier.calculateRoot(_params.treeData, _params.leavesToInsert);
     _correctRoots[_requestId] = _correctRoot;
 
     bool _won = abi.decode(_response.response, (bytes32)) != _correctRoot;

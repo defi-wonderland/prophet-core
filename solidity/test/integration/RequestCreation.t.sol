@@ -25,38 +25,28 @@ contract Integration_RequestCreation is IntegrationBase {
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
-    (
-      string memory _url,
-      IHttpRequestModule.HttpMethod _httpMethod,
-      string memory _httpBody,
-      IAccountingExtension _accExtension,
-      IERC20 _paymentToken,
-      uint256 _paymentAmount
-    ) = _requestModule.decodeRequestData(_requestId);
+    IHttpRequestModule.RequestParameters memory _reqParams = _requestModule.decodeRequestData(_requestId);
 
-    assertEq(_url, _expectedUrl);
-    assertEq(uint256(_httpMethod), uint256(_expectedMethod));
-    assertEq(_httpBody, _expectedBody);
-    assertEq(address(_accExtension), address(_accountingExtension));
-    assertEq(address(_paymentToken), address(usdc));
-    assertEq(_paymentAmount, _expectedReward);
+    assertEq(_reqParams.url, _expectedUrl);
+    assertEq(uint256(_reqParams.method), uint256(_expectedMethod));
+    assertEq(_reqParams.body, _expectedBody);
+    assertEq(address(_reqParams.accountingExtension), address(_accountingExtension));
+    assertEq(address(_reqParams.paymentToken), address(usdc));
+    assertEq(_reqParams.paymentAmount, _expectedReward);
 
     // Check: request data was stored in response module?
-    (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _responseModule.decodeRequestData(_requestId);
-
-    assertEq(address(_accountingExtension), address(_accounting));
-    assertEq(address(_bondToken), address(usdc));
-    assertEq(_expectedBondSize, _bondSize);
-    assertEq(_expectedDeadline, _deadline);
+    IBondedResponseModule.RequestParameters memory _params = _responseModule.decodeRequestData(_requestId);
+    assertEq(address(_accountingExtension), address(_params.accountingExtension));
+    assertEq(address(_params.bondToken), address(usdc));
+    assertEq(_expectedBondSize, _params.bondSize);
+    assertEq(_expectedDeadline, _params.deadline);
 
     // Check: request data was stored in dispute module?
-    (IAccountingExtension _accounting2, IERC20 _bondToken2, uint256 _bondSize2) =
-      _disputeModule.decodeRequestData(_requestId);
+    IBondedDisputeModule.RequestParameters memory _params2 = _disputeModule.decodeRequestData(_requestId);
 
-    assertEq(address(_accountingExtension), address(_accounting2));
-    assertEq(address(_bondToken), address(_bondToken2));
-    assertEq(_expectedBondSize, _bondSize2);
+    assertEq(address(_accountingExtension), address(_params2.accountingExtension));
+    assertEq(address(_params.bondToken), address(_params2.bondToken));
+    assertEq(_expectedBondSize, _params2.bondSize);
 
     // Check: is finality and resolution data stored as empty?
     IOracle.FullRequest memory _fullRequest = oracle.getFullRequest(_requestId);
@@ -76,47 +66,38 @@ contract Integration_RequestCreation is IntegrationBase {
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
-    (
-      string memory _url,
-      IHttpRequestModule.HttpMethod _httpMethod,
-      string memory _httpBody,
-      IAccountingExtension _accExtension,
-      IERC20 _paymentToken,
-      uint256 _paymentAmount
-    ) = _requestModule.decodeRequestData(_requestId);
+    IHttpRequestModule.RequestParameters memory _reqParams = _requestModule.decodeRequestData(_requestId);
 
-    assertEq(_url, _expectedUrl);
-    assertEq(uint256(_httpMethod), uint256(_expectedMethod));
-    assertEq(_httpBody, _expectedBody);
-    assertEq(address(_accExtension), address(_accountingExtension));
-    assertEq(address(_paymentToken), address(usdc));
-    assertEq(_paymentAmount, _expectedReward);
+    assertEq(_reqParams.url, _expectedUrl);
+    assertEq(uint256(_reqParams.method), uint256(_expectedMethod));
+    assertEq(_reqParams.body, _expectedBody);
+    assertEq(address(_reqParams.accountingExtension), address(_accountingExtension));
+    assertEq(address(_reqParams.paymentToken), address(usdc));
+    assertEq(_reqParams.paymentAmount, _expectedReward);
 
     // Check: request data was stored in response module?
-    (IAccountingExtension _accounting, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline) =
-      _responseModule.decodeRequestData(_requestId);
+    IBondedResponseModule.RequestParameters memory _params = _responseModule.decodeRequestData(_requestId);
 
-    assertEq(address(_accountingExtension), address(_accounting));
-    assertEq(address(_bondToken), address(usdc));
-    assertEq(_expectedBondSize, _bondSize);
-    assertEq(_expectedDeadline, _deadline);
+    assertEq(address(_accountingExtension), address(_params.accountingExtension));
+    assertEq(address(_params.bondToken), address(usdc));
+    assertEq(_expectedBondSize, _params.bondSize);
+    assertEq(_expectedDeadline, _params.deadline);
 
     // Check: request data was stored in dispute module?
-    (IAccountingExtension _accounting2, IERC20 _bondToken2, uint256 _bondSize2) =
-      _disputeModule.decodeRequestData(_requestId);
+    IBondedDisputeModule.RequestParameters memory _params2 = _disputeModule.decodeRequestData(_requestId);
 
-    assertEq(address(_accountingExtension), address(_accounting2));
-    assertEq(address(_bondToken), address(_bondToken2));
-    assertEq(_expectedBondSize, _bondSize2);
+    assertEq(address(_accountingExtension), address(_params2.accountingExtension));
+    assertEq(address(_params.bondToken), address(_params2.bondToken));
+    assertEq(_expectedBondSize, _params2.bondSize);
 
     // Check: request data was stored in resolution module?
     (address _arbitrator) = _resolutionModule.decodeRequestData(_requestId);
     assertEq(_arbitrator, address(_mockArbitrator));
 
     // Check: request data was stored in finality module?
-    (address _callback, bytes memory _callbackData) = _callbackModule.decodeRequestData(_requestId);
-    assertEq(_callback, address(_mockCallback));
-    assertEq(_callbackData, abi.encode(_expectedCallbackValue));
+    ICallbackModule.RequestParameters memory _callbackParams = _callbackModule.decodeRequestData(_requestId);
+    assertEq(_callbackParams.target, address(_mockCallback));
+    assertEq(_callbackParams.data, abi.encode(_expectedCallbackValue));
   }
 
   function test_createRequestWithReward_UserHasBonded() public {
@@ -145,9 +126,16 @@ contract Integration_RequestCreation is IntegrationBase {
 
     // Request without rewards.
     IOracle.NewRequest memory _request = _standardRequest();
-    _request.requestModuleData =
-      abi.encode(_expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, 0);
-
+    _request.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: IERC20(USDC_ADDRESS),
+        paymentAmount: 0
+      })
+    );
     // Check: should not revert as user has set no rewards and bonded.
     vm.prank(requester);
     oracle.createRequest(_request);
@@ -156,8 +144,16 @@ contract Integration_RequestCreation is IntegrationBase {
   function test_createRequestWithoutReward_UserHasNotBonded() public {
     // Request without rewards
     IOracle.NewRequest memory _request = _standardRequest();
-    _request.requestModuleData =
-      abi.encode(_expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, 0);
+    _request.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: IERC20(USDC_ADDRESS),
+        paymentAmount: 0
+      })
+    );
 
     // Check: should not revert as user has set no rewards.
     vm.prank(requester);
@@ -178,13 +174,21 @@ contract Integration_RequestCreation is IntegrationBase {
     assertTrue(_firstRequestId != _secondRequestId, 'Request IDs should not be equal');
   }
 
-  function test_createRestWithInvalidParameters() public {
+  function test_createRequestWithInvalidParameters() public {
     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
 
     // Request with invalid token address.
     IOracle.NewRequest memory _invalidTokenRequest = _standardRequest();
-    _invalidTokenRequest.requestModuleData =
-      abi.encode(_expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, address(0), _expectedReward);
+    _invalidTokenRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: IERC20(address(0)),
+        paymentAmount: _expectedReward
+      })
+    );
 
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
     vm.prank(requester);
@@ -225,14 +229,34 @@ contract Integration_RequestCreation is IntegrationBase {
   function _standardRequest() internal view returns (IOracle.NewRequest memory _request) {
     _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        _expectedUrl, _expectedMethod, _expectedBody, _accountingExtension, USDC_ADDRESS, _expectedReward
+        IHttpRequestModule.RequestParameters({
+          url: _expectedUrl,
+          method: _expectedMethod,
+          body: _expectedBody,
+          accountingExtension: _accountingExtension,
+          paymentToken: IERC20(USDC_ADDRESS),
+          paymentAmount: _expectedReward
+        })
         ),
-      responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
+      responseModuleData: abi.encode(
+        IBondedResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize,
+          deadline: _expectedDeadline
+        })
+        ),
       disputeModuleData: abi.encode(
-        _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _mockArbitrator
+        IBondedDisputeModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: IERC20(USDC_ADDRESS),
+          bondSize: _expectedBondSize
+        })
         ),
       resolutionModuleData: abi.encode(_mockArbitrator),
-      finalityModuleData: abi.encode(address(_mockCallback), abi.encode(_expectedCallbackValue)),
+      finalityModuleData: abi.encode(
+        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        ),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,

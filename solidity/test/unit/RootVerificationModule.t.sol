@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   RootVerificationModule,
+  IRootVerificationModule,
   IOracle,
   ITreeVerifier,
   IAccountingExtension,
@@ -133,38 +134,38 @@ contract RootVerificationModule_UnitTest is Test {
     uint256 _bondSize
   ) public {
     // Mock data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, _accountingExtension, _randomtoken, _bondSize);
-
+    bytes memory _requestData = abi.encode(
+      IRootVerificationModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: IAccountingExtension(_accountingExtension),
+        bondToken: IERC20(_randomtoken),
+        bondSize: _bondSize
+      })
+    );
     // Store the mock request
     rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
 
     // Test: decode the given request data
-    (
-      bytes memory _treeDataStored,
-      bytes32[] memory _leavesToInsertStored,
-      ITreeVerifier _treeVerifierStored,
-      IAccountingExtension _accountingExtensionStored,
-      IERC20 _tokenStored,
-      uint256 _bondSizeStored
-    ) = rootVerificationModule.decodeRequestData(_requestId);
+    IRootVerificationModule.RequestParameters memory _params = rootVerificationModule.decodeRequestData(_requestId);
 
     bytes32[32] memory _treeBranchesStored;
     uint256 _treeCountStored;
-    (_treeBranchesStored, _treeCountStored) = abi.decode(_treeDataStored, (bytes32[32], uint256));
+    (_treeBranchesStored, _treeCountStored) = abi.decode(_params.treeData, (bytes32[32], uint256));
 
     // Check: decoded values match original values?
     for (uint256 _i = 0; _i < _treeBranches.length; _i++) {
       assertEq(_treeBranchesStored[_i], _treeBranches[_i], 'Mismatch: decoded tree branch');
     }
     for (uint256 _i = 0; _i < _leavesToInsert.length; _i++) {
-      assertEq(_leavesToInsertStored[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
+      assertEq(_params.leavesToInsert[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
     }
     assertEq(_treeCountStored, _treeCount, 'Mismatch: decoded tree count');
-    assertEq(address(_treeVerifierStored), address(treeVerifier), 'Mismatch: decoded tree verifier');
-    assertEq(address(_accountingExtensionStored), _accountingExtension, 'Mismatch: decoded accounting extension');
-    assertEq(address(_tokenStored), _randomtoken, 'Mismatch: decoded token');
-    assertEq(_bondSizeStored, _bondSize, 'Mismatch: decoded bond size');
+    assertEq(address(_params.treeVerifier), address(treeVerifier), 'Mismatch: decoded tree verifier');
+    assertEq(address(_params.accountingExtension), _accountingExtension, 'Mismatch: decoded accounting extension');
+    assertEq(address(_params.bondToken), _randomtoken, 'Mismatch: decoded token');
+    assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
 
   /**
@@ -191,8 +192,16 @@ contract RootVerificationModule_UnitTest is Test {
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
 
     // Mock request data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      IRootVerificationModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: _token,
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
@@ -238,8 +247,16 @@ contract RootVerificationModule_UnitTest is Test {
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
 
     // Mock request data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      IRootVerificationModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: _token,
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
@@ -282,8 +299,16 @@ contract RootVerificationModule_UnitTest is Test {
     bytes memory _encodedCorrectRoot = abi.encode(bytes32('randomRoot'));
 
     // Mock request data
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accountingExtension, _token, _bondSize);
+    bytes memory _requestData = abi.encode(
+      IRootVerificationModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accountingExtension,
+        bondToken: _token,
+        bondSize: _bondSize
+      })
+    );
 
     // Store the mock request
     rootVerificationModule.forTest_setRequestData(_requestId, _requestData);

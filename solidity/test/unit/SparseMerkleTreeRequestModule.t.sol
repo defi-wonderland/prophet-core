@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 
 import {
   SparseMerkleTreeRequestModule,
+  ISparseMerkleTreeRequestModule,
   IOracle,
   ITreeVerifier,
   IAccountingExtension,
@@ -104,37 +105,39 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     vm.assume(address(_paymentToken) != address(0));
     vm.assume(_paymentAmount > 0);
 
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     // Set the request data
     sparseMerkleTreeRequestModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
-    (
-      bytes memory _decodedTreeData,
-      bytes32[] memory _decodedLeavesToInsert,
-      ITreeVerifier _decodedTreeVerifier,
-      IAccountingExtension _decodedAccountingExtension,
-      IERC20 _decodedPaymentToken,
-      uint256 _decodedPaymentAmount
-    ) = sparseMerkleTreeRequestModule.decodeRequestData(_requestId);
+    ISparseMerkleTreeRequestModule.RequestParameters memory _params =
+      sparseMerkleTreeRequestModule.decodeRequestData(_requestId);
 
     (bytes32[32] memory _decodedTreeBranches, uint256 _decodedTreeCount) =
-      abi.decode(_decodedTreeData, (bytes32[32], uint256));
+      abi.decode(_params.treeData, (bytes32[32], uint256));
 
     // Check: decoded values match original values?
     for (uint256 _i = 0; _i < _treeBranches.length; _i++) {
       assertEq(_decodedTreeBranches[_i], _treeBranches[_i], 'Mismatch: decoded tree branch');
     }
     for (uint256 _i = 0; _i < _leavesToInsert.length; _i++) {
-      assertEq(_decodedLeavesToInsert[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
+      assertEq(_params.leavesToInsert[_i], _leavesToInsert[_i], 'Mismatch: decoded leave to insert');
     }
     assertEq(_decodedTreeCount, _treeCount, 'Mismatch: decoded tree count');
-    assertEq(address(_decodedTreeVerifier), address(treeVerifier), 'Mismatch: decoded tree verifier');
-    assertEq(address(_decodedAccountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
-    assertEq(address(_decodedPaymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
-    assertEq(_decodedPaymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
+    assertEq(address(_params.treeVerifier), address(treeVerifier), 'Mismatch: decoded tree verifier');
+    assertEq(address(_params.accountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
+    assertEq(address(_params.paymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
+    assertEq(_params.paymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
   }
 
   /**
@@ -154,8 +157,16 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     vm.assume(address(_paymentToken) != address(0));
     vm.assume(_paymentAmount > 0);
 
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -202,8 +213,16 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     // Use the correct accounting parameters
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
@@ -270,8 +289,16 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
     vm.assume(_paymentAmount > 0);
 
     // Use the correct accounting parameters
-    bytes memory _requestData =
-      abi.encode(_treeData, _leavesToInsert, treeVerifier, accounting, _paymentToken, _paymentAmount);
+    bytes memory _requestData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: treeVerifier,
+        accountingExtension: accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
 
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;

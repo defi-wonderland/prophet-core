@@ -13,17 +13,17 @@ contract CallbackModule is Module, ICallbackModule {
   }
 
   /// @inheritdoc ICallbackModule
-  function decodeRequestData(bytes32 _requestId) public view returns (address _target, bytes memory _data) {
-    (_target, _data) = abi.decode(requestData[_requestId], (address, bytes));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /**
    * @notice Checks if the target address has code (i.e. is a contract)
-   * @param _data The ABI encoded address of the target contract and the calldata to be executed
+   * @param _data The encoded data for the request
    */
   function _afterSetupRequest(bytes32, bytes calldata _data) internal view override {
-    (address _target,) = abi.decode(_data, (address, bytes));
-    if (_target.code.length == 0) revert CallbackModule_TargetHasNoCode();
+    RequestParameters memory _params = abi.decode(_data, (RequestParameters));
+    if (_params.target.code.length == 0) revert CallbackModule_TargetHasNoCode();
   }
 
   /// @inheritdoc ICallbackModule
@@ -31,10 +31,10 @@ contract CallbackModule is Module, ICallbackModule {
     bytes32 _requestId,
     address _finalizer
   ) external override(Module, ICallbackModule) onlyOracle {
-    (address _target, bytes memory _data) = abi.decode(requestData[_requestId], (address, bytes));
+    RequestParameters memory _params = decodeRequestData(_requestId);
     // solhint-disable-next-line
-    _target.call(_data);
-    emit Callback(_target, _requestId, _data);
+    _params.target.call(_params.data);
+    emit Callback(_params.target, _requestId, _params.data);
     emit RequestFinalized(_requestId, _finalizer);
   }
 }

@@ -78,14 +78,13 @@ contract BondedResponseModule_UnitTest is Test {
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     // Get the returned values
-    (IAccountingExtension _accounting, IERC20 _token, uint256 _bondSize_, uint256 _deadline_) =
-      bondedResponseModule.decodeRequestData(_requestId);
+    IBondedResponseModule.RequestParameters memory _params = bondedResponseModule.decodeRequestData(_requestId);
 
     // Check: correct values returned?
-    assertEq(address(_accounting), address(accounting));
-    assertEq(address(_token), address(token));
-    assertEq(_bondSize_, _bondSize);
-    assertEq(_deadline_, _deadline);
+    assertEq(address(_params.accountingExtension), address(accounting));
+    assertEq(address(_params.bondToken), address(token));
+    assertEq(_params.bondSize, _bondSize);
+    assertEq(_params.deadline, _deadline);
   }
 
   /**

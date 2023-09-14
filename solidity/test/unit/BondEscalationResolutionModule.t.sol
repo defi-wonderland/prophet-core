@@ -1167,20 +1167,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint256 _timeToBreakInequality
   ) public {
     _setRequestData(_requestId, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
-    (
-      IBondEscalationAccounting _accounting,
-      IERC20 _token,
-      uint256 __percentageDiff,
-      uint256 __pledgeThreshold,
-      uint256 __timeUntilDeadline,
-      uint256 __timeToBreakInequality
-    ) = module.decodeRequestData(_requestId);
-    assertEq(address(accounting), address(_accounting));
-    assertEq(address(token), address(_token));
-    assertEq(_percentageDiff, __percentageDiff);
-    assertEq(_pledgeThreshold, __pledgeThreshold);
-    assertEq(_timeUntilDeadline, __timeUntilDeadline);
-    assertEq(_timeToBreakInequality, __timeToBreakInequality);
+    IBondEscalationResolutionModule.RequestParameters memory _params = module.decodeRequestData(_requestId);
+    assertEq(address(accounting), address(_params.accountingExtension));
+    assertEq(address(token), address(_params.bondToken));
+    assertEq(_percentageDiff, _params.percentageDiff);
+    assertEq(_pledgeThreshold, _params.pledgeThreshold);
+    assertEq(_timeUntilDeadline, _params.timeUntilDeadline);
+    assertEq(_timeToBreakInequality, _params.timeToBreakInequality);
   }
 
   ////////////////////////////////////////////////////////////////////

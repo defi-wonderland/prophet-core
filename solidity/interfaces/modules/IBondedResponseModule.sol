@@ -47,21 +47,33 @@ interface IBondedResponseModule is IResponseModule {
   error BondedResponseModule_TooLateToDelete();
 
   /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param accountingExtension The accounting extension used to bond and release tokens
+   * @param bondToken The token used for bonds in the request
+   * @param bondSize The amount of `_bondToken` to bond to propose a response and dispute
+   * @param deadline The timestamp after which no responses can be proposed
+   */
+  struct RequestParameters {
+    IAccountingExtension accountingExtension;
+    IERC20 bondToken;
+    uint256 bondSize;
+    uint256 deadline;
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Returns the decoded data for a request
    * @param _requestId The ID of the request
-   * @return _accountingExtension The accounting extension used to bond and release tokens
-   * @return _bondToken The token used for bonds in the request
-   * @return _bondSize The amount of `_bondToken` to bond to propose a response and dispute
-   * @return _deadline The timestamp after which no responses can be proposed
+   * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize, uint256 _deadline);
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Proposes a response for a request, bonding the proposer's tokens

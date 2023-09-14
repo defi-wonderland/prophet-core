@@ -20,6 +20,27 @@ interface IBondEscalationResolutionModule is IResolutionModule {
     NoResolution
   }
 
+  /**
+   * @notice Parameters of the request as stored in the module
+   *
+   * @param _accountingExtension   The accounting extension to use for this request.
+   * @param _token                 The token to use for this request.
+   * @param _percentageDiff        The percentage difference between the for and against pledges that triggers the change in voting turns.
+   *                                This value should be between 1 and 100.
+   * @param _pledgeThreshold       The amount of pledges that must be reached to achieve quorum and start triggering voting turns.
+   * @param _timeUntilDeadline     The amount of time in seconds past the start time of the escalation until the resolution process is over.
+   * @param _timeToBreakInequality The amount of time the pledgers in favor or against a dispute have to break the pledge inequality once the percentage
+   *                                difference has been surpassed.
+   */
+  struct RequestParameters {
+    IBondEscalationAccounting accountingExtension;
+    IERC20 bondToken;
+    uint256 percentageDiff;
+    uint256 pledgeThreshold;
+    uint256 timeUntilDeadline;
+    uint256 timeToBreakInequality;
+  }
+
   struct PledgerData {
     address pledger;
     uint256 pledges;
@@ -87,17 +108,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
     address _pledger
   ) external view returns (uint256 _pledgesAgainstDispute);
 
-  function decodeRequestData(bytes32 _requestId)
-    external
-    view
-    returns (
-      IBondEscalationAccounting _accountingExtension,
-      IERC20 _token,
-      uint256 _percentageDiff,
-      uint256 _pledgeThreshold,
-      uint256 _timeUntilDeadline,
-      uint256 _timeToBreakInequality
-    );
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   function pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external;
   function pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external;
