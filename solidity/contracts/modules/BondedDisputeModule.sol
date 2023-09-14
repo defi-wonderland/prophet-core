@@ -49,7 +49,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 
-  // TODO: This doesn't handle the cases of unconclusive statuses
+  // TODO: This doesn't handle the cases of inconclusive statuses
   /// @inheritdoc IBondedDisputeModule
   function updateDisputeStatus(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     (IAccountingExtension _accountingExtension, IERC20 _bondToken, uint256 _bondSize) =
