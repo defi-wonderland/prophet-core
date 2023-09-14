@@ -27,9 +27,8 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IArbitratorModule
-  function isValid(bytes32 _disputeId) external view returns (bool _isValid) {
-    uint256 _currentDisputeData = _disputeData[_disputeId];
-    _isValid = (_currentDisputeData & 2 == 2) ? (_currentDisputeData >> 2) & 1 == 1 : false;
+  function getDisputeData(bytes32 _disputeId) public view returns (uint256 _data) {
+    _data = _disputeData[_disputeId];
   }
 
   /// @inheritdoc IArbitratorModule

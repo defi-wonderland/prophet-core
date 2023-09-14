@@ -46,18 +46,18 @@ interface IArbitratorModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Returns data for a dispute
+   * @param _disputeId The ID of the dispute
+   * @return _data The whole uint256 storing the dispute information
+   */
+  function getDisputeData(bytes32 _disputeId) external view returns (uint256 _data);
+
+  /**
    * @notice Returns the current arbitration status of a dispute
    * @param _disputeId The ID of the dispute
    * @return _disputeStatus The `ArbitrationStatus` of the dispute
    */
   function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus);
-
-  /**
-   * @notice Returns the validity of a dispute
-   * @param _disputeId The ID of the dispute
-   * @return _isValid The boolean flag indicating the dispute is valid
-   */
-  function isValid(bytes32 _disputeId) external view returns (bool _isValid);
 
   /**
    * @notice Starts the arbitration process by calling `resolve` on the

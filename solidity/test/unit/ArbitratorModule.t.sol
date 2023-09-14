@@ -88,7 +88,7 @@ contract ArbitratorModule_UnitTest is Test {
    * @dev    If an arbitration is either unknown or active, the request id is always invalid
    *         If an arbitration is resolved, the request id is the one stored
    */
-  function test_isValid(bool _result, uint256 _status, bytes32 _disputeId) public {
+  function test_getDisputeData(bool _result, uint256 _status, bytes32 _disputeId) public {
     // Fuzz the 3 different statuses
     _status = bound(_status, 0, 2);
 
@@ -104,10 +104,18 @@ contract ArbitratorModule_UnitTest is Test {
     // Store the mock dispute
     arbitratorModule.forTest_setDisputeData(_disputeId, _disputeData);
 
-    // Check: Unknown or pending arbitration statuses return false?
-    if (_status < 2) assertFalse(arbitratorModule.isValid(_disputeId));
-    // Check: valid status returns the arbitration result?
-    else assertEq(arbitratorModule.isValid(_disputeId), _result);
+    // Check: Unknown or pending arbitration bits are decimal 1 or 0?
+    if (_status < uint256(IArbitratorModule.ArbitrationStatus.Resolved)) {
+      uint256 _statusBits = arbitratorModule.getDisputeData(_disputeId) & 2;
+      assertTrue(
+        _statusBits == uint256(IArbitratorModule.ArbitrationStatus.Active)
+          || _statusBits == uint256(IArbitratorModule.ArbitrationStatus.Unknown)
+      );
+    } else {
+      // Check: get dispute data returns the arbitration result?
+      uint256 _storedResult = arbitratorModule.getDisputeData(_disputeId) & 4;
+      assertEq(_storedResult >> 2, _result ? 1 : 0);
+    }
   }
 
   /**
@@ -164,9 +172,6 @@ contract ArbitratorModule_UnitTest is Test {
 
     // Check: status is now Resolved?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
-
-    // Check: dispute has correct isValid flag?
-    assertEq(arbitratorModule.isValid(_disputeId), _valid);
   }
 
   function test_resolveDisputeEmitsEvent(bytes32 _disputeId, bytes32 _requestId, bool _valid) public {
