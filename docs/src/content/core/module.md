@@ -13,10 +13,12 @@ All public functions in the abstract contract are callable only by the oracle.
 - `setupRequest` is a hook executed on request creation. Apart from saving the request data in the module, it can run can run validations, bond funds or perform any other action specified in the `_afterSetupRequest` function.
 - `finalizeRequest` is a hook executed on request finalization. It's vital to remember that there are [2 ways of finalizing a request](oracle.md#finalization) and this function must handle both of them.
 
-### Contract Parameters
-
 ## 3. Key Mechanisms & Concepts
+
+### Request Data
+
+The `requestData` is a mapping that associates each request's unique identifier (`_requestId`) with its corresponding parameters. This mapping is public, allowing for the data of any request to be accessed using its ID.
 
 ## 4. Gotchas
 
-## 5. Failure Modes
+It's worth noting that if a module does not implement a hook, it will still be called by the oracle.
