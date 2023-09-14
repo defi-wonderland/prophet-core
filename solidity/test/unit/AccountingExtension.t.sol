@@ -8,8 +8,7 @@ import {
   AccountingExtension,
   IAccountingExtension,
   IERC20,
-  IOracle,
-  IWETH9
+  IOracle
 } from '../../contracts/extensions/AccountingExtension.sol';
 
 /**
@@ -33,9 +32,6 @@ contract AccountingExtension_UnitTest is Test {
   // A mock oracle
   IOracle public oracle;
 
-  // Mock Weth
-  IWETH9 public weth;
-
   // Mock deposit token
   IERC20 public token;
 
@@ -46,41 +42,10 @@ contract AccountingExtension_UnitTest is Test {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    weth = IWETH9(makeAddr('WETH9'));
-    vm.etch(address(weth), hex'069420');
-
     token = IERC20(makeAddr('Token'));
     vm.etch(address(token), hex'069420');
 
-    module = new AccountingExtension(oracle, weth);
-  }
-
-  /**
-   * @notice deposit eth. _amount shouldn't be relevant is msg.value>0
-   */
-  function test_deposit(uint256 _value, uint256 _amount) public {
-    vm.assume(_value > 0);
-    vm.assume(address(token) != address(weth));
-
-    address _sender = makeAddr('sender');
-    vm.deal(_sender, _value);
-
-    // Mock and expect the weth deposit
-    vm.mockCall(address(weth), abi.encodeCall(IWETH9.deposit, ()), abi.encode());
-    vm.expectCall(address(weth), abi.encodeCall(IWETH9.deposit, ()));
-
-    // Expect the event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Deposited(_sender, IERC20(address(weth)), _value);
-
-    vm.prank(_sender);
-    module.deposit{value: _value}(token, _amount);
-
-    // Check: balance of weth deposit increased?
-    assertEq(module.balanceOf(_sender, IERC20(address(weth))), _value);
-
-    // Check: balance of token deposit unchanged/bypassed?
-    assertEq(module.balanceOf(_sender, token), 0);
+    module = new AccountingExtension(oracle);
   }
 
   /**

@@ -200,7 +200,7 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
 
   // This functions use msg.sender in the oracle implementation and cannot be called from a the sequential resolution module
   /// @inheritdoc IOracle
-  function createRequest(IOracle.NewRequest memory) external payable returns (bytes32) {
+  function createRequest(IOracle.NewRequest memory) external returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
 

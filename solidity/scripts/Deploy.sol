@@ -120,11 +120,11 @@ contract Deploy is Script {
     console.log('SPARSE_MERKLE_TREE_REQUEST_MODULE:', address(sparseMerkleTreeRequestModule));
 
     // Deploy accounting extension
-    accountingExtension = new AccountingExtension(oracle, WETH);
+    accountingExtension = new AccountingExtension(oracle);
     console.log('ACCOUNTING_EXTENSION:', address(accountingExtension));
 
     // Deploy bond escalation accounting
-    bondEscalationAccounting = new BondEscalationAccounting(oracle, WETH);
+    bondEscalationAccounting = new BondEscalationAccounting(oracle);
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
 
     // Deploy multiple callbacks module

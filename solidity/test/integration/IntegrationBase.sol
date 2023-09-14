@@ -97,7 +97,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _callbackModule = new CallbackModule(oracle);
     label(address(_callbackModule), 'CallbackModule');
 
-    _accountingExtension = new AccountingExtension(oracle, weth);
+    _accountingExtension = new AccountingExtension(oracle);
     label(address(_accountingExtension), 'AccountingExtension');
 
     _mockCallback = new MockCallback();

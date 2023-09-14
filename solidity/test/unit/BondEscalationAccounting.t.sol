@@ -23,7 +23,7 @@ import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
-  constructor(IOracle _oracle, IWETH9 _weth) BondEscalationAccounting(_oracle, _weth) {}
+  constructor(IOracle _oracle) BondEscalationAccounting(_oracle) {}
 
   function forTest_setPledge(bytes32 _requestId, bytes32 _disputeId, IERC20 _token, uint256 _amount) public {
     pledges[_requestId][_disputeId][_token] = _amount;
@@ -83,7 +83,7 @@ contract BondEscalationAccounting_UnitTest is Test {
 
     bonder = makeAddr('bonder');
 
-    bondEscalationAccounting = new ForTest_BondEscalationAccounting(oracle, weth);
+    bondEscalationAccounting = new ForTest_BondEscalationAccounting(oracle);
   }
 
   ////////////////////////////////////////////////////////////////////

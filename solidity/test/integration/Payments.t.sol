@@ -60,13 +60,13 @@ contract Integration_Payments is IntegrationBase {
     vm.assume(_rewardSize < type(uint256).max - _bondSize);
 
     // Requester bonds and creates request.
-    _forBondDepositETH(_accountingExtension, requester, address(weth), _rewardSize, _rewardSize);
+    _forBondDepositERC20(_accountingExtension, requester, IERC20(address(weth)), _rewardSize, _rewardSize);
     IOracle.NewRequest memory _ethRequest = _standardRequest(_rewardSize, _bondSize, weth);
     vm.prank(requester);
     _requestId = oracle.createRequest(_ethRequest);
 
     // Proposer bonds and creates request.
-    _forBondDepositETH(_accountingExtension, proposer, address(weth), _bondSize, _bondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, IERC20(address(weth)), _bondSize, _bondSize);
     vm.prank(proposer);
     _responseId = oracle.proposeResponse(_requestId, bytes('response'));
 

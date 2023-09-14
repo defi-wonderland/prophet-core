@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 /*
@@ -78,11 +77,6 @@ interface IAccountingExtension {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Returns the interface for the WETH contract
-   */
-  function WETH() external view returns (IWETH9);
-
-  /**
    * @notice Returns the interface for the Oracle contract
    */
   function ORACLE() external view returns (IOracle);
@@ -111,11 +105,10 @@ interface IAccountingExtension {
   /**
    * @notice Transfers tokens from a user and updates his virtual balance
    * @dev The user must have approved the accounting extension to transfer the tokens.
-   * If ETH is being deposited, it is wrapped to WETH.
    * @param _token The address of the token being deposited
    * @param _amount The amount of `_token` to deposit
    */
-  function deposit(IERC20 _token, uint256 _amount) external payable;
+  function deposit(IERC20 _token, uint256 _amount) external;
 
   /**
    * @notice Allows an user to withdraw deposited tokens

@@ -48,7 +48,7 @@ contract Oracle is IOracle {
   uint256 public totalRequestCount;
 
   /// @inheritdoc IOracle
-  function createRequest(NewRequest memory _request) external payable returns (bytes32 _requestId) {
+  function createRequest(NewRequest memory _request) external returns (bytes32 _requestId) {
     _requestId = _createRequest(_request);
   }
 

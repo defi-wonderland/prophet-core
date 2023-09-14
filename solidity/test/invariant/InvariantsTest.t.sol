@@ -78,7 +78,7 @@ contract HandlerProphet is Test {
     bondEscalationResolutionModule = new BondEscalationResolutionModule(oracle);
 
     weth = IWETH9(address(new WETH9()));
-    accountingExtension = new AccountingExtension(oracle, weth);
+    accountingExtension = new AccountingExtension(oracle);
 
     requestId = _createRequest(1 ether, 1 ether); // TODO: fuzz payment amount
   }
@@ -104,7 +104,8 @@ contract HandlerProphet is Test {
     );
 
     vm.deal(address(this), _bondedAmount);
-    accountingExtension.deposit{value: _bondedAmount}(IERC20(address(weth)), _bondedAmount);
+    weth.deposit{value: msg.value}();
+    accountingExtension.deposit(IERC20(address(weth)), _bondedAmount);
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: _httpRequestModuleData,
@@ -128,8 +129,7 @@ contract HandlerProphet is Test {
   /////////////////////////////////////////////////////////////////////
 
   function createRequest(IOracle.NewRequest memory _request) public {
-    bytes32 _requestId = oracle.createRequest(_request);
-
+    oracle.createRequest(_request);
     ghostNumberOfRequest++;
   }
 

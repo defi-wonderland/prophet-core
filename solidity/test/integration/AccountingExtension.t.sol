@@ -33,29 +33,6 @@ contract Integration_AccountingExtension is IntegrationBase {
     assertEq(_initialBalance - _depositAmount + _withdrawAmount, usdc.balanceOf(user));
   }
 
-  function test_depositETH(uint256 _initialBalance, uint256 _depositAmount) public {
-    _forBondDepositETH(_accountingExtension, user, address(weth), _depositAmount, _initialBalance);
-
-    // Check: is virtual balance updated?
-    assertEq(_depositAmount, _accountingExtension.balanceOf(user, weth));
-    // Check: is account balance updated?
-    assertEq(_initialBalance - _depositAmount, user.balance);
-  }
-
-  function test_withdrawETH(uint256 _initialBalance, uint256 _depositAmount, uint256 _withdrawAmount) public {
-    vm.assume(_withdrawAmount <= _depositAmount);
-    // Deposit some ETH
-    _forBondDepositETH(_accountingExtension, user, address(weth), _depositAmount, _initialBalance);
-
-    vm.prank(user);
-    _accountingExtension.withdraw(weth, _withdrawAmount);
-
-    // Check: is virtual balance updated?
-    assertEq(_depositAmount - _withdrawAmount, _accountingExtension.balanceOf(user, weth));
-    // Check: is token contract balance updated?
-    assertEq(_withdrawAmount, weth.balanceOf(user));
-  }
-
   function test_depositERC20_invalidAmount(uint256 _initialBalance, uint256 _invalidDepositAmount) public {
     vm.assume(_invalidDepositAmount > _initialBalance);
     deal(address(usdc), user, _initialBalance);
@@ -90,7 +67,7 @@ contract Integration_AccountingExtension is IntegrationBase {
     uint256 _withdrawAmount
   ) public {
     vm.assume(_withdrawAmount > _depositAmount);
-    _forBondDepositETH(_accountingExtension, user, address(weth), _depositAmount, _initialBalance);
+    _forBondDepositERC20(_accountingExtension, user, IERC20(address(weth)), _depositAmount, _initialBalance);
 
     // Check: does it revert if trying to withdraw an amount greater than virtual balance?
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);

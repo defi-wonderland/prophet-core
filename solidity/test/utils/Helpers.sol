@@ -23,23 +23,6 @@ contract Helpers is DSTestPlus {
     });
   }
 
-  function _forBondDepositETH(
-    IAccountingExtension _accountingExtension,
-    address _depositor,
-    address _weth,
-    uint256 _depositAmount,
-    uint256 _balanceIncrease
-  ) internal {
-    uint256 _maxDeposit = type(uint256).max - _weth.balance;
-    vm.assume(_depositAmount > 0);
-    vm.assume(_depositAmount < _maxDeposit);
-    vm.assume(_depositAmount <= _depositor.balance + _balanceIncrease);
-    deal(_depositor, _balanceIncrease);
-
-    vm.prank(_depositor);
-    _accountingExtension.deposit{value: _depositAmount}(IERC20(address(0)), _depositAmount);
-  }
-
   function _forBondDepositERC20(
     IAccountingExtension _accountingExtension,
     address _depositor,

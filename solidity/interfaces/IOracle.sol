@@ -337,7 +337,7 @@ interface IOracle {
    * @param _request The request data
    * @return _requestId The id of the request, can be used to propose a response or query results
    */
-  function createRequest(IOracle.NewRequest memory _request) external payable returns (bytes32 _requestId);
+  function createRequest(IOracle.NewRequest memory _request) external returns (bytes32 _requestId);
 
   /**
    * @notice Creates multiple requests, the same way as createRequest
