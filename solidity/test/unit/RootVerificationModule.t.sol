@@ -98,7 +98,7 @@ contract RootVerificationModule_UnitTest is Test {
 
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
-  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension

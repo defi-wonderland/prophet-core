@@ -24,8 +24,8 @@ contract ForTest_MultipleCallbacksModule is MultipleCallbacksModule {
 }
 
 contract Base is Test {
-  event Callback(address indexed _target, bytes32 indexed _request, bytes _data);
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   // The target contract
   ForTest_MultipleCallbacksModule public multipleCallbackModule;
@@ -79,7 +79,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
 
     // Check: correct event emitted
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
-    emit Callback(_target, _requestId, _data);
+    emit Callback(_requestId, _target, _data);
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));

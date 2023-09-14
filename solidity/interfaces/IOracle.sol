@@ -18,18 +18,18 @@ interface IOracle {
 
   /**
    * @notice Emitted when a request is created
-   * @param _requester The address of the user who created the request
    * @param _requestId The id of the created request
+   * @param _requester The address of the user who created the request
    */
-  event Oracle_RequestCreated(address indexed _requester, bytes32 indexed _requestId);
+  event Oracle_RequestCreated(bytes32 indexed _requestId, address indexed _requester);
 
   /**
    * @notice Emitted when a response is proposed
-   * @param _proposer The address of the user who proposed the response
    * @param _requestId The id of the request
+   * @param _proposer The address of the user who proposed the response
    * @param _responseId The id of the proposed response
    */
-  event Oracle_ResponseProposed(address indexed _proposer, bytes32 indexed _requestId, bytes32 indexed _responseId);
+  event Oracle_ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
 
   /**
    * @notice Emitted when a response is disputed
@@ -41,10 +41,10 @@ interface IOracle {
 
   /**
    * @notice Emitted when a request is finalized
-   * @param _caller The address of the user who finalized the request
    * @param _requestId The id of the request being finalized
+   * @param _caller The address of the user who finalized the request
    */
-  event Oracle_RequestFinalized(address indexed _caller, bytes32 indexed _requestId);
+  event Oracle_RequestFinalized(bytes32 indexed _requestId, address indexed _caller);
 
   /**
    * @notice Emitted when a dispute is escalated
@@ -69,11 +69,11 @@ interface IOracle {
 
   /**
    * @notice Emitted when a response is deleted
-   * @param _caller The address of the user who deleted the response
    * @param _requestId The id of the request
+   * @param _caller The address of the user who deleted the response
    * @param _responseId The id of the deleted response
    */
-  event Oracle_ResponseDeleted(address indexed _caller, bytes32 indexed _requestId, bytes32 indexed _responseId);
+  event Oracle_ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS

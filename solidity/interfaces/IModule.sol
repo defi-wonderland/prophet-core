@@ -18,7 +18,7 @@ interface IModule {
    * @param _requestId The ID of the request that was finalized
    * @param _finalizer The address that initiated the finalization
    */
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/

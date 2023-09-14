@@ -63,9 +63,9 @@ contract CircuitResolverModule_UnitTest is Test {
 
   bytes internal _callData = abi.encodeWithSignature('test(uint256)', 123);
 
-  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
   event DisputeStatusUpdated(
-    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
   );
 
   /**

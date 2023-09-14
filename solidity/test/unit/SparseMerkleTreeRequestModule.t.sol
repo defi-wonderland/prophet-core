@@ -80,7 +80,7 @@ contract SparseMerkleTreeRequestModule_UnitTest is Test {
   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension

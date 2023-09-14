@@ -44,7 +44,7 @@ contract HttpRequestModule_UnitTest is Test {
 
   IERC20 immutable TOKEN;
 
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   constructor() {
     TOKEN = IERC20(makeAddr('ERC20'));

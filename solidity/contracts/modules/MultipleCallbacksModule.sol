@@ -45,7 +45,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     for (uint256 _i; _i < _length;) {
       // solhint-disable-next-line
       _params.targets[_i].call(_params.data[_i]);
-      emit Callback(_params.targets[_i], _requestId, _params.data[_i]);
+      emit Callback(_requestId, _params.targets[_i], _params.data[_i]);
       unchecked {
         ++_i;
       }

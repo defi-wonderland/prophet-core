@@ -15,7 +15,7 @@ interface IDisputeModule is IModule {
    * @param _disputer The address of the disputed
    * @param _proposer The address of the proposer
    */
-  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
 
   /**
    * @notice Emitted when a dispute status is updated
@@ -26,7 +26,7 @@ interface IDisputeModule is IModule {
    * @param _disputerWon True if the disputer won the dispute
    */
   event DisputeStatusUpdated(
-    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
   );
   /*///////////////////////////////////////////////////////////////
                              FUNCTIONS

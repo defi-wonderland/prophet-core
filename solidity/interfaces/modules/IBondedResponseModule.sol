@@ -21,7 +21,7 @@ interface IBondedResponseModule is IResponseModule {
    * @param _proposer The user that proposed the response
    * @param _responseData The data for the response
    */
-  event ProposeResponse(bytes32 _requestId, address _proposer, bytes _responseData);
+  event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/

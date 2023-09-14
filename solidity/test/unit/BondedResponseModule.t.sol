@@ -45,8 +45,8 @@ contract BondedResponseModule_UnitTest is Test {
   // Mock EOA proposer
   address public proposer;
 
-  event ProposeResponse(bytes32 _requestId, address _proposer, bytes _responseData);
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension

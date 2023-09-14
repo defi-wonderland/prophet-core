@@ -91,9 +91,9 @@ contract BondEscalationModule_UnitTest is Test {
   event BondEscalationStatusUpdated(
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
-  event ResponseDisputed(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
   event DisputeStatusUpdated(
-    bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
   );
 
   /**

@@ -15,11 +15,11 @@ interface ICallbackModule is IFinalityModule {
 
   /**
    * @notice A callback has been executed
-   * @param _target The target address for the callback
    * @param _requestId The id of the request being finalized
+   * @param _target The target address for the callback
    * @param _data The calldata forwarded to the _target
    */
-  event Callback(address indexed _target, bytes32 indexed _requestId, bytes _data);
+  event Callback(bytes32 indexed _requestId, address indexed _target, bytes _data);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS

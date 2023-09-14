@@ -34,7 +34,7 @@ contract CallbackModule is Module, ICallbackModule {
     RequestParameters memory _params = decodeRequestData(_requestId);
     // solhint-disable-next-line
     _params.target.call(_params.data);
-    emit Callback(_params.target, _requestId, _params.data);
+    emit Callback(_requestId, _params.target, _params.data);
     emit RequestFinalized(_requestId, _finalizer);
   }
 }

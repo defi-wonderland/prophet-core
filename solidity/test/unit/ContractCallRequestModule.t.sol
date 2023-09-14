@@ -52,7 +52,7 @@ contract ContractCallRequestModule_UnitTest is Test {
   bytes4 _functionSelector = bytes4(abi.encodeWithSignature('allowance(address,address)'));
   bytes _dataParams = abi.encode(_user, _user2);
 
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension

@@ -22,8 +22,8 @@ contract ForTest_CallbackModule is CallbackModule {
  * @title Callback Module Unit tests
  */
 contract CallbackModule_UnitTest is Test {
-  event Callback(address indexed _target, bytes32 indexed _request, bytes _data);
-  event RequestFinalized(bytes32 _requestId, address _finalizer);
+  event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   // The target contract
   ForTest_CallbackModule public callbackModule;
@@ -93,7 +93,7 @@ contract CallbackModule_UnitTest is Test {
 
     // Check: correct event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
-    emit Callback(_target, _requestId, _data);
+    emit Callback(_requestId, _target, _data);
 
     vm.prank(address(oracle));
     callbackModule.finalizeRequest(_requestId, address(oracle));

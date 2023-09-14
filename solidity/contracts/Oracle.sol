@@ -160,7 +160,7 @@ contract Oracle is IOracle {
     _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
     _responseIds[_requestId].push(_responseId);
 
-    emit Oracle_ResponseProposed(_proposer, _requestId, _responseId);
+    emit Oracle_ResponseProposed(_requestId, _proposer, _responseId);
   }
 
   /// @inheritdoc IOracle
@@ -190,7 +190,7 @@ contract Oracle is IOracle {
         ++_i;
       }
     }
-    emit Oracle_ResponseDeleted(msg.sender, _response.requestId, _responseId);
+    emit Oracle_ResponseDeleted(_response.requestId, msg.sender, _responseId);
   }
 
   /// @inheritdoc IOracle
@@ -366,7 +366,7 @@ contract Oracle is IOracle {
     _request.responseModule.finalizeRequest(_requestId, msg.sender);
     _request.requestModule.finalizeRequest(_requestId, msg.sender);
 
-    emit Oracle_RequestFinalized(msg.sender, _requestId);
+    emit Oracle_RequestFinalized(_requestId, msg.sender);
   }
 
   /**
@@ -406,7 +406,7 @@ contract Oracle is IOracle {
       _request.finalityModule.setupRequest(_requestId, _request.finalityModuleData);
     }
 
-    emit Oracle_RequestCreated(msg.sender, _requestId);
+    emit Oracle_RequestCreated(_requestId, msg.sender);
   }
 
   /**
