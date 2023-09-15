@@ -38,7 +38,6 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   }
 
   // Casts vote in favor of dispute
-  // TODO: Discuss whether to change this to vote against disputes/for disputes
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
@@ -67,7 +66,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     if (_dispute.status != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
 
     EscalationData memory _escalationData = escalationData[_disputeId];
-    // Check that the dispute is actually escalated
+    // 1. Check that the dispute is actually escalated
     if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
     // 2. Check that voting deadline is over
