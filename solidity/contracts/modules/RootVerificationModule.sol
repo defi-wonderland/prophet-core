@@ -55,7 +55,9 @@ contract RootVerificationModule is Module, IRootVerificationModule {
 
     delete _correctRoots[_dispute.requestId];
 
-    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
+    emit DisputeStatusChanged(
+      _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
+    );
   }
 
   /// @inheritdoc IRootVerificationModule

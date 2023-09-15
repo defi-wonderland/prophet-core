@@ -44,24 +44,27 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
 
-  // TODO: This doesn't handle the cases of inconclusive statuses
   /// @inheritdoc IBondedDisputeModule
   function onDisputeStatusChange(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
-    bool _won = _dispute.status == IOracle.DisputeStatus.Won;
+    IOracle.DisputeStatus _status = _dispute.status;
+    address _proposer = _dispute.proposer;
+    address _disputer = _dispute.disputer;
 
-    _params.accountingExtension.pay(
-      _dispute.requestId,
-      _won ? _dispute.proposer : _dispute.disputer,
-      _won ? _dispute.disputer : _dispute.proposer,
-      _params.bondToken,
-      _params.bondSize
-    );
+    if (_status == IOracle.DisputeStatus.NoResolution) {
+      // No resolution, we release both bonds
+      _params.accountingExtension.release(_disputer, _dispute.requestId, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.release(_proposer, _dispute.requestId, _params.bondToken, _params.bondSize);
+    } else if (_status == IOracle.DisputeStatus.Won) {
+      // Disputer won, we pay the disputer and release their bond
+      _params.accountingExtension.pay(_dispute.requestId, _proposer, _disputer, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.release(_disputer, _dispute.requestId, _params.bondToken, _params.bondSize);
+    } else if (_status == IOracle.DisputeStatus.Lost) {
+      // Disputer lost, we pay the proposer and release their bond
+      _params.accountingExtension.pay(_dispute.requestId, _disputer, _proposer, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.release(_proposer, _dispute.requestId, _params.bondToken, _params.bondSize);
+    }
 
-    _params.accountingExtension.release(
-      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _params.bondToken, _params.bondSize
-    );
-
-    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
+    emit DisputeStatusChanged(_dispute.requestId, _dispute.responseId, _disputer, _proposer, _status);
   }
 }

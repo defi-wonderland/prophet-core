@@ -23,10 +23,10 @@ interface IDisputeModule is IModule {
    * @param _responseId The id of the response
    * @param _disputer The address of the disputed
    * @param _proposer The address of the proposer
-   * @param _disputerWon True if the disputer won the dispute
+   * @param _status The new status of the dispute
    */
-  event DisputeStatusUpdated(
-    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  event DisputeStatusChanged(
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
   );
   /*///////////////////////////////////////////////////////////////
                              FUNCTIONS

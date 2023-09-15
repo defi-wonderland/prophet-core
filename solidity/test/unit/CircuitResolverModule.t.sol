@@ -64,8 +64,8 @@ contract CircuitResolverModule_UnitTest is Test {
   bytes internal _callData = abi.encodeWithSignature('test(uint256)', 123);
 
   event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
-  event DisputeStatusUpdated(
-    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  event DisputeStatusChanged(
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
   );
 
   /**
@@ -486,7 +486,9 @@ contract CircuitResolverModule_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(circuitResolverModule));
-    emit DisputeStatusUpdated(_requestId, _responseId, mockDispute.disputer, mockDispute.proposer, false);
+    emit DisputeStatusChanged(
+      _requestId, _responseId, mockDispute.disputer, mockDispute.proposer, IOracle.DisputeStatus.Lost
+    );
 
     // Test: call onDisputeStatusChange
     vm.prank(address(oracle));

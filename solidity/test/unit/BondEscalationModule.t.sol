@@ -92,8 +92,8 @@ contract BondEscalationModule_UnitTest is Test {
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
   event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
-  event DisputeStatusUpdated(
-    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  event DisputeStatusChanged(
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
   );
 
   /**
@@ -634,7 +634,9 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit DisputeStatusUpdated(_requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, true);
+    emit DisputeStatusChanged(
+      _requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, IOracle.DisputeStatus.Won
+    );
 
     vm.prank(address(oracle));
     bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);

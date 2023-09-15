@@ -38,8 +38,8 @@ contract BondedDisputeModule_UnitTest is Test {
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
-  event DisputeStatusUpdated(
-    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, bool _disputerWon
+  event DisputeStatusChanged(
+    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
   );
 
   /**
@@ -257,6 +257,122 @@ contract BondedDisputeModule_UnitTest is Test {
 
     vm.prank(address(oracle));
     bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
+
+    // ------------------------------------
+    //   Scenario: dispute with no resolution
+    // ------------------------------------
+
+    mockDispute = IOracle.Dispute({
+      createdAt: 1,
+      disputer: _disputer,
+      proposer: _proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.NoResolution
+    });
+
+    // mock and expect the call to release, for the proposer
+    vm.mockCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
+      abi.encode()
+    );
+    vm.mockCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
+      abi.encode()
+    );
+
+    vm.expectCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
+    );
+
+    vm.expectCall(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize))
+    );
+
+    vm.prank(address(oracle));
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
+  }
+
+  function test_onDisputeStatusChange_statusWithNoChange() public {
+    // Mock addresses
+    IERC20 _token = IERC20(makeAddr('token'));
+    address _disputer = makeAddr('disputer');
+    address _proposer = makeAddr('proposer');
+
+    uint256 _bondSize = 69;
+
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+
+    // Mock request data
+    bytes memory _requestData = abi.encode(accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    bondedDisputeModule.forTest_setRequestData(mockId, _requestData);
+
+    // ------------------------------------
+    //   Scenario: dispute new status is None
+    // ------------------------------------
+
+    mockDispute = IOracle.Dispute({
+      createdAt: 1,
+      disputer: _disputer,
+      proposer: _proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.None
+    });
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit DisputeStatusChanged(_requestId, _responseId, _disputer, _proposer, IOracle.DisputeStatus.None);
+
+    vm.prank(address(oracle));
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
+
+    // ------------------------------------
+    //   Scenario: dispute new status is Active
+    // ------------------------------------
+
+    mockDispute = IOracle.Dispute({
+      createdAt: 1,
+      disputer: _disputer,
+      proposer: _proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.Active
+    });
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit DisputeStatusChanged(_requestId, _responseId, _disputer, _proposer, IOracle.DisputeStatus.Active);
+
+    vm.prank(address(oracle));
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
+    // ------------------------------------
+    //   Scenario: dispute new status is Escalated
+    // ------------------------------------
+
+    mockDispute = IOracle.Dispute({
+      createdAt: 1,
+      disputer: _disputer,
+      proposer: _proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.Escalated
+    });
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit DisputeStatusChanged(_requestId, _responseId, _disputer, _proposer, IOracle.DisputeStatus.Escalated);
+
+    vm.prank(address(oracle));
+    bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
   function test_onDisputeStatusChange_emitsEvent() public {
@@ -306,7 +422,7 @@ contract BondedDisputeModule_UnitTest is Test {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
-    emit DisputeStatusUpdated(_requestId, _responseId, _disputer, _proposer, true);
+    emit DisputeStatusChanged(_requestId, _responseId, _disputer, _proposer, IOracle.DisputeStatus.Won);
 
     vm.prank(address(oracle));
     bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);

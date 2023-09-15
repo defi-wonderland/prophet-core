@@ -46,7 +46,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     delete _correctResponses[_dispute.requestId];
 
-    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
+    emit DisputeStatusChanged(
+      _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
+    );
   }
 
   function disputeResponse(

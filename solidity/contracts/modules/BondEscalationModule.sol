@@ -138,7 +138,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _params.bondSize << 1
       );
     }
-    emit DisputeStatusUpdated(_dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _won);
+    emit DisputeStatusChanged(
+      _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
+    );
   }
 
   ////////////////////////////////////////////////////////////////////
