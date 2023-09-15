@@ -62,7 +62,8 @@ interface IAccountingExtension {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Thrown when the user has not bond the necessary amount of funds
+   * @notice Thrown when the account doesn't have enough balance to bond/withdraw
+   * or not enough bonded to release/pay
    */
   error AccountingExtension_InsufficientFunds();
 
