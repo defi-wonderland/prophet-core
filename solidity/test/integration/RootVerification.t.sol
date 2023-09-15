@@ -9,9 +9,11 @@ import {
   ITreeVerifier,
   IAccountingExtension,
   IERC20
-} from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
+} from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
-import {RootVerificationModule, IRootVerificationModule} from '../../contracts/modules/RootVerificationModule.sol';
+import {
+  RootVerificationModule, IRootVerificationModule
+} from '../../contracts/modules/dispute/RootVerificationModule.sol';
 
 contract Integration_RootVerification is IntegrationBase {
   SparseMerkleTreeL32Verifier _treeVerifier;

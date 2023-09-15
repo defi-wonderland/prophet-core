@@ -6,25 +6,25 @@ import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 import {Oracle} from '../contracts/Oracle.sol';
 
-import {ArbitratorModule} from '../contracts/modules/ArbitratorModule.sol';
-import {BondedDisputeModule} from '../contracts/modules/BondedDisputeModule.sol';
-import {BondedResponseModule} from '../contracts/modules/BondedResponseModule.sol';
-import {BondEscalationModule} from '../contracts/modules/BondEscalationModule.sol';
-import {CallbackModule} from '../contracts/modules/CallbackModule.sol';
-import {HttpRequestModule} from '../contracts/modules/HttpRequestModule.sol';
-import {ContractCallRequestModule} from '../contracts/modules/ContractCallRequestModule.sol';
-import {ERC20ResolutionModule} from '../contracts/modules/ERC20ResolutionModule.sol';
-import {MultipleCallbacksModule} from '../contracts/modules/MultipleCallbacksModule.sol';
-import {PrivateERC20ResolutionModule} from '../contracts/modules/PrivateERC20ResolutionModule.sol';
-import {BondEscalationResolutionModule} from '../contracts/modules/BondEscalationResolutionModule.sol';
-import {SequentialResolutionModule} from '../contracts/modules/SequentialResolutionModule.sol';
-import {RootVerificationModule} from '../contracts/modules/RootVerificationModule.sol';
-import {SparseMerkleTreeRequestModule} from '../contracts/modules/SparseMerkleTreeRequestModule.sol';
+import {ArbitratorModule} from '../contracts/modules/resolution/ArbitratorModule.sol';
+import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
+import {BondedResponseModule} from '../contracts/modules/response/BondedResponseModule.sol';
+import {BondEscalationModule} from '../contracts/modules/dispute/BondEscalationModule.sol';
+import {CallbackModule} from '../contracts/modules/finality/CallbackModule.sol';
+import {HttpRequestModule} from '../contracts/modules/request/HttpRequestModule.sol';
+import {ContractCallRequestModule} from '../contracts/modules/request/ContractCallRequestModule.sol';
+import {ERC20ResolutionModule} from '../contracts/modules/resolution/ERC20ResolutionModule.sol';
+import {MultipleCallbacksModule} from '../contracts/modules/finality/MultipleCallbacksModule.sol';
+import {PrivateERC20ResolutionModule} from '../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
+import {BondEscalationResolutionModule} from '../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+import {SequentialResolutionModule} from '../contracts/modules/resolution/SequentialResolutionModule.sol';
+import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
+import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
 
-import {IResolutionModule} from '../interfaces/modules/IResolutionModule.sol';
+import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 
 // solhint-disable no-console
 contract Deploy is Script {

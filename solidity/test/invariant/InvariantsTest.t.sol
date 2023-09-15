@@ -5,10 +5,10 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {Oracle} from '../../contracts/Oracle.sol';
-import {HttpRequestModule} from '../../contracts/modules/HttpRequestModule.sol';
-import {BondedResponseModule} from '../../contracts/modules/BondedResponseModule.sol';
-import {BondedDisputeModule} from '../../contracts/modules/BondedDisputeModule.sol';
-import {BondEscalationResolutionModule} from '../../contracts/modules/BondEscalationResolutionModule.sol';
+import {HttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
+import {BondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
+import {BondedDisputeModule} from '../../contracts/modules/dispute/BondedDisputeModule.sol';
+import {BondEscalationResolutionModule} from '../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
 import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../../contracts/extensions/BondEscalationAccounting.sol';
 
