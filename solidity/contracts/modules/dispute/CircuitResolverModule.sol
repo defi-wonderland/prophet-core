@@ -18,12 +18,15 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     return 'CircuitResolverModule';
   }
 
+  /// @inheritdoc ICircuitResolverModule
   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
     _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
+  /// @inheritdoc ICircuitResolverModule
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
 
+  /// @inheritdoc ICircuitResolverModule
   function onDisputeStatusChange(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
@@ -51,6 +54,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     );
   }
 
+  /// @inheritdoc ICircuitResolverModule
   function disputeResponse(
     bytes32 _requestId,
     bytes32 _responseId,

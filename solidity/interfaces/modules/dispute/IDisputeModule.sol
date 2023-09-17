@@ -8,6 +8,7 @@ interface IDisputeModule is IModule {
   /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
+
   /**
    * @notice Emitted when a response is disputed
    * @param _requestId The id of the request created
@@ -28,10 +29,20 @@ interface IDisputeModule is IModule {
   event DisputeStatusChanged(
     bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
   );
+
   /*///////////////////////////////////////////////////////////////
                              FUNCTIONS
   //////////////////////////////////////////////////////////////*/
 
+  /**
+   * @notice Called by the oracle when a dispute has been made on a response.
+   * Bonds the tokens of the disputer.
+   * @param _requestId The ID of the request whose response is disputed
+   * @param _responseId The ID of the response being disputed
+   * @param _disputer The address of the user who disputed the response
+   * @param _proposer The address of the user who proposed the disputed response
+   * @return _dispute The dispute on the proposed response
+   */
   function disputeResponse(
     bytes32 _requestId,
     bytes32 _responseId,
@@ -46,5 +57,9 @@ interface IDisputeModule is IModule {
    */
   function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
 
+  /**
+   * @notice Called by the oracle when a dispute has been escalated.
+   * @param _disputeId The ID of the dispute being escalated
+   */
   function disputeEscalated(bytes32 _disputeId) external;
 }

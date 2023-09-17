@@ -180,7 +180,7 @@ contract CircuitResolverModule_UnitTest is Test {
     vm.mockCall(circuitVerifier, _callData, abi.encode(_correctResponse));
     vm.expectCall(circuitVerifier, _callData);
 
-    // // Test: call disputeResponse
+    // Test: call disputeResponse
     vm.prank(address(oracle));
     IOracle.Dispute memory _dispute =
       circuitResolverModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
