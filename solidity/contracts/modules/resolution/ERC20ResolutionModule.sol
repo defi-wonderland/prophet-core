@@ -18,8 +18,12 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
+  /// @inheritdoc IERC20ResolutionModule
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
+
+  /// @inheritdoc IERC20ResolutionModule
   mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) public votes;
+
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -28,16 +32,18 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     return 'ERC20ResolutionModule';
   }
 
+  /// @inheritdoc IERC20ResolutionModule
   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
     _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
+  /// @inheritdoc IERC20ResolutionModule
   function startResolution(bytes32 _disputeId) external onlyOracle {
     escalationData[_disputeId].startTime = block.timestamp;
     emit VotingPhaseStarted(block.timestamp, _disputeId);
   }
 
-  // Casts vote in favor of dispute
+  /// @inheritdoc IERC20ResolutionModule
   function castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
@@ -59,6 +65,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
+  /// @inheritdoc IERC20ResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
     // 0. Check disputeId actually exists and that it isnt resolved already
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
@@ -99,6 +106,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     }
   }
 
+  /// @inheritdoc IERC20ResolutionModule
   function getVoters(bytes32 _disputeId) external view returns (address[] memory __voters) {
     __voters = _voters[_disputeId].values();
   }
