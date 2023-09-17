@@ -155,6 +155,37 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
+   * @notice Tests that escalateDispute reverts if the _disputeId doesn't match any existing disputes.
+   */
+  function test_revertOnInvalidParameters(
+    bytes32 _requestId,
+    uint256 _maxNumberOfEscalations,
+    uint256 _bondSize,
+    uint256 _bondEscalationDeadline,
+    uint256 _tyingBuffer,
+    uint256 _challengePeriod
+  ) public {
+    bytes memory _requestData = abi.encode(
+      IBondEscalationModule.RequestParameters({
+        accountingExtension: accounting,
+        bondToken: token,
+        bondSize: _bondSize,
+        maxNumberOfEscalations: _maxNumberOfEscalations,
+        bondEscalationDeadline: _bondEscalationDeadline,
+        tyingBuffer: _tyingBuffer,
+        challengePeriod: _challengePeriod
+      })
+    );
+
+    if (_maxNumberOfEscalations == 0 || _bondSize == 0) {
+      vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidEscalationParameters.selector);
+    }
+
+    vm.prank(address(oracle));
+    bondEscalationModule.setupRequest(_requestId, _requestData);
+  }
+
+  /**
    * @notice Tests that escalateDispute reverts if a dispute is escalated before the bond escalation deadline is over.
    *         Conditions to reach this check:
    *                                         - The _requestId tied to the dispute tied to _disputeId must be valid (non-zero)

@@ -89,6 +89,10 @@ interface IBondEscalationModule is IDisputeModule {
    * @notice Thrown when trying to dispute a response after the challenge period expired.
    */
   error BondEscalationModule_ChallengePeriodOver();
+  /**
+   * @notice Thrown when trying to set up a request with invalid bond size or maximum amount of escalations.
+   */
+  error BondEscalationModule_InvalidEscalationParameters();
 
   /**
    * @notice Enum holding all the possible statuses of a dispute going through the bond escalation mechanism.

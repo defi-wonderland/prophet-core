@@ -30,6 +30,17 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     return 'BondEscalationModule';
   }
 
+  /**
+   * @notice Checks if the escalation parameters are valid
+   * @param _data The encoded data for the request
+   */
+  function _afterSetupRequest(bytes32, bytes calldata _data) internal view override {
+    RequestParameters memory _params = abi.decode(_data, (RequestParameters));
+    if (_params.maxNumberOfEscalations == 0 || _params.bondSize == 0) {
+      revert BondEscalationModule_InvalidEscalationParameters();
+    }
+  }
+
   /// @inheritdoc IBondEscalationModule
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
