@@ -105,6 +105,16 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
+  function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId) {
+    _requestId = _requestIds[_nonce];
+  }
+
+  /// @inheritdoc IOracle
+  function getRequestByNonce(uint256 _nonce) external view returns (Request memory _request) {
+    _request = _requests[_requestIds[_nonce]];
+  }
+
+  /// @inheritdoc IOracle
   function getRequest(bytes32 _requestId) external view returns (Request memory _request) {
     _request = _requests[_requestId];
   }

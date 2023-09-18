@@ -421,6 +421,40 @@ contract Oracle_UnitTest is Test {
     assertEq(_requests.length, 0);
   }
 
+  function test_getRequestByNonce() public {
+    uint256 _totalRequestCount = oracle.totalRequestCount();
+
+    // Store mock requests and mock the associated requestData calls
+    (, IOracle.NewRequest[] memory _dummyRequests) = _storeDummyRequests(1);
+
+    IOracle.Request memory _request = oracle.getRequestByNonce(_totalRequestCount);
+    IOracle.NewRequest memory _expectedRequest = _dummyRequests[_totalRequestCount];
+
+    assertEq(_request.ipfsHash, _expectedRequest.ipfsHash);
+    assertEq(address(_request.requestModule), address(_expectedRequest.requestModule));
+    assertEq(address(_request.responseModule), address(_expectedRequest.responseModule));
+    assertEq(address(_request.disputeModule), address(_expectedRequest.disputeModule));
+    assertEq(address(_request.resolutionModule), address(_expectedRequest.resolutionModule));
+    assertEq(address(_request.finalityModule), address(_expectedRequest.finalityModule));
+
+    // Params created in createRequest:
+    assertEq(_request.nonce, _totalRequestCount);
+    assertEq(_request.requester, sender);
+    assertEq(_request.createdAt, block.timestamp);
+  }
+
+  function test_getRequestId() public {
+    uint256 _totalRequestCount = oracle.totalRequestCount();
+
+    // Store mock requests and mock the associated requestData calls
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+
+    bytes32 _requestId = oracle.getRequestId(_totalRequestCount);
+    bytes32 _expectedRequestId = _dummyRequestIds[0];
+
+    assertEq(_requestId, _expectedRequestId);
+  }
+
   /**
    * @notice Test propose response: check _responses, _responseIds and _responseId
    */

@@ -145,6 +145,16 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   }
 
   /// @inheritdoc IOracle
+  function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId) {
+    _requestId = ORACLE.getRequestId(_nonce);
+  }
+
+  /// @inheritdoc IOracle
+  function getRequestByNonce(uint256 _nonce) external view returns (Request memory _request) {
+    _request = ORACLE.getRequestByNonce(_nonce);
+  }
+
+  /// @inheritdoc IOracle
   function getRequest(bytes32 _requestId) external view returns (IOracle.Request memory _request) {
     _request = ORACLE.getRequest(_requestId);
   }

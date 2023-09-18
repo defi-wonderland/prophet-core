@@ -372,6 +372,20 @@ interface IOracle {
   function getResponse(bytes32 _responseId) external view returns (Response memory _response);
 
   /**
+   * @notice Returns a request id
+   * @param _nonce The nonce of the request
+   * @return _requestId The id of the request
+   */
+  function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
+
+  /**
+   * @notice Returns a request
+   * @param _nonce The nonce of the request
+   * @return _request The request data
+   */
+  function getRequestByNonce(uint256 _nonce) external view returns (Request memory _request);
+
+  /**
    * @notice Returns a request
    * @param _requestId The id of the request
    * @return _request The request data

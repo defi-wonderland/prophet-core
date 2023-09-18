@@ -487,6 +487,19 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
     module.listRequestIds(0, 10);
   }
 
+  function test_getRequestIdCallsOracle(uint256 _nonce) public {
+    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.getRequestId.selector), abi.encode(bytes32(0)));
+    vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.getRequestId.selector, _nonce));
+    module.getRequestId(_nonce);
+  }
+
+  function test_getRequestByNonceCallsOracle(uint256 _nonce) public {
+    IOracle.Request memory _request;
+    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.getRequestByNonce.selector), abi.encode(_request));
+    vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.getRequestByNonce.selector, _nonce));
+    module.getRequestByNonce(_nonce);
+  }
+
   function testReverts_createRequestNotSubmodule() public {
     IOracle.NewRequest memory _request;
     vm.expectRevert(
