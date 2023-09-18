@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
-
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IModule} from '../../../interfaces/IModule.sol';
-import {IBondEscalationAccounting} from '../../../interfaces/extensions/IBondEscalationAccounting.sol';
-
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract BondEscalationModule is Module, IBondEscalationModule {
   /**
@@ -160,80 +155,20 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
   /// @inheritdoc IBondEscalationModule
   function pledgeForDispute(bytes32 _disputeId) external {
-    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
-
-    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-
-    if (_disputeId != escalatedDispute[_dispute.requestId]) {
-      revert BondEscalationModule_DisputeNotEscalated();
-    }
-
-    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
-
-    if (_params.maxNumberOfEscalations == 0 || _params.bondSize == 0) revert BondEscalationModule_ZeroValue();
-
-    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
-      revert BondEscalationModule_BondEscalationOver();
-    }
-
-    uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
-    uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
-
-    if (_numPledgersForDispute == _params.maxNumberOfEscalations) {
-      revert BondEscalationModule_MaxNumberOfEscalationsReached();
-    }
-
-    if (_numPledgersForDispute > _numPledgersAgainstDispute) {
-      revert BondEscalationModule_CanOnlySurpassByOnePledge();
-    }
-
-    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
-      revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
-    }
+    (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, true);
 
     _bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
-
-    _params.accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _params.bondSize);
 
     emit PledgedInFavorOfDisputer(_disputeId, msg.sender, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
   function pledgeAgainstDispute(bytes32 _disputeId) external {
-    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
-
-    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-
-    if (_disputeId != escalatedDispute[_dispute.requestId]) {
-      revert BondEscalationModule_DisputeNotEscalated();
-    }
-
-    RequestParameters memory _params = decodeRequestData(_dispute.requestId);
-
-    if (_params.maxNumberOfEscalations == 0 || _params.bondSize == 0) revert BondEscalationModule_ZeroValue();
-
-    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
-      revert BondEscalationModule_BondEscalationOver();
-    }
-
-    uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
-    uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
-
-    if (_numPledgersAgainstDispute == _params.maxNumberOfEscalations) {
-      revert BondEscalationModule_MaxNumberOfEscalationsReached();
-    }
-
-    if (_numPledgersAgainstDispute > _numPledgersForDispute) {
-      revert BondEscalationModule_CanOnlySurpassByOnePledge();
-    }
-
-    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersAgainstDispute == _numPledgersForDispute) {
-      revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
-    }
+    (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, false);
 
     _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
-
-    _params.accountingExtension.pledge(msg.sender, _dispute.requestId, _disputeId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _params.bondSize);
 
     emit PledgedInFavorOfProposer(_disputeId, msg.sender, _params.bondSize);
   }
@@ -284,6 +219,51 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _params.bondToken,
       _amountToPay
     );
+  }
+
+  /**
+   * @notice Checks the necessary conditions for pledging
+   * @param _disputeId The encoded data for the request
+   * @return _requestId The ID of the request being disputed on
+   * @return _params The decoded parameters for the request
+   */
+  function _pledgeChecks(
+    bytes32 _disputeId,
+    bool _forDispute
+  ) internal view returns (bytes32 _requestId, RequestParameters memory _params) {
+    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
+
+    IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+    _requestId = _dispute.requestId;
+
+    if (_disputeId != escalatedDispute[_dispute.requestId]) {
+      revert BondEscalationModule_DisputeNotEscalated();
+    }
+
+    _params = decodeRequestData(_dispute.requestId);
+
+    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
+      revert BondEscalationModule_BondEscalationOver();
+    }
+
+    uint256 _numPledgersForDispute = _bondEscalationData[_disputeId].pledgersForDispute.length;
+    uint256 _numPledgersAgainstDispute = _bondEscalationData[_disputeId].pledgersAgainstDispute.length;
+
+    if (_forDispute) {
+      if (_numPledgersForDispute == _params.maxNumberOfEscalations) {
+        revert BondEscalationModule_MaxNumberOfEscalationsReached();
+      }
+      if (_numPledgersForDispute > _numPledgersAgainstDispute) revert BondEscalationModule_CanOnlySurpassByOnePledge();
+    } else {
+      if (_numPledgersAgainstDispute == _params.maxNumberOfEscalations) {
+        revert BondEscalationModule_MaxNumberOfEscalationsReached();
+      }
+      if (_numPledgersAgainstDispute > _numPledgersForDispute) revert BondEscalationModule_CanOnlySurpassByOnePledge();
+    }
+
+    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
+      revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
+    }
   }
 
   ////////////////////////////////////////////////////////////////////

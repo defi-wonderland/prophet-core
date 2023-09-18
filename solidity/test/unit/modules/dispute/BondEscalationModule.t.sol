@@ -8,14 +8,13 @@ import {
   BondEscalationModule,
   Module,
   IOracle,
-  IBondEscalationAccounting,
-  IBondEscalationModule,
-  IERC20
+  IBondEscalationModule
 } from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IModule} from '../../../../contracts/Module.sol';
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
+import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**
@@ -103,7 +102,7 @@ contract BondEscalationModule_UnitTest is Test {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    accounting = IBondEscalationAccounting(makeAddr('AccountingExtension'));
+    accounting = IBondEscalationAccounting(makeAddr('BondEscalationAccounting'));
     vm.etch(address(accounting), hex'069420');
 
     token = IERC20(makeAddr('ERC20'));
@@ -925,38 +924,6 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that pledgeForDispute reverts if the maximum number of escalations is zero.
-   */
-  function test_pledgeForDisputeRevertIfMaxNumOfEscalationsIsZero(bytes32 _disputeId, bytes32 _requestId) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _bondSize = 1;
-
-    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
-    bondEscalationModule.pledgeForDispute(_disputeId);
-  }
-
-  /**
-   * @notice Tests that pledgeForDispute if the size of the bond is zero.
-   */
-  function test_pledgeForDisputeRevertIfBondSizeIsZero(bytes32 _disputeId, bytes32 _requestId) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _maxNumberOfEscalations = 1;
-
-    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
-    bondEscalationModule.pledgeForDispute(_disputeId);
-  }
-
-  /**
    * @notice Tests that pledgeForDispute reverts if someone tries to pledge after the tying buffer.
    */
   function test_pledgeForDisputeRevertIfTimestampBeyondTyingBuffer(bytes32 _disputeId, bytes32 _requestId) public {
@@ -1136,38 +1103,6 @@ contract BondEscalationModule_UnitTest is Test {
     _mockDispute(_disputeId, _requestId);
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_DisputeNotEscalated.selector);
-    bondEscalationModule.pledgeAgainstDispute(_disputeId);
-  }
-
-  /**
-   * @notice Tests that pledgeAgainstDispute reverts if the maximum number of escalations is zero.
-   */
-  function test_pledgeAgainstDisputeRevertIfMaxNumOfEscalationsIsZero(bytes32 _disputeId, bytes32 _requestId) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _bondSize = 1;
-
-    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
-    bondEscalationModule.pledgeAgainstDispute(_disputeId);
-  }
-
-  /**
-   * @notice Tests that pledgeAgainstDispute if the size of the bond is zero.
-   */
-  function test_pledgeAgainstDisputeRevertIfBondSizeIsZero(bytes32 _disputeId, bytes32 _requestId) public {
-    vm.assume(_disputeId > 0);
-    _mockDispute(_disputeId, _requestId);
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
-    bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
-
-    uint256 _maxNumberOfEscalations = 1;
-
-    _setRequestData(_requestId, bondSize, _maxNumberOfEscalations, bondEscalationDeadline, tyingBuffer, challengePeriod);
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ZeroValue.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
 
@@ -1561,7 +1496,15 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _challengePeriod
   ) internal {
     bytes memory _data = abi.encode(
-      accounting, token, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _challengePeriod
+      IBondEscalationModule.RequestParameters({
+        accountingExtension: accounting,
+        bondToken: token,
+        bondSize: _bondSize,
+        maxNumberOfEscalations: _maxNumberOfEscalations,
+        bondEscalationDeadline: _bondEscalationDeadline,
+        tyingBuffer: _tyingBuffer,
+        challengePeriod: _challengePeriod
+      })
     );
     bondEscalationModule.forTest_setRequestData(_requestId, _data);
   }
