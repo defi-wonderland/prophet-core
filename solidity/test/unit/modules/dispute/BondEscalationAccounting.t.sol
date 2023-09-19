@@ -98,7 +98,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
-    bondEscalationAccounting.pledge(_pledger, _requestId, _disputeId, token, _amount);
+    bondEscalationAccounting.pledge({
+      _pledger: _pledger,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: token,
+      _amount: _amount
+    });
   }
 
   function test_pledgeRevertIfNotEnoughDeposited(
@@ -111,7 +117,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
-    bondEscalationAccounting.pledge(_pledger, _requestId, _disputeId, token, _amount);
+    bondEscalationAccounting.pledge({
+      _pledger: _pledger,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: token,
+      _amount: _amount
+    });
   }
 
   function test_pledgeSuccessfulCall(address _pledger, bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
@@ -126,7 +138,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     uint256 _balanceBeforePledge = bondEscalationAccounting.balanceOf(_pledger, token);
     uint256 _pledgesBeforePledge = bondEscalationAccounting.pledges(_disputeId, token);
 
-    bondEscalationAccounting.pledge(_pledger, _requestId, _disputeId, token, _amount);
+    bondEscalationAccounting.pledge({
+      _pledger: _pledger,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: token,
+      _amount: _amount
+    });
 
     uint256 _balanceAfterPledge = bondEscalationAccounting.balanceOf(_pledger, token);
     uint256 _pledgesAfterPledge = bondEscalationAccounting.pledges(_disputeId, token);
@@ -147,7 +165,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
-    bondEscalationAccounting.payWinningPledgers(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
+    bondEscalationAccounting.payWinningPledgers({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _winningPledgers: _winningPledgers,
+      _token: token,
+      _amountPerPledger: _amountPerPledger
+    });
   }
 
   function test_payWinningPledgersRevertIfInsufficientFunds(
@@ -171,7 +195,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     bondEscalationAccounting.forTest_setPledge(_requestId, _disputeId, token, _insufficientPledges);
 
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
-    bondEscalationAccounting.payWinningPledgers(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
+    bondEscalationAccounting.payWinningPledgers({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _winningPledgers: _winningPledgers,
+      _token: token,
+      _amountPerPledger: _amountPerPledger
+    });
   }
 
   function test_payWinningPledgersSuccessfulCall(
@@ -203,7 +233,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
     emit WinningPledgersPaid(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
 
-    bondEscalationAccounting.payWinningPledgers(_requestId, _disputeId, _winningPledgers, token, _amountPerPledger);
+    bondEscalationAccounting.payWinningPledgers({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _winningPledgers: _winningPledgers,
+      _token: token,
+      _amountPerPledger: _amountPerPledger
+    });
 
     for (uint256 j; j < _winningPledgers.length; j++) {
       _balanceAfter = bondEscalationAccounting.balanceOf(_winningPledgers[j], token);
@@ -226,7 +262,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
-    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _pledger, token, _amount);
+    bondEscalationAccounting.releasePledge({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _pledger,
+      _token: token,
+      _amount: _amount
+    });
   }
 
   function test_releaseRevertIfInsufficientFunds(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
@@ -238,7 +280,13 @@ contract BondEscalationAccounting_UnitTest is Test {
     uint256 _underflowAmount = _amount + 1;
     address _randomPledger = makeAddr('randomPledger');
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
-    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _randomPledger, token, _underflowAmount);
+    bondEscalationAccounting.releasePledge({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _randomPledger,
+      _token: token,
+      _amount: _underflowAmount
+    });
   }
 
   function test_releaseSuccessfulCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
@@ -249,7 +297,13 @@ contract BondEscalationAccounting_UnitTest is Test {
 
     address _randomPledger = makeAddr('randomPledger');
 
-    bondEscalationAccounting.releasePledge(_requestId, _disputeId, _randomPledger, token, _amount);
+    bondEscalationAccounting.releasePledge({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _randomPledger,
+      _token: token,
+      _amount: _amount
+    });
     assertEq(bondEscalationAccounting.balanceOf(_randomPledger, token), _amount);
   }
 

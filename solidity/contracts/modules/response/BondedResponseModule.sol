@@ -54,7 +54,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       createdAt: block.timestamp
     });
 
-    _params.accountingExtension.bond(_response.proposer, _requestId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.bond({
+      _bonder: _response.proposer,
+      _requestId: _requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     emit ProposeResponse(_requestId, _proposer, _responseData);
   }
@@ -65,7 +70,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     if (block.timestamp > _params.deadline) revert BondedResponseModule_TooLateToDelete();
 
-    _params.accountingExtension.release(_proposer, _requestId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.release({
+      _bonder: _proposer,
+      _requestId: _requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -83,7 +93,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     if (_response.createdAt != 0) {
-      _params.accountingExtension.release(_response.proposer, _requestId, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.release({
+        _bonder: _response.proposer,
+        _requestId: _requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
     }
     emit RequestFinalized(_requestId, _finalizer);
   }

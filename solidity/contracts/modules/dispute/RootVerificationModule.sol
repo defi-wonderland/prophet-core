@@ -43,9 +43,13 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     bool _won = abi.decode(_response.response, (bytes32)) != _correctRoots[_dispute.requestId];
 
     if (_won) {
-      _params.accountingExtension.pay(
-        _dispute.requestId, _dispute.proposer, _dispute.disputer, _params.bondToken, _params.bondSize
-      );
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _dispute.proposer,
+        _receiver: _dispute.disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
       bytes32 _correctResponseId =
         ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctRoots[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);

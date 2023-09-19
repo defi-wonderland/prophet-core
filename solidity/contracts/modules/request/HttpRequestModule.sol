@@ -25,7 +25,12 @@ contract HttpRequestModule is Module, IHttpRequestModule {
   function _afterSetupRequest(bytes32 _requestId, bytes calldata) internal override {
     RequestParameters memory _params = decodeRequestData(_requestId);
     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
-    _params.accountingExtension.bond(_request.requester, _requestId, _params.paymentToken, _params.paymentAmount);
+    _params.accountingExtension.bond({
+      _bonder: _request.requester,
+      _requestId: _requestId,
+      _token: _params.paymentToken,
+      _amount: _params.paymentAmount
+    });
   }
 
   /// @inheritdoc IHttpRequestModule
@@ -37,11 +42,20 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     RequestParameters memory _params = decodeRequestData(_requestId);
     if (_response.createdAt != 0) {
-      _params.accountingExtension.pay(
-        _requestId, _request.requester, _response.proposer, _params.paymentToken, _params.paymentAmount
-      );
+      _params.accountingExtension.pay({
+        _requestId: _requestId,
+        _payer: _request.requester,
+        _receiver: _response.proposer,
+        _token: _params.paymentToken,
+        _amount: _params.paymentAmount
+      });
     } else {
-      _params.accountingExtension.release(_request.requester, _requestId, _params.paymentToken, _params.paymentAmount);
+      _params.accountingExtension.release({
+        _bonder: _request.requester,
+        _requestId: _requestId,
+        _token: _params.paymentToken,
+        _amount: _params.paymentAmount
+      });
     }
     emit RequestFinalized(_requestId, _finalizer);
   }

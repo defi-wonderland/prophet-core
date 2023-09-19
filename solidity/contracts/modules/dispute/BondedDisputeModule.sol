@@ -39,7 +39,12 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     });
 
     RequestParameters memory _params = decodeRequestData(_requestId);
-    _params.accountingExtension.bond(_disputer, _requestId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.bond({
+      _bonder: _disputer,
+      _requestId: _requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
@@ -53,16 +58,49 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
 
     if (_status == IOracle.DisputeStatus.NoResolution) {
       // No resolution, we release both bonds
-      _params.accountingExtension.release(_disputer, _dispute.requestId, _params.bondToken, _params.bondSize);
-      _params.accountingExtension.release(_proposer, _dispute.requestId, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.release({
+        _bonder: _disputer,
+        _requestId: _dispute.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+
+      _params.accountingExtension.release({
+        _bonder: _proposer,
+        _requestId: _dispute.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
     } else if (_status == IOracle.DisputeStatus.Won) {
       // Disputer won, we pay the disputer and release their bond
-      _params.accountingExtension.pay(_dispute.requestId, _proposer, _disputer, _params.bondToken, _params.bondSize);
-      _params.accountingExtension.release(_disputer, _dispute.requestId, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _proposer,
+        _receiver: _disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+      _params.accountingExtension.release({
+        _bonder: _disputer,
+        _requestId: _dispute.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
     } else if (_status == IOracle.DisputeStatus.Lost) {
       // Disputer lost, we pay the proposer and release their bond
-      _params.accountingExtension.pay(_dispute.requestId, _disputer, _proposer, _params.bondToken, _params.bondSize);
-      _params.accountingExtension.release(_proposer, _dispute.requestId, _params.bondToken, _params.bondSize);
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _disputer,
+        _receiver: _proposer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+      _params.accountingExtension.release({
+        _bonder: _proposer,
+        _requestId: _dispute.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
     }
 
     emit DisputeStatusChanged(_dispute.requestId, _dispute.responseId, _disputer, _proposer, _status);

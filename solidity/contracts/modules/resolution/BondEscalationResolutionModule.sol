@@ -87,7 +87,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
 
-    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _pledgeAmount);
+    _params.accountingExtension.pledge({
+      _pledger: msg.sender,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: _params.bondToken,
+      _amount: _pledgeAmount
+    });
     emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     /*
@@ -164,7 +170,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
 
-    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _pledgeAmount);
+    _params.accountingExtension.pledge({
+      _pledger: msg.sender,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: _params.bondToken,
+      _amount: _pledgeAmount
+    });
     emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     /*
@@ -279,7 +291,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesFor);
       _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _params.accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      _params.accountingExtension.releasePledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _amount: _amountToRelease
+      });
       emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
       return;
     }
@@ -291,7 +309,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesAgainst);
       _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _params.accountingExtension.releasePledge(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      _params.accountingExtension.releasePledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _amount: _amountToRelease
+      });
       emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
       return;
     }
@@ -302,16 +326,24 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     if (_pledgerBalanceFor > 0) {
       pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
-      _params.accountingExtension.releasePledge(
-        _requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor
-      );
+      _params.accountingExtension.releasePledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _amount: _pledgerBalanceFor
+      });
       emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor);
     }
     if (_pledgerBalanceAgainst > 0) {
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
-      _params.accountingExtension.releasePledge(
-        _requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst
-      );
+      _params.accountingExtension.releasePledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _amount: _pledgerBalanceAgainst
+      });
       emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst);
     }
   }

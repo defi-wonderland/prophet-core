@@ -147,7 +147,7 @@ contract AccountingExtension_UnitTest is Test {
     emit Paid(_requestId, _receiver, _payer, token, _amount);
 
     vm.prank(_sender);
-    module.pay(_requestId, _payer, _receiver, token, _amount);
+    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
 
     // check: balance receiver
     assertEq(module.balanceOf(_receiver, token), _amount);
@@ -180,7 +180,7 @@ contract AccountingExtension_UnitTest is Test {
 
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
     vm.prank(_sender);
-    module.pay(_requestId, _payer, _receiver, token, _amount);
+    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
   }
 
   /**
@@ -202,7 +202,7 @@ contract AccountingExtension_UnitTest is Test {
 
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
     vm.prank(_sender);
-    module.pay(_requestId, _payer, _receiver, token, _amount);
+    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
   }
 
   /**
@@ -230,7 +230,7 @@ contract AccountingExtension_UnitTest is Test {
     emit Bonded(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
-    module.bond(_bonder, _requestId, token, _amount);
+    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
 
     // check: balance receiver
     assertEq(module.balanceOf(_bonder, token), _initialBalance - _amount);
@@ -263,7 +263,7 @@ contract AccountingExtension_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
 
     vm.prank(_sender);
-    module.bond(_bonder, _requestId, token, _amount);
+    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 
   /**
@@ -278,7 +278,7 @@ contract AccountingExtension_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
 
     vm.prank(_sender);
-    module.bond(_bonder, _requestId, token, _amount);
+    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 
   /**
@@ -307,7 +307,7 @@ contract AccountingExtension_UnitTest is Test {
     emit Released(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
-    module.release(_bonder, _requestId, token, _amount);
+    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
 
     // check: balance receiver
     assertEq(module.balanceOf(_bonder, token), _amount);
@@ -341,7 +341,7 @@ contract AccountingExtension_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
 
     vm.prank(_sender);
-    module.release(_bonder, _requestId, token, _amount);
+    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 
   /**
@@ -361,6 +361,6 @@ contract AccountingExtension_UnitTest is Test {
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
 
     vm.prank(_sender);
-    module.release(_bonder, _requestId, token, _amount);
+    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 }

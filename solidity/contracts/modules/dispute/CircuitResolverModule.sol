@@ -37,9 +37,13 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       || keccak256(_response.response) != keccak256(_correctResponse);
 
     if (_won) {
-      _params.accountingExtension.pay(
-        _dispute.requestId, _dispute.proposer, _dispute.disputer, _params.bondToken, _params.bondSize
-      );
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _dispute.proposer,
+        _receiver: _dispute.disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
       bytes32 _correctResponseId =
         ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctResponses[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);

@@ -94,7 +94,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       createdAt: block.timestamp
     });
 
-    _params.accountingExtension.bond(_disputer, _requestId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.bond({
+      _bonder: _disputer,
+      _requestId: _requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
   }
@@ -105,17 +110,20 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     bool _won = _dispute.status == IOracle.DisputeStatus.Won;
 
-    _params.accountingExtension.pay(
-      _dispute.requestId,
-      _won ? _dispute.proposer : _dispute.disputer,
-      _won ? _dispute.disputer : _dispute.proposer,
-      _params.bondToken,
-      _params.bondSize
-    );
+    _params.accountingExtension.pay({
+      _requestId: _dispute.requestId,
+      _payer: _won ? _dispute.proposer : _dispute.disputer,
+      _receiver: _won ? _dispute.disputer : _dispute.proposer,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
-    _params.accountingExtension.release(
-      _won ? _dispute.disputer : _dispute.proposer, _dispute.requestId, _params.bondToken, _params.bondSize
-    );
+    _params.accountingExtension.release({
+      _bonder: _won ? _dispute.disputer : _dispute.proposer,
+      _requestId: _dispute.requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
     //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
@@ -136,13 +144,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
 
-      _params.accountingExtension.payWinningPledgers(
-        _dispute.requestId,
-        _disputeId,
-        _won ? __bondEscalationData.pledgersForDispute : __bondEscalationData.pledgersAgainstDispute,
-        _params.bondToken,
-        _params.bondSize << 1
-      );
+      _params.accountingExtension.payWinningPledgers({
+        _requestId: _dispute.requestId,
+        _disputeId: _disputeId,
+        _winningPledgers: _won ? __bondEscalationData.pledgersForDispute : __bondEscalationData.pledgersAgainstDispute,
+        _token: _params.bondToken,
+        _amountPerPledger: _params.bondSize << 1
+      });
     }
     emit DisputeStatusChanged(
       _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
@@ -158,7 +166,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, true);
 
     _bondEscalationData[_disputeId].pledgersForDispute.push(msg.sender);
-    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.pledge({
+      _pledger: msg.sender,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     emit PledgedInFavorOfDisputer(_disputeId, msg.sender, _params.bondSize);
   }
@@ -168,7 +182,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, false);
 
     _bondEscalationData[_disputeId].pledgersAgainstDispute.push(msg.sender);
-    _params.accountingExtension.pledge(msg.sender, _requestId, _disputeId, _params.bondToken, _params.bondSize);
+    _params.accountingExtension.pledge({
+      _pledger: msg.sender,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     emit PledgedInFavorOfProposer(_disputeId, msg.sender, _params.bondSize);
   }
@@ -212,13 +232,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
     //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
     //                   Another approach is correct parameters (low number of escalations and higher amount bonded)
-    _params.accountingExtension.payWinningPledgers(
-      _requestId,
-      _disputeId,
-      _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute,
-      _params.bondToken,
-      _amountToPay
-    );
+    _params.accountingExtension.payWinningPledgers({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _winningPledgers: _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute,
+      _token: _params.bondToken,
+      _amountPerPledger: _amountToPay
+    });
   }
 
   /**
