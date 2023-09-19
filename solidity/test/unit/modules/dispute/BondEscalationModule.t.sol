@@ -28,21 +28,27 @@ contract ForTest_BondEscalationModule is BondEscalationModule {
   }
 
   function forTest_setBondEscalationData(
-    bytes32 _disputeId,
-    BondEscalationModule.BondEscalationData calldata __bondEscalationData
+    bytes32 _requestId,
+    address[] memory _pledgersForDispute,
+    address[] memory _pledgersAgainstDispute
   ) public {
-    _bondEscalationData[_disputeId] = __bondEscalationData;
+    _escalations[_requestId].pledgersForDispute = _pledgersForDispute;
+    _escalations[_requestId].pledgersAgainstDispute = _pledgersAgainstDispute;
   }
 
   function forTest_setBondEscalationStatus(
     bytes32 _requestId,
     BondEscalationModule.BondEscalationStatus _bondEscalationStatus
   ) public {
-    bondEscalationStatus[_requestId] = _bondEscalationStatus;
+    _escalations[_requestId].status = _bondEscalationStatus;
   }
 
   function forTest_setEscalatedDispute(bytes32 _requestId, bytes32 _disputeId) public {
-    escalatedDispute[_requestId] = _disputeId;
+    _escalations[_requestId].disputeId = _disputeId;
+  }
+
+  function forTest_setDisputeToRequest(bytes32 _disputeId, bytes32 _requestId) public {
+    _disputeToRequest[_disputeId] = _requestId;
   }
 }
 
@@ -308,7 +314,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
     // Set the number of pledgers for both sides
-    _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -361,7 +367,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
     // Set the number of pledgers for both sides
-    _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Expect Oracle.getDispute to be called.
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
@@ -374,11 +380,9 @@ contract BondEscalationModule_UnitTest is Test {
     vm.prank(address(oracle));
     bondEscalationModule.disputeEscalated(_disputeId);
 
+    IBondEscalationModule.BondEscalation memory _escalation = bondEscalationModule.getEscalationData(_requestId);
     // Expect the bond escalation status to be changed from Active to Escalated
-    assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
-      uint256(IBondEscalationModule.BondEscalationStatus.Escalated)
-    );
+    assertEq(uint256(_escalation.status), uint256(IBondEscalationModule.BondEscalationStatus.Escalated));
   }
 
   /**
@@ -517,12 +521,12 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Assert that the bond escalation status is now active
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.Active)
     );
 
     // Assert that the dispute was assigned to the bond escalation process
-    assertEq(bondEscalationModule.escalatedDispute(_requestId), _expectedDisputeId);
+    assertEq(bondEscalationModule.getEscalationData(_requestId).disputeId, _expectedDisputeId);
   }
 
   function test_disputeResponseEmitsEvent(bytes32 _requestId, bytes32 _responseId) public {
@@ -689,7 +693,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numAgainstPledgers = 0;
 
     // Set bond escalation data to have no pledgers
-    _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -724,7 +728,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     // If it remains at escalated it means it returned early as it didn't update the bond escalation status
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.Escalated)
     );
   }
@@ -750,7 +754,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numAgainstPledgers = 2;
 
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
-    (address[] memory _winningForPledgers,) = _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    (address[] memory _winningForPledgers,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -807,7 +811,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
 
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.DisputerWon)
     );
   }
@@ -835,7 +839,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
     (, address[] memory _winningAgainstPledgers) =
-      _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -892,7 +896,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.onDisputeStatusChange(_disputeId, _dispute);
 
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.DisputerLost)
     );
   }
@@ -967,7 +971,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -997,7 +1001,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers - 1;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -1028,7 +1032,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -1055,7 +1059,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers + 1;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.mockCall(
       address(accounting),
@@ -1072,6 +1076,9 @@ contract BondEscalationModule_UnitTest is Test {
     emit PledgedInFavorOfDisputer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeForDispute(_disputeId);
+
+    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
+
     address[] memory _pledgersForDispute = bondEscalationModule.fetchPledgersForDispute(_disputeId);
     assertEq(_pledgersForDispute.length, numForPledgers + 1);
     assertEq(_pledgersForDispute[2], address(this));
@@ -1153,7 +1160,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1183,7 +1190,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numAgainstPledgers = 2;
     uint256 numForPledgers = numAgainstPledgers - 1;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1214,7 +1221,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numForPledgers = 2;
     uint256 numAgainstPledgers = numForPledgers;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1241,7 +1248,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 numAgainstPledgers = 2;
     uint256 numForPledgers = numAgainstPledgers + 1;
 
-    _setBondEscalationData(_disputeId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
 
     vm.mockCall(
       address(accounting),
@@ -1258,6 +1265,9 @@ contract BondEscalationModule_UnitTest is Test {
     emit PledgedInFavorOfProposer(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
+
+    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
+
     address[] memory _pledgersAgainstDispute = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
     assertEq(_pledgersAgainstDispute.length, numAgainstPledgers + 1);
     assertEq(_pledgersAgainstDispute[2], address(this));
@@ -1311,7 +1321,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numForPledgers = 5;
     uint256 _numAgainstPledgers = _numForPledgers;
 
-    _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ShouldBeEscalated.selector);
 
@@ -1337,7 +1347,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numForPledgers = 2;
     uint256 _numAgainstPledgers = _numForPledgers - 1;
 
-    (address[] memory _pledgersForDispute,) = _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    (address[] memory _pledgersForDispute,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     uint256 _amountToPay = _bondSize + (_numAgainstPledgers * _bondSize) / _numForPledgers;
 
@@ -1361,7 +1371,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.settleBondEscalation(_requestId);
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.DisputerWon)
     );
   }
@@ -1386,7 +1396,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numForPledgers = _numAgainstPledgers - 1;
 
     (, address[] memory _pledgersAgainstDispute) =
-      _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     uint256 _amountToPay = _bondSize + (_numForPledgers * _bondSize) / _numAgainstPledgers;
 
@@ -1412,7 +1422,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.settleBondEscalation(_requestId);
     assertEq(
-      uint256(bondEscalationModule.bondEscalationStatus(_requestId)),
+      uint256(bondEscalationModule.getEscalationData(_requestId).status),
       uint256(IBondEscalationModule.BondEscalationStatus.DisputerLost)
     );
   }
@@ -1451,11 +1461,14 @@ contract BondEscalationModule_UnitTest is Test {
   /**
    * @notice Tests that fetchPledgersForDispute fetches the pledgers that pledged in favor the dispute correctly
    */
-  function test_fetchPledgerForDispute(bytes32 _disputeId) public {
+  function test_fetchPledgerForDispute(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _numForPledgers = 10;
     uint256 _numAgainstPledgers;
 
-    (address[] memory _expectedForPledgers,) = _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+    (address[] memory _expectedForPledgers,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+
+    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
+
     (address[] memory _forPledgers) = bondEscalationModule.fetchPledgersForDispute(_disputeId);
 
     for (uint256 i; i < _numForPledgers; i++) {
@@ -1470,12 +1483,15 @@ contract BondEscalationModule_UnitTest is Test {
   /**
    * @notice Tests that fetchPledgersAgainstDispute fetches the pledgers that pledged against the dispute correctly
    */
-  function test_fetchPledgerAgainstDispute(bytes32 _disputeId) public {
+  function test_fetchPledgerAgainstDispute(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _numForPledgers;
     uint256 _numAgainstPledgers = 10;
 
     (, address[] memory _expectedAgainstPledgers) =
-      _setBondEscalationData(_disputeId, _numForPledgers, _numAgainstPledgers);
+      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+
+    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
+
     (address[] memory _againstPledgers) = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
 
     for (uint256 i; i < _numAgainstPledgers; i++) {
@@ -1549,7 +1565,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   function _setBondEscalationData(
-    bytes32 _disputeId,
+    bytes32 _requestId,
     uint256 _numForPledgers,
     uint256 _numAgainstPledgers
   ) internal returns (address[] memory _forPledgers, address[] memory _againstPledgers) {
@@ -1568,10 +1584,9 @@ contract BondEscalationModule_UnitTest is Test {
       _againstPledgers[j] = _againstPledger;
     }
 
-    IBondEscalationModule.BondEscalationData memory _escalationData =
-      IBondEscalationModule.BondEscalationData(_forPledgers, _againstPledgers);
+    // IBondEscalationModule.BondEscalation memory _escalation = bondEscalationModule.getEscalationData(_requestId);
 
-    bondEscalationModule.forTest_setBondEscalationData(_disputeId, _escalationData);
+    bondEscalationModule.forTest_setBondEscalationData(_requestId, _forPledgers, _againstPledgers);
 
     return (_forPledgers, _againstPledgers);
   }

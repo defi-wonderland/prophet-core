@@ -127,23 +127,12 @@ interface IBondEscalationModule is IDisputeModule {
     uint256 challengePeriod;
   }
 
-  /**
-   * @notice Struct containing an array of the pledgers in favor of a dispute and another containing those against it.
-   */
-  struct BondEscalationData {
+  struct BondEscalation {
+    bytes32 disputeId;
+    BondEscalationStatus status;
     address[] pledgersForDispute; // Array of pledgers in favor of a given dispute.
     address[] pledgersAgainstDispute; // Array of pledges against a given dispute.
   }
-
-  /**
-   * @notice Struct containing the current bond escalation status of a given request through its id.
-   */
-  function bondEscalationStatus(bytes32 _requestId) external view returns (BondEscalationStatus _status);
-
-  /**
-   * @notice The dispute id of the dispute that is going through the bond escalation process for a given request.
-   */
-  function escalatedDispute(bytes32 _requestId) external view returns (bytes32 _disputeId);
 
   /**
    * @notice Disputes a response
@@ -219,6 +208,13 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _requestId requestId of the request to settle the bond escalation process for.
    */
   function settleBondEscalation(bytes32 _requestId) external;
+
+  /**
+   * @notice Returns the escalation data for a request.
+   * @param _requestId id of the request to get its escalation data.
+   * @return _escalation The struct containing the escalation data.
+   */
+  function getEscalationData(bytes32 _requestId) external view returns (BondEscalation memory _escalation);
 
   /**
    * @notice Decodes the request data associated to a request id.
