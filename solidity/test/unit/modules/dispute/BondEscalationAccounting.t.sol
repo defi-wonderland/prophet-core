@@ -26,7 +26,7 @@ contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
   constructor(IOracle _oracle) BondEscalationAccounting(_oracle) {}
 
   function forTest_setPledge(bytes32 _requestId, bytes32 _disputeId, IERC20 _token, uint256 _amount) public {
-    pledges[_requestId][_disputeId][_token] = _amount;
+    pledges[_disputeId][_token] = _amount;
   }
 
   function forTest_setBalanceOf(address _bonder, IERC20 _token, uint256 _balance) public {
@@ -124,12 +124,12 @@ contract BondEscalationAccounting_UnitTest is Test {
     emit Pledged(_pledger, _requestId, _disputeId, token, _amount);
 
     uint256 _balanceBeforePledge = bondEscalationAccounting.balanceOf(_pledger, token);
-    uint256 _pledgesBeforePledge = bondEscalationAccounting.pledges(_requestId, _disputeId, token);
+    uint256 _pledgesBeforePledge = bondEscalationAccounting.pledges(_disputeId, token);
 
     bondEscalationAccounting.pledge(_pledger, _requestId, _disputeId, token, _amount);
 
     uint256 _balanceAfterPledge = bondEscalationAccounting.balanceOf(_pledger, token);
-    uint256 _pledgesAfterPledge = bondEscalationAccounting.pledges(_requestId, _disputeId, token);
+    uint256 _pledgesAfterPledge = bondEscalationAccounting.pledges(_disputeId, token);
 
     assertEq(_balanceAfterPledge, _balanceBeforePledge - _amount);
     assertEq(_pledgesAfterPledge, _pledgesBeforePledge + _amount);
@@ -210,7 +210,7 @@ contract BondEscalationAccounting_UnitTest is Test {
       assertEq(_balanceBefore[j] + _amountPerPledger, _balanceAfter);
     }
 
-    uint256 _pledgesAfter = bondEscalationAccounting.pledges(_requestId, _disputeId, token);
+    uint256 _pledgesAfter = bondEscalationAccounting.pledges(_disputeId, token);
     assertEq(_pledgesAfter, 0);
   }
 

@@ -72,12 +72,11 @@ interface IBondEscalationAccounting is IAccountingExtension {
   /**
    * @notice The amount pledged by the given pledger in the given dispute of the given request
    *
-   * @param _requestId         The ID of the bond-escalated request
    * @param _disputeId         The ID of the bond-escalated dispute
    * @param _token             Address of the token being pledged
    * @return _amountPledged    The amount of pledged tokens
    */
-  function pledges(bytes32 _requestId, bytes32 _disputeId, IERC20 _token) external returns (uint256 _amountPledged);
+  function pledges(bytes32 _disputeId, IERC20 _token) external returns (uint256 _amountPledged);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

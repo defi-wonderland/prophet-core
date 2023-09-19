@@ -11,13 +11,14 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccounting {
   /// @inheritdoc IBondEscalationAccounting
-  mapping(bytes32 _requestId => mapping(bytes32 _disputeId => mapping(IERC20 _token => uint256 _amount))) public pledges;
+  mapping(bytes32 _disputeId => mapping(IERC20 _token => uint256 _amount)) public pledges;
 
   constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
     address _pledger,
+    // TODO: leaving this request id here for the valid module check until the audit fix is defined
     bytes32 _requestId,
     bytes32 _disputeId,
     IERC20 _token,
@@ -25,7 +26,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   ) external onlyValidModule(_requestId) {
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
-    pledges[_requestId][_disputeId][_token] += _amount;
+    pledges[_disputeId][_token] += _amount;
 
     unchecked {
       balanceOf[_pledger][_token] -= _amount;
@@ -44,7 +45,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   ) external onlyValidModule(_requestId) {
     uint256 _winningPledgersLength = _winningPledgers.length;
     // TODO: check that flooring at _amountPerPledger calculation doesn't mess with this check
-    if (pledges[_requestId][_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
+    if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
       revert BondEscalationAccounting_InsufficientFunds();
     }
 
@@ -52,7 +53,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       balanceOf[_winningPledgers[i]][_token] += _amountPerPledger;
 
       unchecked {
-        pledges[_requestId][_disputeId][_token] -= _amountPerPledger;
+        pledges[_disputeId][_token] -= _amountPerPledger;
         ++i;
       }
     }
@@ -68,12 +69,12 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     IERC20 _token,
     uint256 _amount
   ) external onlyValidModule(_requestId) {
-    if (pledges[_requestId][_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
+    if (pledges[_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     balanceOf[_pledger][_token] += _amount;
 
     unchecked {
-      pledges[_requestId][_disputeId][_token] -= _amount;
+      pledges[_disputeId][_token] -= _amount;
     }
 
     emit PledgeReleased(_requestId, _disputeId, _pledger, _token, _amount);
