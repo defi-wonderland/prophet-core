@@ -147,7 +147,6 @@ contract CircuitResolverModule_UnitTest is Test {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
-    bytes32 _newResponseId = bytes32(uint256(mockId) + 2);
     bool _correctResponse = false;
 
     // Mock request data

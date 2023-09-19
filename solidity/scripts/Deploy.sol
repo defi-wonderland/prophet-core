@@ -56,7 +56,6 @@ contract Deploy is Script {
 
   function run() public {
     address deployer = vm.rememberKey(vm.envUint('DEPLOYER_PRIVATE_KEY'));
-    address governance = deployer; // TODO: Change to actual governance
 
     vm.startBroadcast(deployer);
 

@@ -17,7 +17,7 @@ interface IHttpRequestModule is IRequestModule {
   /**
    * @notice Parameters of the request as stored in the module
    * @param url The url to make the request to
-   * @param The HTTP method to use for the request
+   * @param method The HTTP method to use for the request
    * @param body The HTTP body to use for the request
    * @param accountingExtension The accounting extension used to bond and release tokens
    * @param paymentToken The token used to pay for the request
@@ -25,8 +25,8 @@ interface IHttpRequestModule is IRequestModule {
    */
   struct RequestParameters {
     string url;
-    HttpMethod method;
     string body;
+    HttpMethod method;
     IAccountingExtension accountingExtension;
     IERC20 paymentToken;
     uint256 paymentAmount;

@@ -137,7 +137,7 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
    * @param _data The data received
    * @return _params The parameters of the request
    */
-  function _decodeData(bytes memory _data) internal view returns (RequestParameters memory _params) {
+  function _decodeData(bytes memory _data) internal pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -243,32 +243,32 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
 
   // This functions use msg.sender in the oracle implementation and cannot be called from a the sequential resolution module
   /// @inheritdoc IOracle
-  function createRequest(IOracle.NewRequest memory) external returns (bytes32) {
+  function createRequest(IOracle.NewRequest memory) external pure returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
 
   /// @inheritdoc IOracle
-  function createRequests(IOracle.NewRequest[] calldata) external view returns (bytes32[] memory) {
+  function createRequests(IOracle.NewRequest[] calldata) external pure returns (bytes32[] memory) {
     revert SequentialResolutionModule_NotImplemented();
   }
 
   /// @inheritdoc IOracle
-  function disputeResponse(bytes32, bytes32) external view returns (bytes32) {
+  function disputeResponse(bytes32, bytes32) external pure returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
 
   /// @inheritdoc IOracle
-  function proposeResponse(bytes32, bytes calldata) external view returns (bytes32) {
+  function proposeResponse(bytes32, bytes calldata) external pure returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
 
   /// @inheritdoc IOracle
-  function proposeResponse(address, bytes32, bytes calldata) external view returns (bytes32) {
+  function proposeResponse(address, bytes32, bytes calldata) external pure returns (bytes32) {
     revert SequentialResolutionModule_NotImplemented();
   }
 
   /// @inheritdoc IOracle
-  function deleteResponse(bytes32) external view {
+  function deleteResponse(bytes32) external pure {
     revert SequentialResolutionModule_NotImplemented();
   }
 }

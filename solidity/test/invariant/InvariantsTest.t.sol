@@ -158,7 +158,7 @@ contract HandlerProphet is Test {
     ghostNumberOfResponse++;
   }
 
-  function disputeResponse(bytes32 _requestId, bytes32 _responseId) external {
+  function disputeResponse(bytes32, /* _requestId */ bytes32 _responseId) external {
     oracle.disputeResponse(requestId, _responseId);
 
     ghostDisputeToResponseId[ghostNumberOfDispute] = _responseId;

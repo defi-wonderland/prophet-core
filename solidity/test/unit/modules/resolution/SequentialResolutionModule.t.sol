@@ -617,7 +617,6 @@ contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
 
   function testReverts_createRequestsNotImplemented() public {
     IOracle.NewRequest[] memory _requests;
-    bytes32[] memory _ids;
     vm.expectRevert(
       abi.encodeWithSelector(ISequentialResolutionModule.SequentialResolutionModule_NotImplemented.selector)
     );
