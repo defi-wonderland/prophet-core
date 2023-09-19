@@ -158,12 +158,6 @@ interface IOracle {
    */
   error Oracle_CannotDeleteInvalidProposer(address _caller, bytes32 _responseId);
 
-  /**
-   * @notice Thrown when trying to finalize a request with an active dispute
-   * @param _requestId The id of the request being finalized
-   */
-  error Oracle_CannotFinalizeWithActiveDispute(bytes32 _requestId);
-
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/

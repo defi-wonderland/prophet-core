@@ -327,7 +327,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
     DisputeStatus _disputeStatus = _disputes[disputeOf[_finalizedResponseId]].status;
-    if (_disputeStatus == DisputeStatus.Active || _disputeStatus == DisputeStatus.Won) {
+    if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
 
@@ -353,7 +353,7 @@ contract Oracle is IOracle {
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 
         if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
-          revert Oracle_CannotFinalizeWithActiveDispute(_requestId);
+          revert Oracle_InvalidFinalizedResponse(_requestId);
         }
 
         unchecked {

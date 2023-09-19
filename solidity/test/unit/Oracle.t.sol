@@ -1047,19 +1047,21 @@ contract Oracle_UnitTest is Test {
     oracle.finalize(_requestId, _responseId);
   }
 
-  function test_finalizeRevertsWhenActiveDispute(address _caller) public {
+  function test_finalizeRevertsWhenInvalidFinalizedResponse(address _caller) public {
     // Create mock request and store it
     (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
     bytes32 _requestId = _dummyRequestIds[0];
 
     address _proposer = makeAddr('proposer');
 
+    bytes32 _disputeId = bytes32('69');
+
     // Create mock response and store it
     IOracle.Response memory _response = IOracle.Response({
       createdAt: block.timestamp,
       proposer: _proposer,
       requestId: _requestId,
-      disputeId: bytes32('69'),
+      disputeId: _disputeId,
       response: bytes('69')
     });
 
@@ -1076,9 +1078,32 @@ contract Oracle_UnitTest is Test {
     vm.prank(sender);
     oracle.disputeResponse(_requestId, _responseId);
 
+    // Test: finalize the request with active dispute reverts
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    vm.prank(_caller);
+    oracle.finalize(_requestId, _responseId);
 
-    // Test: finalize the request
+    mockDispute.status = IOracle.DisputeStatus.Escalated;
+    oracle.forTest_setDispute(_disputeId, mockDispute);
+
+    // Test: finalize the request with escalated dispute reverts
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    vm.prank(_caller);
+    oracle.finalize(_requestId, _responseId);
+
+    mockDispute.status = IOracle.DisputeStatus.Won;
+    oracle.forTest_setDispute(_disputeId, mockDispute);
+
+    // Test: finalize the request with Won dispute reverts
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    vm.prank(_caller);
+    oracle.finalize(_requestId, _responseId);
+
+    mockDispute.status = IOracle.DisputeStatus.NoResolution;
+    oracle.forTest_setDispute(_disputeId, mockDispute);
+
+    // Test: finalize the request with NoResolution dispute reverts
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
     vm.prank(_caller);
     oracle.finalize(_requestId, _responseId);
   }
