@@ -27,7 +27,7 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   uint256 public currentSequenceId;
 
   /**
-   * @notice Maps the sequedId to the array of modules to use
+   * @notice Maps the sequenceId to the array of modules to use
    */
   mapping(uint256 _sequenceId => EnumerableSet.AddressSet _modules) internal _resolutionModules;
 
@@ -77,13 +77,9 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
     return 'SequentialResolutionModule';
   }
 
-  /// @inheritdoc Module
-  function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal override {
-    (uint256 _sequenceId, bytes[] memory _submoduleData) = _decodeData(_data);
-    EnumerableSet.AddressSet storage _modules = _resolutionModules[_sequenceId];
-    for (uint256 i; i < _modules.length(); ++i) {
-      IResolutionModule(_modules.at(i)).setupRequest(_requestId, _submoduleData[i]);
-    }
+  /// @inheritdoc ISequentialResolutionModule
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
   /// @inheritdoc IModule
@@ -125,6 +121,35 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   /// @inheritdoc IResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
     getCurrentResolutionModule(_disputeId).resolveDispute(_disputeId);
+  }
+
+  /// @inheritdoc Module
+  function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal override {
+    RequestParameters memory _params = _decodeData(_data);
+    EnumerableSet.AddressSet storage _modules = _resolutionModules[_params.sequenceId];
+    for (uint256 i; i < _modules.length(); ++i) {
+      IResolutionModule(_modules.at(i)).setupRequest(_requestId, _params.submoduleData[i]);
+    }
+  }
+
+  /**
+   * @notice Decodes the data received
+   * @param _data The data received
+   * @return _params The parameters of the request
+   */
+  function _decodeData(bytes memory _data) internal view returns (RequestParameters memory _params) {
+    _params = abi.decode(_data, (RequestParameters));
+  }
+
+  /**
+   * @notice Returns the sequenceId for a particular requestId
+   * @param _requestId The requestId to the sequenceId
+   * @return _sequenceId The sequenceId
+   */
+  function _getSequenceId(bytes32 _requestId) internal view returns (uint256 _sequenceId) {
+    bytes memory _data = requestData[_requestId];
+    RequestParameters memory _params = _decodeData(_data);
+    _sequenceId = _params.sequenceId;
   }
 
   // ============ ORACLE Proxy =============
@@ -245,25 +270,5 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   /// @inheritdoc IOracle
   function deleteResponse(bytes32) external view {
     revert SequentialResolutionModule_NotImplemented();
-  }
-
-  /**
-   * @notice Decodes the data received
-   * @param _data The data received
-   * @return _sequenceId The sequenceId decoded
-   * @return _submoduleData The data for the submodules
-   */
-  function _decodeData(bytes memory _data) internal view returns (uint256 _sequenceId, bytes[] memory _submoduleData) {
-    (_sequenceId, _submoduleData) = abi.decode(_data, (uint256, bytes[]));
-  }
-
-  /**
-   * @notice Returns the sequenceId for a particular requestId
-   * @param _requestId The requestId to the sequenceId
-   * @return _sequenceId The sequenceId
-   */
-  function _getSequenceId(bytes32 _requestId) internal view returns (uint256 _sequenceId) {
-    bytes memory _data = requestData[_requestId];
-    (_sequenceId,) = _decodeData(_data);
   }
 }

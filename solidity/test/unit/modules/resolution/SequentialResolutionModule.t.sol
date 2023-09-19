@@ -103,7 +103,10 @@ contract Base is Test {
     _submoduleData[2] = abi.encode('submodule3Data');
 
     vm.prank(address(oracle));
-    module.setupRequest(requestId, abi.encode(sequenceId, _submoduleData));
+    module.setupRequest(
+      requestId,
+      abi.encode(ISequentialResolutionModule.RequestParameters({sequenceId: sequenceId, submoduleData: _submoduleData}))
+    );
 
     resolutionModules2.push(IResolutionModule(address(submodule2)));
     resolutionModules2.push(IResolutionModule(address(submodule3)));
@@ -112,7 +115,12 @@ contract Base is Test {
     sequenceId2 = module.addResolutionModuleSequence(resolutionModules2);
 
     vm.prank(address(oracle));
-    module.setupRequest(requestId2, abi.encode(sequenceId2, _submoduleData));
+    module.setupRequest(
+      requestId2,
+      abi.encode(
+        ISequentialResolutionModule.RequestParameters({sequenceId: sequenceId2, submoduleData: _submoduleData})
+      )
+    );
   }
 }
 
@@ -120,7 +128,7 @@ contract Base is Test {
  * @title SequentialResolutionModule Unit tests
  */
 contract SequentialResolutionModule_UnitTest is Base {
-  function test_setupRequestCallsAllSubmodules(bytes32 _newReqId) public {
+  function test_setupRequestCallsAllSubmodules(bytes32 _requestId) public {
     bytes memory _submodule1Data = abi.encode('submodule1Data');
     bytes memory _submodule2Data = abi.encode('submodule2Data');
     bytes memory _submodule3Data = abi.encode('submodule3Data');
@@ -131,17 +139,20 @@ contract SequentialResolutionModule_UnitTest is Base {
     _submoduleData[2] = _submodule3Data;
 
     vm.expectCall(
-      address(submodule1), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule1Data)
+      address(submodule1), abi.encodeWithSelector(IModule.setupRequest.selector, _requestId, _submodule1Data)
     );
     vm.expectCall(
-      address(submodule2), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule2Data)
+      address(submodule2), abi.encodeWithSelector(IModule.setupRequest.selector, _requestId, _submodule2Data)
     );
     vm.expectCall(
-      address(submodule3), abi.encodeWithSelector(IModule.setupRequest.selector, _newReqId, _submodule3Data)
+      address(submodule3), abi.encodeWithSelector(IModule.setupRequest.selector, _requestId, _submodule3Data)
     );
 
     vm.prank(address(oracle));
-    module.setupRequest(_newReqId, abi.encode(sequenceId, _submoduleData));
+    module.setupRequest(
+      _requestId,
+      abi.encode(ISequentialResolutionModule.RequestParameters({sequenceId: sequenceId, submoduleData: _submoduleData}))
+    );
   }
 
   function test_setupRequestRevertsIfNotOracle() public {
