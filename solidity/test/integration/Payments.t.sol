@@ -123,7 +123,7 @@ contract Integration_Payments is IntegrationBase {
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     _dispute.status = IOracle.DisputeStatus.Won;
     vm.prank(address(oracle));
-    _disputeModule.onDisputeStatusChange(bytes32(0), _dispute);
+    _bondedDisputeModule.onDisputeStatusChange(bytes32(0), _dispute);
     vm.prank(address(oracle));
     _requestModule.finalizeRequest(_requestId, address(oracle));
 
@@ -174,7 +174,7 @@ contract Integration_Payments is IntegrationBase {
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     _dispute.status = IOracle.DisputeStatus.Won;
     vm.prank(address(oracle));
-    _disputeModule.onDisputeStatusChange(bytes32(0), _dispute);
+    _bondedDisputeModule.onDisputeStatusChange(bytes32(0), _dispute);
     vm.prank(address(oracle));
     _requestModule.finalizeRequest(_requestId, address(oracle));
 
@@ -237,8 +237,8 @@ contract Integration_Payments is IntegrationBase {
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
+      disputeModule: _bondedDisputeModule,
+      resolutionModule: _arbitratorModule,
       finalityModule: IFinalityModule(_callbackModule),
       ipfsHash: _ipfsHash
     });

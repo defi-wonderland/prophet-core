@@ -22,6 +22,10 @@ import {BondedDisputeModule, IBondedDisputeModule} from '../../contracts/modules
 import {ArbitratorModule, IArbitratorModule} from '../../contracts/modules/resolution/ArbitratorModule.sol';
 import {AccountingExtension, IAccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
 import {CallbackModule, ICallbackModule} from '../../contracts/modules/finality/CallbackModule.sol';
+import {BondEscalationModule, IBondEscalationModule} from '../../contracts/modules/dispute/BondEscalationModule.sol';
+import {
+  BondEscalationAccounting, IBondEscalationAccounting
+} from '../../contracts/extensions/BondEscalationAccounting.sol';
 import {Oracle, IOracle} from '../../contracts/Oracle.sol';
 
 import {MockCallback} from '../mocks/MockCallback.sol';
@@ -44,11 +48,13 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   HttpRequestModule public _requestModule;
   BondedResponseModule public _responseModule;
   AccountingExtension public _accountingExtension;
-  BondedDisputeModule public _disputeModule;
-  ArbitratorModule public _resolutionModule;
+  BondEscalationAccounting public _bondEscalationAccounting;
+  BondedDisputeModule public _bondedDisputeModule;
+  ArbitratorModule public _arbitratorModule;
   CallbackModule public _callbackModule;
   MockCallback public _mockCallback;
   MockArbitrator public _mockArbitrator;
+  BondEscalationModule public _bondEscalationModule;
 
   IERC20 usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
   IWETH9 weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
@@ -88,11 +94,11 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _responseModule = new BondedResponseModule(oracle);
     label(address(_responseModule), 'ResponseModule');
 
-    _disputeModule = new BondedDisputeModule(oracle);
-    label(address(_disputeModule), 'DisputeModule');
+    _bondedDisputeModule = new BondedDisputeModule(oracle);
+    label(address(_bondedDisputeModule), 'DisputeModule');
 
-    _resolutionModule = new ArbitratorModule(oracle);
-    label(address(_resolutionModule), 'ResolutionModule');
+    _arbitratorModule = new ArbitratorModule(oracle);
+    label(address(_arbitratorModule), 'ResolutionModule');
 
     _callbackModule = new CallbackModule(oracle);
     label(address(_callbackModule), 'CallbackModule');
@@ -100,13 +106,23 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _accountingExtension = new AccountingExtension(oracle);
     label(address(_accountingExtension), 'AccountingExtension');
 
+    _bondEscalationModule = new BondEscalationModule(oracle);
+    label(address(_bondEscalationModule), 'BondEscalationModule');
+
+    _bondEscalationAccounting = new BondEscalationAccounting(oracle);
+    label(address(_bondEscalationAccounting), 'BondEscalationAccounting');
+
     _mockCallback = new MockCallback();
     _mockArbitrator = new MockArbitrator();
     vm.stopPrank();
   }
 
   function mineBlock() internal {
-    vm.warp(block.timestamp + BLOCK_TIME);
-    vm.roll(block.number + 1);
+    mineBlocks(1);
+  }
+
+  function mineBlocks(uint256 _blocks) internal {
+    vm.warp(block.timestamp + _blocks * BLOCK_TIME);
+    vm.roll(block.number + _blocks);
   }
 }

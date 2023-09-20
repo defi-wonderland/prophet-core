@@ -81,7 +81,7 @@ contract Integration_AccountingExtension is IntegrationBase {
 
     HttpRequestModule _requestModule = new HttpRequestModule(oracle);
     BondedResponseModule _responseModule = new BondedResponseModule(oracle);
-    BondedDisputeModule _disputeModule = new BondedDisputeModule(oracle);
+    BondedDisputeModule _bondedDisputeModule = new BondedDisputeModule(oracle);
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
@@ -100,7 +100,7 @@ contract Integration_AccountingExtension is IntegrationBase {
       finalityModuleData: abi.encode(),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _disputeModule,
+      disputeModule: _bondedDisputeModule,
       resolutionModule: IResolutionModule(address(0)),
       finalityModule: IFinalityModule(address(0)),
       ipfsHash: _ipfsHash

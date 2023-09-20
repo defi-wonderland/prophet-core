@@ -42,7 +42,7 @@ contract Integration_RequestCreation is IntegrationBase {
     assertEq(_expectedDeadline, _params.deadline);
 
     // Check: request data was stored in dispute module?
-    IBondedDisputeModule.RequestParameters memory _params2 = _disputeModule.decodeRequestData(_requestId);
+    IBondedDisputeModule.RequestParameters memory _params2 = _bondedDisputeModule.decodeRequestData(_requestId);
 
     assertEq(address(_accountingExtension), address(_params2.accountingExtension));
     assertEq(address(_params.bondToken), address(_params2.bondToken));
@@ -84,14 +84,14 @@ contract Integration_RequestCreation is IntegrationBase {
     assertEq(_expectedDeadline, _params.deadline);
 
     // Check: request data was stored in dispute module?
-    IBondedDisputeModule.RequestParameters memory _params2 = _disputeModule.decodeRequestData(_requestId);
+    IBondedDisputeModule.RequestParameters memory _params2 = _bondedDisputeModule.decodeRequestData(_requestId);
 
     assertEq(address(_accountingExtension), address(_params2.accountingExtension));
     assertEq(address(_params.bondToken), address(_params2.bondToken));
     assertEq(_expectedBondSize, _params2.bondSize);
 
     // Check: request data was stored in resolution module?
-    (address _arbitrator) = _resolutionModule.decodeRequestData(_requestId);
+    (address _arbitrator) = _arbitratorModule.decodeRequestData(_requestId);
     assertEq(_arbitrator, address(_mockArbitrator));
 
     // Check: request data was stored in finality module?
@@ -259,8 +259,8 @@ contract Integration_RequestCreation is IntegrationBase {
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
+      disputeModule: _bondedDisputeModule,
+      resolutionModule: _arbitratorModule,
       finalityModule: IFinalityModule(_callbackModule),
       ipfsHash: _ipfsHash
     });

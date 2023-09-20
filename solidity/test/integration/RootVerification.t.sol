@@ -106,7 +106,7 @@ contract Integration_RootVerification is IntegrationBase {
       requestModule: _sparseMerkleTreeModule,
       responseModule: _responseModule,
       disputeModule: _rootVerificationModule,
-      resolutionModule: _resolutionModule,
+      resolutionModule: _arbitratorModule,
       finalityModule: IFinalityModule(_callbackModule),
       ipfsHash: _ipfsHash
     });

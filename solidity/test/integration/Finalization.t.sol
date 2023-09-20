@@ -216,8 +216,8 @@ contract Integration_Finalization is IntegrationBase {
       finalityModuleData: _finalityModuleData,
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
+      disputeModule: _bondedDisputeModule,
+      resolutionModule: _arbitratorModule,
       finalityModule: IFinalityModule(_finalityModule),
       ipfsHash: _ipfsHash
     });

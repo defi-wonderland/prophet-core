@@ -24,21 +24,21 @@ contract Integration_Arbitration is IntegrationBase {
   function test_resolveCorrectDispute_twoStep() public {
     (bytes32 _requestId,, bytes32 _disputeId) = _setupDispute(address(_mockArbitrator));
     // Check: is the dispute status unknown before starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
 
     // First step: escalating the dispute
     vm.prank(disputer);
     oracle.escalateDispute(_disputeId);
 
     // Check: is the dispute status active after starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
 
     // Second step: resolving the dispute
     vm.prank(disputer);
     oracle.resolveDispute(_disputeId);
 
     // Check: is the dispute status resolved after calling resolve?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
 
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     // Check: is the dispute updated as won?
@@ -57,14 +57,14 @@ contract Integration_Arbitration is IntegrationBase {
     (bytes32 _requestId,, bytes32 _disputeId) = _setupDispute(address(_mockAtomicArbitrator));
 
     // Check: is the dispute status unknown before starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
 
     // First step: escalating the dispute
     vm.prank(disputer);
     oracle.escalateDispute(_disputeId);
 
     // Check: is the dispute status resolved after calling resolve?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
 
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     // Check: is the dispute updated as won?
@@ -82,14 +82,14 @@ contract Integration_Arbitration is IntegrationBase {
   function test_resolveIncorrectDispute_twoStep() public {
     (bytes32 _requestId,, bytes32 _disputeId) = _setupDispute(address(_mockArbitrator));
     // Check: is the dispute status unknown before starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
 
     // First step: escalating the dispute
     vm.prank(disputer);
     oracle.escalateDispute(_disputeId);
 
     // Check: is the dispute status active after starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
 
     // Mocking the answer to return false ==> dispute lost
     vm.mockCall(address(_mockArbitrator), abi.encodeCall(IArbitrator.getAnswer, (_disputeId)), abi.encode(false));
@@ -99,7 +99,7 @@ contract Integration_Arbitration is IntegrationBase {
     oracle.resolveDispute(_disputeId);
 
     // Check: is the dispute status resolved after calling resolve?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
 
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     // Check: is the dispute updated as lost?
@@ -118,7 +118,7 @@ contract Integration_Arbitration is IntegrationBase {
     (bytes32 _requestId,, bytes32 _disputeId) = _setupDispute(address(_mockAtomicArbitrator));
 
     // Check: is the dispute status unknown before starting the resolution?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
 
     // Mocking the answer to return false ==> dispute lost
     vm.mockCall(address(_mockAtomicArbitrator), abi.encodeCall(IArbitrator.getAnswer, (_disputeId)), abi.encode(false));
@@ -128,7 +128,7 @@ contract Integration_Arbitration is IntegrationBase {
     oracle.escalateDispute(_disputeId);
 
     // Check: is the dispute status resolved after calling escalate?
-    assertEq(uint256(_resolutionModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
 
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     // Check: is the dispute updated as lost?
@@ -179,8 +179,8 @@ contract Integration_Arbitration is IntegrationBase {
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
+      disputeModule: _bondedDisputeModule,
+      resolutionModule: _arbitratorModule,
       finalityModule: IFinalityModule(_callbackModule),
       ipfsHash: _ipfsHash
     });

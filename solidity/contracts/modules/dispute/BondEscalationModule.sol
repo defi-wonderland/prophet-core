@@ -73,7 +73,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     BondEscalation storage _escalation = _escalations[_requestId];
 
-    if (block.timestamp <= _params.bondEscalationDeadline && _escalation.status == BondEscalationStatus.None) {
+    if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
+
+    if (_escalation.status == BondEscalationStatus.None) {
       _escalation.status = BondEscalationStatus.Active;
       // Note: this imitates the way _disputeId is calculated on the Oracle, it must always match
       bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId, _responseId));

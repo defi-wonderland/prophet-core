@@ -478,9 +478,7 @@ contract BondEscalationModule_UnitTest is Test {
       abi.encode(true)
     );
 
-    vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize))
-    );
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
 
     vm.prank(address(oracle));
     bondEscalationModule.disputeResponse(_requestId, _responseId, disputer, proposer);
