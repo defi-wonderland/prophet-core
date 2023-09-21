@@ -11,6 +11,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    * @notice Struct containing all the data for a given escalation.
    */
   mapping(bytes32 _requestId => BondEscalation) internal _escalations;
+
+  /// @inheritdoc IBondEscalationModule
+  mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesForDispute;
+
+  /// @inheritdoc IBondEscalationModule
+  mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesAgainstDispute;
+
   /**
    * @notice Mapping storing all dispute IDs to request IDs.
    */
@@ -37,23 +44,24 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function disputeEscalated(bytes32 _disputeId) external onlyOracle {
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-    BondEscalation storage _escalation = _escalations[_dispute.requestId];
+    bytes32 _requestId = _dispute.requestId;
+    BondEscalation storage _escalation = _escalations[_requestId];
 
-    if (_dispute.requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
+    if (_requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
 
     if (_disputeId == _escalation.disputeId) {
-      RequestParameters memory _params = decodeRequestData(_dispute.requestId);
+      RequestParameters memory _params = decodeRequestData(_requestId);
       if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
       if (
         _escalation.status != BondEscalationStatus.Active
-          || _escalation.pledgersForDispute.length != _escalation.pledgersAgainstDispute.length
+          || _escalation.amountOfPledgesForDispute != _escalation.amountOfPledgesAgainstDispute
       ) {
         revert BondEscalationModule_NotEscalatable();
       }
 
       _escalation.status = BondEscalationStatus.Escalated;
-      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
+      emit BondEscalationStatusUpdated(_requestId, _disputeId, BondEscalationStatus.Escalated);
     }
   }
 
@@ -123,14 +131,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _amount: _params.bondSize
     });
 
-    // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
-    //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
-    //                   Another approach is correct parameters (low number of escalations and higher amount bonded)
-
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId == _escalation.disputeId && _escalation.status == BondEscalationStatus.Escalated) {
-      if (_escalation.pledgersAgainstDispute.length == 0) {
+      if (_escalation.amountOfPledgesAgainstDispute == 0) {
         return;
       }
 
@@ -140,12 +144,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
 
-      _params.accountingExtension.payWinningPledgers({
+      _params.accountingExtension.onSettleBondEscalation({
         _requestId: _dispute.requestId,
         _disputeId: _disputeId,
-        _winningPledgers: _won ? _escalation.pledgersForDispute : _escalation.pledgersAgainstDispute,
+        _forVotesWon: _won,
         _token: _params.bondToken,
-        _amountPerPledger: _params.bondSize << 1
+        _amountPerPledger: _params.bondSize << 1,
+        _winningPledgersLength: _won ? _escalation.amountOfPledgesForDispute : _escalation.amountOfPledgesAgainstDispute
       });
     }
     emit DisputeStatusChanged(
@@ -161,7 +166,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   function pledgeForDispute(bytes32 _disputeId) external {
     (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, true);
 
-    _escalations[_requestId].pledgersForDispute.push(msg.sender);
+    _escalations[_requestId].amountOfPledgesForDispute += 1;
+    pledgesForDispute[_requestId][msg.sender] += 1;
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
       _requestId: _requestId,
@@ -177,7 +183,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   function pledgeAgainstDispute(bytes32 _disputeId) external {
     (bytes32 _requestId, RequestParameters memory _params) = _pledgeChecks(_disputeId, false);
 
-    _escalations[_requestId].pledgersAgainstDispute.push(msg.sender);
+    _escalations[_requestId].amountOfPledgesAgainstDispute += 1;
+    pledgesAgainstDispute[_requestId][msg.sender] += 1;
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
       _requestId: _requestId,
@@ -202,20 +209,18 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_BondEscalationCantBeSettled();
     }
 
-    address[] memory _pledgersForDispute = _escalation.pledgersForDispute;
-    address[] memory _pledgersAgainstDispute = _escalation.pledgersAgainstDispute;
+    uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
+    uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
 
-    if (_pledgersForDispute.length == _pledgersAgainstDispute.length) {
+    if (_pledgesForDispute == _pledgesAgainstDispute) {
       revert BondEscalationModule_ShouldBeEscalated();
     }
 
-    bool _disputersWon = _pledgersForDispute.length > _pledgersAgainstDispute.length;
+    bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
 
     uint256 _amountToPay = _disputersWon
-      ? _params.bondSize
-        + FixedPointMathLib.mulDivDown(_pledgersAgainstDispute.length, _params.bondSize, _pledgersForDispute.length)
-      : _params.bondSize
-        + FixedPointMathLib.mulDivDown(_pledgersForDispute.length, _params.bondSize, _pledgersAgainstDispute.length);
+      ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
+      : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
 
     BondEscalationStatus _newStatus =
       _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
@@ -224,15 +229,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     emit BondEscalationStatusUpdated(_requestId, _escalation.disputeId, _newStatus);
 
-    // NOTE: DoS Vector: Large amount of proposers/disputers can cause this function to run out of gas.
-    //                   Ideally this should be done in batches in a different function perhaps once we know the result of the dispute.
-    //                   Another approach is correct parameters (low number of escalations and higher amount bonded)
-    _params.accountingExtension.payWinningPledgers({
+    _params.accountingExtension.onSettleBondEscalation({
       _requestId: _requestId,
       _disputeId: _escalation.disputeId,
-      _winningPledgers: _disputersWon ? _pledgersForDispute : _pledgersAgainstDispute,
+      _forVotesWon: _disputersWon,
       _token: _params.bondToken,
-      _amountPerPledger: _amountToPay
+      _amountPerPledger: _amountToPay,
+      _winningPledgersLength: _disputersWon ? _pledgesForDispute : _pledgesAgainstDispute
     });
   }
 
@@ -262,8 +265,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_BondEscalationOver();
     }
 
-    uint256 _numPledgersForDispute = _escalation.pledgersForDispute.length;
-    uint256 _numPledgersAgainstDispute = _escalation.pledgersAgainstDispute.length;
+    uint256 _numPledgersForDispute = _escalation.amountOfPledgesForDispute;
+    uint256 _numPledgersAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
 
     if (_forDispute) {
       if (_numPledgersForDispute == _params.maxNumberOfEscalations) {
@@ -297,18 +300,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   /// @inheritdoc IBondEscalationModule
-  function fetchPledgersForDispute(bytes32 _disputeId) external view returns (address[] memory _pledgersForDispute) {
-    BondEscalation memory _escalation = _escalations[_disputeToRequest[_disputeId]];
-    _pledgersForDispute = _escalation.pledgersForDispute;
+  function forPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges) {
+    _numPledges = pledgesForDispute[_requestId][_pledger];
   }
 
   /// @inheritdoc IBondEscalationModule
-  function fetchPledgersAgainstDispute(bytes32 _disputeId)
-    external
-    view
-    returns (address[] memory _pledgersAgainstDispute)
-  {
-    BondEscalation memory _escalation = _escalations[_disputeToRequest[_disputeId]];
-    _pledgersAgainstDispute = _escalation.pledgersAgainstDispute;
+  function againstPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges) {
+    _numPledges = pledgesAgainstDispute[_requestId][_pledger];
   }
 }

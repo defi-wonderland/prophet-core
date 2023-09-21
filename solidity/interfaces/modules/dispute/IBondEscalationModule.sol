@@ -130,8 +130,8 @@ interface IBondEscalationModule is IDisputeModule {
   struct BondEscalation {
     bytes32 disputeId;
     BondEscalationStatus status;
-    address[] pledgersForDispute; // Array of pledgers in favor of a given dispute.
-    address[] pledgersAgainstDispute; // Array of pledges against a given dispute.
+    uint256 amountOfPledgesForDispute;
+    uint256 amountOfPledgesAgainstDispute;
   }
 
   /**
@@ -224,27 +224,34 @@ interface IBondEscalationModule is IDisputeModule {
   function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
 
   /**
-   * @notice Fetches the addresses that pledged in favor of a dispute during the bond escalation process
-   *
-   * @dev This will return an empty array if the dispute never went through the bond escalation process.
-   *
-   * @param _disputeId id of the dispute to retrieve the for-pledgers from.
-   *
-   * @return _pledgersForDispute Addresses that pledged in favor of the dispute during the bond escalation process
+   * @notice Returns the amount of pledges that a particular pledger has made for a given dispute.
+   * @param _requestId id of the request to get the pledges for.
+   * @param _pledger   address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger for the dispute.
    */
-  function fetchPledgersForDispute(bytes32 _disputeId) external view returns (address[] memory _pledgersForDispute);
+  function forPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
 
   /**
-   * @notice Fetches the addresses that pledged against a dispute during the bond escalation process
-   *
-   * @dev This will return an empty array if the dispute never went through the bond escalation process.
-   *
-   * @param _disputeId id of the dispute to retrieve the addresses of the pledgers against it from.
-   *
-   * @return _pledgersAgainstDispute Addresses that pledged against the given dispute during the bond escalation process
+   * @notice Returns the amount of pledges that a particular pledger has made against a given dispute.
+   * @param _requestId id of the request to get the pledges for.
+   * @param _pledger   address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger against the dispute.
    */
-  function fetchPledgersAgainstDispute(bytes32 _disputeId)
-    external
-    view
-    returns (address[] memory _pledgersAgainstDispute);
+  function againstPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
+
+  /**
+   * @notice Returns the amount of pledges that a particular pledger has made for a given dispute.
+   * @param _requestId id of the request to get the pledges for.
+   * @param _pledger   address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger for the dispute.
+   */
+  function pledgesForDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
+
+  /**
+   * @notice Returns the amount of pledges that a particular pledger has made against a given dispute.
+   * @param _requestId id of the request to get the pledges for.
+   * @param _pledger   address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger against the dispute.
+   */
+  function pledgesAgainstDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
 }

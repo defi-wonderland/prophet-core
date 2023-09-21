@@ -32,8 +32,16 @@ contract ForTest_BondEscalationModule is BondEscalationModule {
     address[] memory _pledgersForDispute,
     address[] memory _pledgersAgainstDispute
   ) public {
-    _escalations[_requestId].pledgersForDispute = _pledgersForDispute;
-    _escalations[_requestId].pledgersAgainstDispute = _pledgersAgainstDispute;
+    for (uint256 _i; _i < _pledgersForDispute.length; _i++) {
+      pledgesForDispute[_requestId][_pledgersForDispute[_i]] += 1;
+    }
+
+    for (uint256 _i; _i < _pledgersAgainstDispute.length; _i++) {
+      pledgesAgainstDispute[_requestId][_pledgersAgainstDispute[_i]] += 1;
+    }
+
+    _escalations[_requestId].amountOfPledgesForDispute += _pledgersForDispute.length;
+    _escalations[_requestId].amountOfPledgesAgainstDispute += _pledgersAgainstDispute.length;
   }
 
   function forTest_setBondEscalationStatus(
@@ -752,7 +760,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numAgainstPledgers = 2;
 
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
-    (address[] memory _winningForPledgers,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -777,10 +785,10 @@ contract BondEscalationModule_UnitTest is Test {
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _winningForPledgers, token, _bondSize << 1)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, true, token, _bondSize << 1, _numForPledgers)
       ),
-      abi.encode(true)
+      abi.encode()
     );
 
     vm.expectCall(
@@ -796,8 +804,8 @@ contract BondEscalationModule_UnitTest is Test {
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _winningForPledgers, token, _bondSize << 1)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, true, token, _bondSize << 1, _numForPledgers)
       )
     );
 
@@ -836,8 +844,7 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numAgainstPledgers = 2;
 
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
-    (, address[] memory _winningAgainstPledgers) =
-      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -862,8 +869,8 @@ contract BondEscalationModule_UnitTest is Test {
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _winningAgainstPledgers, token, _bondSize << 1)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, false, token, _bondSize << 1, _numAgainstPledgers)
       ),
       abi.encode(true)
     );
@@ -881,8 +888,8 @@ contract BondEscalationModule_UnitTest is Test {
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _winningAgainstPledgers, token, _bondSize << 1)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, false, token, _bondSize << 1, _numAgainstPledgers)
       )
     );
 
@@ -1077,9 +1084,11 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    address[] memory _pledgersForDispute = bondEscalationModule.fetchPledgersForDispute(_disputeId);
-    assertEq(_pledgersForDispute.length, numForPledgers + 1);
-    assertEq(_pledgersForDispute[2], address(this));
+    uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
+    assertEq(_forPledges, numForPledgers + 1);
+
+    uint256 _userPledges = bondEscalationModule.forPledges(_requestId, address(this));
+    assertEq(_userPledges, 1);
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -1266,9 +1275,11 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    address[] memory _pledgersAgainstDispute = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
-    assertEq(_pledgersAgainstDispute.length, numAgainstPledgers + 1);
-    assertEq(_pledgersAgainstDispute[2], address(this));
+    uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
+    assertEq(_forPledges, numAgainstPledgers + 1);
+
+    uint256 _userPledges = bondEscalationModule.againstPledges(_requestId, address(this));
+    assertEq(_userPledges, 1);
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -1345,21 +1356,23 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numForPledgers = 2;
     uint256 _numAgainstPledgers = _numForPledgers - 1;
 
-    (address[] memory _pledgersForDispute,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     uint256 _amountToPay = _bondSize + (_numAgainstPledgers * _bondSize) / _numForPledgers;
 
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _pledgersForDispute, token, _amountToPay)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, true, token, _amountToPay, _numForPledgers)
       ),
       abi.encode(true)
     );
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers, (_requestId, _disputeId, _pledgersForDispute, token, _amountToPay)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, true, token, _amountToPay, _numForPledgers)
       )
     );
 
@@ -1393,24 +1406,23 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _numAgainstPledgers = 2;
     uint256 _numForPledgers = _numAgainstPledgers - 1;
 
-    (, address[] memory _pledgersAgainstDispute) =
-      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     uint256 _amountToPay = _bondSize + (_numForPledgers * _bondSize) / _numAgainstPledgers;
 
     vm.mockCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _pledgersAgainstDispute, token, _amountToPay)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, false, token, _amountToPay, _numAgainstPledgers)
       ),
-      abi.encode(true)
+      abi.encode()
     );
     vm.expectCall(
       address(accounting),
       abi.encodeCall(
-        IBondEscalationAccounting.payWinningPledgers,
-        (_requestId, _disputeId, _pledgersAgainstDispute, token, _amountToPay)
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (_requestId, _disputeId, false, token, _amountToPay, _numAgainstPledgers)
       )
     );
 
@@ -1453,11 +1465,11 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   ////////////////////////////////////////////////////////////////////
-  //                  Tests for fetchPledgersForDispute
+  //                  Tests for forPledges
   ////////////////////////////////////////////////////////////////////
 
   /**
-   * @notice Tests that fetchPledgersForDispute fetches the pledgers that pledged in favor the dispute correctly
+   * @notice Tests that forPledges fetches the pledgers that pledged in favor the dispute correctly
    */
   function test_fetchPledgerForDispute(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _numForPledgers = 10;
@@ -1467,19 +1479,20 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    (address[] memory _forPledgers) = bondEscalationModule.fetchPledgersForDispute(_disputeId);
+    uint256 _totalForPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
+    assertEq(_totalForPledges, _numForPledgers);
 
     for (uint256 i; i < _numForPledgers; i++) {
-      assertEq(_forPledgers[i], _expectedForPledgers[i]);
+      assertEq(bondEscalationModule.forPledges(_requestId, _expectedForPledgers[i]), 1);
     }
   }
 
   ////////////////////////////////////////////////////////////////////
-  //                  Tests for fetchPledgersAgainstDispute
+  //                  Tests for againstPledges
   ////////////////////////////////////////////////////////////////////
 
   /**
-   * @notice Tests that fetchPledgersAgainstDispute fetches the pledgers that pledged against the dispute correctly
+   * @notice Tests that againstPledges fetches the pledgers that pledged against the dispute correctly
    */
   function test_fetchPledgerAgainstDispute(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _numForPledgers;
@@ -1490,10 +1503,11 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    (address[] memory _againstPledgers) = bondEscalationModule.fetchPledgersAgainstDispute(_disputeId);
+    uint256 _totalAgainstPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
+    assertEq(_totalAgainstPledges, _numAgainstPledgers);
 
     for (uint256 i; i < _numAgainstPledgers; i++) {
-      assertEq(_againstPledgers[i], _expectedAgainstPledgers[i]);
+      assertEq(bondEscalationModule.againstPledges(_requestId, _expectedAgainstPledgers[i]), 1);
     }
   }
 
