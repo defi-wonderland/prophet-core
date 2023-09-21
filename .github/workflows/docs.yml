@@ -43,6 +43,7 @@ jobs:
         run: mdbook build docs
 
       - uses: amondnet/vercel-action@v25
+        id: vercel-deployment
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }} # Required
           vercel-org-id: ${{ secrets.ORG_ID}} #Required
@@ -50,3 +51,8 @@ jobs:
           vercel-args: ${{ github.ref_name == 'main' && '--prod' || '' }}
           vercel-project-id: ${{ secrets.PROJECT_ID}} #Required
           working-directory: ./docs/book
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Preview: ${{ steps.vercel-deployment.outputs.preview-url }}
