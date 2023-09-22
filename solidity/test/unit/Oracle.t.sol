@@ -526,6 +526,23 @@ contract Oracle_UnitTest is Test {
     assertEq(_responseIds[1], _secondResponseId);
   }
 
+  function test_proposeResponseRevertsIfAlreadyFinalized(bytes calldata _responseData, uint256 _finalizedAt) public {
+    vm.assume(_finalizedAt > 0);
+
+    // Create mock request
+    (bytes32[] memory _dummyRequestIds,) = _storeDummyRequests(1);
+    bytes32 _requestId = _dummyRequestIds[0];
+    IOracle.Request memory _request = oracle.getRequest(_requestId);
+
+    // Override the finalizedAt to make it be finalized
+    _request.finalizedAt = _finalizedAt;
+    oracle.forTest_setRequest(_requestId, _request);
+
+    // Should revert with already finalized
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, (_requestId)));
+    oracle.proposeResponse(_requestId, _responseData);
+  }
+
   /**
    * @notice Test dispute module proposes a response as somebody else: check _responses, _responseIds and _responseId
    */

@@ -98,9 +98,6 @@ contract Integration_ResponseProposal is IntegrationBase {
     oracle.proposeResponse(_requestId, _response);
   }
 
-  // Proposing to a finalized request (should revert already finalized)
-  // TODO: missing code for this test case
-
   function test_proposeResponse_nonExistentRequest(bytes memory _response, bytes32 _nonExistentRequestId) public {
     vm.assume(_nonExistentRequestId != _requestId);
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
