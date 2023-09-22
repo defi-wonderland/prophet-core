@@ -6,10 +6,6 @@ import './IntegrationBase.sol';
 contract Integration_AccountingExtension is IntegrationBase {
   address user = makeAddr('user');
 
-  function setUp() public override {
-    super.setUp();
-  }
-
   function test_depositERC20(uint256 _initialBalance, uint256 _depositAmount) public {
     vm.assume(_initialBalance >= _depositAmount);
     _forBondDepositERC20(_accountingExtension, user, usdc, _depositAmount, _initialBalance);
