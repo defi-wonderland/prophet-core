@@ -976,15 +976,17 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
   ////////////////////////////////////////////////////////////////////
   //                  Tests for claimPledge
   ////////////////////////////////////////////////////////////////////
-  function test_claimPledgeRevert(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_claimPledgeRevert(
+    bytes32 _disputeId,
+    bytes32 _requestId,
+    uint256 _pledgesFor,
+    uint256 _pledgesAgainst,
+    uint128 _startTime
+  ) public {
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
 
-    uint128 _startTime = 0;
-    // TODO: fuzz these values when mulDiv
-    uint256 _pledgesFor = 200;
-    uint256 _pledgesAgainst = 100;
     _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     address _randomPledger = makeAddr('randomPledger');
@@ -993,7 +995,6 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _pledgesAgainst);
 
     // Test revert
-
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotResolved.selector);
     module.claimPledge(_requestId, _disputeId);
   }
