@@ -92,7 +92,11 @@ contract Integration_Arbitration is IntegrationBase {
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
 
     // Mocking the answer to return false ==> dispute lost
-    vm.mockCall(address(_mockArbitrator), abi.encodeCall(IArbitrator.getAnswer, (_disputeId)), abi.encode(false));
+    vm.mockCall(
+      address(_mockArbitrator),
+      abi.encodeCall(IArbitrator.getAnswer, (_disputeId)),
+      abi.encode(IOracle.DisputeStatus.Lost)
+    );
 
     // Second step: resolving the dispute
     vm.prank(disputer);
@@ -121,7 +125,11 @@ contract Integration_Arbitration is IntegrationBase {
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Unknown));
 
     // Mocking the answer to return false ==> dispute lost
-    vm.mockCall(address(_mockAtomicArbitrator), abi.encodeCall(IArbitrator.getAnswer, (_disputeId)), abi.encode(false));
+    vm.mockCall(
+      address(_mockAtomicArbitrator),
+      abi.encodeCall(IArbitrator.getAnswer, (_disputeId)),
+      abi.encode(IOracle.DisputeStatus.Lost)
+    );
 
     // First step: escalating and resolving the dispute
     vm.prank(disputer);

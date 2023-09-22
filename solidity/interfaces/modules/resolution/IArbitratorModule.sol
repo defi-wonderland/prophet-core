@@ -28,6 +28,11 @@ interface IArbitratorModule is IResolutionModule {
    */
   error ArbitratorModule_InvalidArbitrator();
 
+  /**
+   * @notice Thrown when the arbitrator returns an invalid resolution status
+   */
+  error ArbitratorModule_InvalidResolutionStatus();
+
   /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
@@ -44,13 +49,6 @@ interface IArbitratorModule is IResolutionModule {
   /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Returns data for a dispute
-   * @param _disputeId The ID of the dispute
-   * @return _data The whole uint256 storing the dispute information
-   */
-  function getDisputeData(bytes32 _disputeId) external view returns (uint256 _data);
 
   /**
    * @notice Returns the current arbitration status of a dispute

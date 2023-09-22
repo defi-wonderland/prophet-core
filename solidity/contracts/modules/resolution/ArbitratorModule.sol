@@ -3,17 +3,15 @@ pragma solidity ^0.8.19;
 
 import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
+import {IArbitrator, IOracle} from '../../../interfaces/IArbitrator.sol';
 
 import {Module, IModule} from '../../Module.sol';
 
 contract ArbitratorModule is Module, IArbitratorModule {
   /**
    * @notice The status of all disputes
-   * @dev The status is stored in a single uint256 using
-   * the rightmost bits 0 and 1 for ArbitrationStatus and bit 2 for arbitration result
    */
-  mapping(bytes32 _disputeId => uint256 _data) internal _disputeData;
+  mapping(bytes32 _disputeId => ArbitrationStatus _status) internal _disputeData;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
@@ -28,15 +26,8 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IArbitratorModule
-  function getDisputeData(bytes32 _disputeId) public view returns (uint256 _data) {
-    _data = _disputeData[_disputeId];
-  }
-
-  /// @inheritdoc IArbitratorModule
   function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus) {
-    uint256 _currentDisputeData = _disputeData[_disputeId];
-
-    _disputeStatus = ArbitrationStatus(_currentDisputeData & 3);
+    _disputeStatus = _disputeData[_disputeId];
   }
 
   /// @inheritdoc IArbitratorModule
@@ -46,7 +37,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
     address _arbitrator = abi.decode(requestData[_dispute.requestId], (address));
     if (_arbitrator == address(0)) revert ArbitratorModule_InvalidArbitrator();
 
-    _disputeData[_disputeId] = 1;
+    _disputeData[_disputeId] = ArbitrationStatus.Active;
     IArbitrator(_arbitrator).resolve(_disputeId);
 
     emit ResolutionStarted(_dispute.requestId, _disputeId);
@@ -58,13 +49,13 @@ contract ArbitratorModule is Module, IArbitratorModule {
     if (_dispute.status != IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidDisputeId();
 
     address _arbitrator = abi.decode(requestData[_dispute.requestId], (address));
-    bool _valid = IArbitrator(_arbitrator).getAnswer(_disputeId);
+    IOracle.DisputeStatus _status = IArbitrator(_arbitrator).getAnswer(_disputeId);
 
-    uint256 _requestDataUpdated = 2 | uint256(_valid ? 1 : 0) << 2;
-    _disputeData[_disputeId] = _requestDataUpdated;
-    IOracle.DisputeStatus _resolution = _valid ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
-    ORACLE.updateDisputeStatus(_disputeId, _resolution);
+    if (_status <= IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidResolutionStatus();
+    _disputeData[_disputeId] = ArbitrationStatus.Resolved;
 
-    emit DisputeResolved(_dispute.requestId, _disputeId, _resolution);
+    ORACLE.updateDisputeStatus(_disputeId, _status);
+
+    emit DisputeResolved(_dispute.requestId, _disputeId, _status);
   }
 }
