@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -11,7 +10,6 @@ import {
 import {IOracle} from '../../../../interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IModule} from '../../../../interfaces/IModule.sol';
-import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {Helpers} from '../../../utils/Helpers.sol';
 
 contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
@@ -298,11 +296,11 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.warp(150_000);
 
     // Mock and expect token transfers (should happen always)
-    for (uint256 i = 1; i <= _votersAmount;) {
-      vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)), abi.encode());
-      vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(i), 100)));
+    for (uint256 _i = 1; _i <= _votersAmount;) {
+      vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
+      vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)));
       unchecked {
-        ++i;
+        ++_i;
       }
     }
 
@@ -389,8 +387,8 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
 
     address[] memory _votersArray = module.getVoters(_disputeId);
 
-    for (uint256 i = 1; i <= _votersAmount; i++) {
-      assertEq(_votersArray[i - 1], vm.addr(i));
+    for (uint256 _i = 1; _i <= _votersAmount; _i++) {
+      assertEq(_votersArray[_i - 1], vm.addr(_i));
     }
   }
 
@@ -403,17 +401,19 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     uint256 _amountOfVoters,
     uint256 _amountOfVotes
   ) internal returns (uint256 _totalVotesCast) {
-    for (uint256 i = 1; i <= _amountOfVoters;) {
+    for (uint256 _i = 1; _i <= _amountOfVoters;) {
       vm.warp(120_000);
-      vm.startPrank(vm.addr(i));
+      vm.startPrank(vm.addr(_i));
       vm.mockCall(
-        address(token), abi.encodeCall(IERC20.transferFrom, (vm.addr(i), address(module), _amountOfVotes)), abi.encode()
+        address(token),
+        abi.encodeCall(IERC20.transferFrom, (vm.addr(_i), address(module), _amountOfVotes)),
+        abi.encode()
       );
       module.castVote(_requestId, _disputeId, _amountOfVotes);
       vm.stopPrank();
       _totalVotesCast += _amountOfVotes;
       unchecked {
-        ++i;
+        ++_i;
       }
     }
   }

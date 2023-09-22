@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -368,41 +367,41 @@ contract SequentialResolutionModule_UnitTest is Base {
   }
 
   function test_listSubmodulesFullList() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 3, 1);
-    assertEq(submodules.length, 3);
-    assertEq(address(submodules[0]), address(submodule1));
-    assertEq(address(submodules[1]), address(submodule2));
-    assertEq(address(submodules[2]), address(submodule3));
+    IResolutionModule[] memory _submodules = module.listSubmodules(0, 3, 1);
+    assertEq(_submodules.length, 3);
+    assertEq(address(_submodules[0]), address(submodule1));
+    assertEq(address(_submodules[1]), address(submodule2));
+    assertEq(address(_submodules[2]), address(submodule3));
   }
 
   function test_listSubmodulesFullListSequence2() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 3, sequenceId2);
-    assertEq(submodules.length, 3);
-    assertEq(address(submodules[0]), address(submodule2));
-    assertEq(address(submodules[1]), address(submodule3));
-    assertEq(address(submodules[2]), address(submodule1));
+    IResolutionModule[] memory _submodules = module.listSubmodules(0, 3, sequenceId2);
+    assertEq(_submodules.length, 3);
+    assertEq(address(_submodules[0]), address(submodule2));
+    assertEq(address(_submodules[1]), address(submodule3));
+    assertEq(address(_submodules[2]), address(submodule1));
   }
 
   function test_listSubmodulesMoreThanExist() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 200, 1);
-    assertEq(submodules.length, 3);
-    assertEq(address(submodules[0]), address(submodule1));
-    assertEq(address(submodules[1]), address(submodule2));
-    assertEq(address(submodules[2]), address(submodule3));
+    IResolutionModule[] memory _submodules = module.listSubmodules(0, 200, 1);
+    assertEq(_submodules.length, 3);
+    assertEq(address(_submodules[0]), address(submodule1));
+    assertEq(address(_submodules[1]), address(submodule2));
+    assertEq(address(_submodules[2]), address(submodule3));
   }
 
   function test_listSubmodulesPartialListMiddle() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(1, 2, 1);
-    assertEq(submodules.length, 2);
-    assertEq(address(submodules[0]), address(submodule2));
-    assertEq(address(submodules[1]), address(submodule3));
+    IResolutionModule[] memory _submodules = module.listSubmodules(1, 2, 1);
+    assertEq(_submodules.length, 2);
+    assertEq(address(_submodules[0]), address(submodule2));
+    assertEq(address(_submodules[1]), address(submodule3));
   }
 
   function test_listSubmodulesPartialListStart() public {
-    IResolutionModule[] memory submodules = module.listSubmodules(0, 2, sequenceId);
-    assertEq(submodules.length, 2);
-    assertEq(address(submodules[0]), address(submodule1));
-    assertEq(address(submodules[1]), address(submodule2));
+    IResolutionModule[] memory _submodules = module.listSubmodules(0, 2, sequenceId);
+    assertEq(_submodules.length, 2);
+    assertEq(address(_submodules[0]), address(submodule1));
+    assertEq(address(_submodules[1]), address(submodule2));
   }
 
   function test_startResolutionNewDispute() public {

@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+/* solhint-disable no-unused-import */
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 import {Helpers} from '../utils/Helpers.sol';
-// solhint-disable-next-line no-console
-import {console} from 'forge-std/console.sol';
-import {Helpers} from '../utils/Helpers.sol';
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
 import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
-import {IOracle} from '../../interfaces/IOracle.sol';
 
 import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
 import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
@@ -32,56 +28,57 @@ import {MockCallback} from '../mocks/MockCallback.sol';
 import {MockArbitrator} from '../mocks/MockArbitrator.sol';
 
 import {TestConstants} from '../utils/TestConstants.sol';
+/* solhint-enable no-unused-import */
 
 contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
-  uint256 constant FORK_BLOCK = 756_611;
+  uint256 public constant FORK_BLOCK = 756_611;
 
-  uint256 initialBalance = 100_000 ether;
+  uint256 internal _initialBalance = 100_000 ether;
 
-  address requester = makeAddr('requester');
-  address proposer = makeAddr('proposer');
-  address disputer = makeAddr('disputer');
-  address keeper = makeAddr('keeper');
-  address governance = makeAddr('governance');
+  address public requester = makeAddr('requester');
+  address public proposer = makeAddr('proposer');
+  address public disputer = makeAddr('disputer');
+  address public keeper = makeAddr('keeper');
+  address public governance = makeAddr('governance');
 
   Oracle public oracle;
-  HttpRequestModule public _requestModule;
-  BondedResponseModule public _responseModule;
-  AccountingExtension public _accountingExtension;
-  BondEscalationAccounting public _bondEscalationAccounting;
-  BondedDisputeModule public _bondedDisputeModule;
-  ArbitratorModule public _arbitratorModule;
-  CallbackModule public _callbackModule;
-  MockCallback public _mockCallback;
-  MockArbitrator public _mockArbitrator;
-  BondEscalationModule public _bondEscalationModule;
+  HttpRequestModule internal _requestModule;
+  BondedResponseModule internal _responseModule;
+  AccountingExtension internal _accountingExtension;
+  BondEscalationAccounting internal _bondEscalationAccounting;
+  BondedDisputeModule internal _bondedDisputeModule;
+  ArbitratorModule internal _arbitratorModule;
+  CallbackModule internal _callbackModule;
+  MockCallback internal _mockCallback;
+  MockArbitrator internal _mockArbitrator;
+  BondEscalationModule internal _bondEscalationModule;
 
-  IERC20 usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
-  IWETH9 weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
+  IERC20 public usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
+  IWETH9 public weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
 
-  string _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
-  IHttpRequestModule.HttpMethod _expectedMethod = IHttpRequestModule.HttpMethod.GET;
-  string _expectedBody = 'ids=ethereum&vs_currencies=usd';
-  string _expectedResponse = '{"ethereum":{"usd":1000}}';
-  uint256 _expectedBondSize = 100 ether;
-  uint256 _expectedReward = 30 ether;
-  uint256 _expectedDeadline;
-  uint256 _expectedCallbackValue = 42;
-  uint256 _baseDisputeWindow = 12 hours;
-  bytes32 _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
+  string internal _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
+  IHttpRequestModule.HttpMethod internal _expectedMethod = IHttpRequestModule.HttpMethod.GET;
+  string internal _expectedBody = 'ids=ethereum&vs_currencies=usd';
+  string internal _expectedResponse = '{"ethereum":{"usd":1000}}';
+  uint256 internal _expectedBondSize = 100 ether;
+  uint256 internal _expectedReward = 30 ether;
+  uint256 internal _expectedDeadline;
+  uint256 internal _expectedCallbackValue = 42;
+  uint256 internal _baseDisputeWindow = 12 hours;
+  bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('optimism'), FORK_BLOCK);
 
     // Transfer some DAI and WETH to the users
-    deal(address(weth), requester, initialBalance);
-    deal(address(usdc), requester, initialBalance);
+    deal(address(weth), requester, _initialBalance);
+    deal(address(usdc), requester, _initialBalance);
 
-    deal(address(weth), proposer, initialBalance);
-    deal(address(usdc), proposer, initialBalance);
+    deal(address(weth), proposer, _initialBalance);
+    deal(address(usdc), proposer, _initialBalance);
 
-    deal(address(weth), disputer, initialBalance);
-    deal(address(usdc), disputer, initialBalance);
+    deal(address(weth), disputer, _initialBalance);
+    deal(address(usdc), disputer, _initialBalance);
 
     // Deploy every contract needed
     vm.startPrank(governance);
@@ -118,11 +115,11 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     vm.stopPrank();
   }
 
-  function mineBlock() internal {
-    mineBlocks(1);
+  function _mineBlock() internal {
+    _mineBlocks(1);
   }
 
-  function mineBlocks(uint256 _blocks) internal {
+  function _mineBlocks(uint256 _blocks) internal {
     vm.warp(block.timestamp + _blocks * BLOCK_TIME);
     vm.roll(block.number + _blocks);
   }

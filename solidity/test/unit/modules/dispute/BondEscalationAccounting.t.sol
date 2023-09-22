@@ -2,15 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {
-  BondEscalationModule,
-  Module,
-  IOracle,
-  IBondEscalationModule
-} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
+import {IOracle, IBondEscalationModule} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {
   IBondEscalationAccounting,
@@ -494,9 +488,9 @@ contract BondEscalationAccounting_UnitTest is Test {
     _winningPledgers = new address[](_numWinningPledgers);
     address _winningPledger;
 
-    for (uint256 i; i < _numWinningPledgers; i++) {
-      _winningPledger = makeAddr(string.concat('winningPledger', Strings.toString(i)));
-      _winningPledgers[i] = _winningPledger;
+    for (uint256 _i; _i < _numWinningPledgers; _i++) {
+      _winningPledger = makeAddr(string.concat('winningPledger', Strings.toString(_i)));
+      _winningPledgers[_i] = _winningPledger;
     }
   }
 }

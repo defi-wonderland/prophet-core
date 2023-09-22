@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {Oracle} from '../../contracts/Oracle.sol';
@@ -102,7 +101,7 @@ contract Oracle_UnitTest is Test {
    * @dev    The request might or might not use a dispute and a finality module, this is fuzzed
    */
   function test_createRequest(
-    bool useResolutionAndFinality,
+    bool _useResolutionAndFinality,
     bytes calldata _requestData,
     bytes calldata _responseData,
     bytes calldata _disputeData,
@@ -110,7 +109,7 @@ contract Oracle_UnitTest is Test {
     bytes calldata _finalityData
   ) public {
     // If no dispute and finality module used, set them to address 0
-    if (!useResolutionAndFinality) {
+    if (!_useResolutionAndFinality) {
       disputeModule = IDisputeModule(address(0));
       finalityModule = IFinalityModule(address(0));
     }
@@ -136,7 +135,7 @@ contract Oracle_UnitTest is Test {
     bytes32 _theoricRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce));
 
     // If dispute and finality module != 0, mock and expect their calls
-    if (useResolutionAndFinality) {
+    if (_useResolutionAndFinality) {
       vm.mockCall(
         address(disputeModule),
         abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
@@ -360,28 +359,28 @@ contract Oracle_UnitTest is Test {
     assertEq(_requests.length, _howMany);
 
     // Check: correct requests returned (dummy are incremented)?
-    for (uint256 i; i < _howMany; i++) {
+    for (uint256 _i; _i < _howMany; _i++) {
       // Params copied:
-      assertEq(_requests[i].ipfsHash, _dummyRequests[i].ipfsHash);
-      assertEq(address(_requests[i].requestModule), address(_dummyRequests[i].requestModule));
-      assertEq(address(_requests[i].responseModule), address(_dummyRequests[i].responseModule));
-      assertEq(address(_requests[i].disputeModule), address(_dummyRequests[i].disputeModule));
-      assertEq(address(_requests[i].resolutionModule), address(_dummyRequests[i].resolutionModule));
-      assertEq(address(_requests[i].finalityModule), address(_dummyRequests[i].finalityModule));
+      assertEq(_requests[_i].ipfsHash, _dummyRequests[_i].ipfsHash);
+      assertEq(address(_requests[_i].requestModule), address(_dummyRequests[_i].requestModule));
+      assertEq(address(_requests[_i].responseModule), address(_dummyRequests[_i].responseModule));
+      assertEq(address(_requests[_i].disputeModule), address(_dummyRequests[_i].disputeModule));
+      assertEq(address(_requests[_i].resolutionModule), address(_dummyRequests[_i].resolutionModule));
+      assertEq(address(_requests[_i].finalityModule), address(_dummyRequests[_i].finalityModule));
 
       // Params created in createRequest:
-      assertEq(_requests[i].nonce, i);
-      assertEq(_requests[i].requester, sender);
-      assertEq(_requests[i].createdAt, block.timestamp);
+      assertEq(_requests[_i].nonce, _i);
+      assertEq(_requests[_i].requester, sender);
+      assertEq(_requests[_i].createdAt, block.timestamp);
 
-      assertEq(_requests[i].requestId, _dummyRequestIds[i]);
+      assertEq(_requests[_i].requestId, _dummyRequestIds[_i]);
 
       // Params gathered from external modules:
-      assertEq(_requests[i].requestModuleData, bytes('requestModuleData'));
-      assertEq(_requests[i].responseModuleData, bytes('responseModuleData'));
-      assertEq(_requests[i].disputeModuleData, bytes('disputeModuleData'));
-      assertEq(_requests[i].resolutionModuleData, bytes('resolutionModuleData'));
-      assertEq(_requests[i].finalityModuleData, bytes('finalityModuleData'));
+      assertEq(_requests[_i].requestModuleData, bytes('requestModuleData'));
+      assertEq(_requests[_i].responseModuleData, bytes('responseModuleData'));
+      assertEq(_requests[_i].disputeModuleData, bytes('disputeModuleData'));
+      assertEq(_requests[_i].resolutionModuleData, bytes('resolutionModuleData'));
+      assertEq(_requests[_i].finalityModuleData, bytes('finalityModuleData'));
     }
   }
 
@@ -404,9 +403,9 @@ contract Oracle_UnitTest is Test {
     assertEq(_requests.length, _howMany);
 
     // Check: correct data?
-    for (uint256 i; i < _howMany; i++) {
-      assertEq(_requests[i].ipfsHash, bytes32(i));
-      assertEq(_requests[i].nonce, i);
+    for (uint256 _i; _i < _howMany; _i++) {
+      assertEq(_requests[_i].ipfsHash, bytes32(_i));
+      assertEq(_requests[_i].nonce, _i);
     }
   }
 
@@ -1320,14 +1319,14 @@ contract Oracle_UnitTest is Test {
     _requestIds = new bytes32[](_howMany);
     _requests = new IOracle.NewRequest[](_howMany);
 
-    for (uint256 i; i < _howMany; i++) {
+    for (uint256 _i; _i < _howMany; _i++) {
       IOracle.NewRequest memory _request = IOracle.NewRequest({
         requestModuleData: bytes('requestModuleData'),
         responseModuleData: bytes('responseModuleData'),
         disputeModuleData: bytes('disputeModuleData'),
         resolutionModuleData: bytes('resolutionModuleData'),
         finalityModuleData: bytes('finalityModuleData'),
-        ipfsHash: bytes32(i),
+        ipfsHash: bytes32(_i),
         requestModule: requestModule,
         responseModule: responseModule,
         disputeModule: disputeModule,
@@ -1336,36 +1335,36 @@ contract Oracle_UnitTest is Test {
       });
 
       vm.prank(sender);
-      _requestIds[i] = oracle.createRequest(_request);
-      _requests[i] = _request;
+      _requestIds[_i] = oracle.createRequest(_request);
+      _requests[_i] = _request;
 
       vm.mockCall(
         address(requestModule),
-        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[_i])),
         abi.encode(_request.requestModuleData)
       );
 
       vm.mockCall(
         address(responseModule),
-        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[_i])),
         abi.encode(_request.responseModuleData)
       );
 
       vm.mockCall(
         address(disputeModule),
-        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[_i])),
         abi.encode(_request.disputeModuleData)
       );
 
       vm.mockCall(
         address(resolutionModule),
-        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[_i])),
         abi.encode(_request.resolutionModuleData)
       );
 
       vm.mockCall(
         address(finalityModule),
-        abi.encodeCall(IModule.requestData, (_requestIds[i])),
+        abi.encodeCall(IModule.requestData, (_requestIds[_i])),
         abi.encode(_request.finalityModuleData)
       );
     }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_AccountingExtension is IntegrationBase {
-  address user = makeAddr('user');
+  address public user = makeAddr('user');
 
   function test_depositERC20(uint256 _initialBalance, uint256 _depositAmount) public {
     vm.assume(_initialBalance >= _depositAmount);

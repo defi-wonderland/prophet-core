@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_EscalateDispute is IntegrationBase {
-  bytes _responseData = abi.encode('response');
-  uint256 _blocksDeadline = 600;
+  bytes internal _responseData = abi.encode('response');
+  uint256 internal _blocksDeadline = 600;
 
   function setUp() public override {
     super.setUp();
@@ -47,7 +47,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.expectCall(address(_mockArbitrator), abi.encodeCall(MockArbitrator.resolve, _disputeId));
 
     /// We escalate the dispute
-    mineBlocks(_blocksDeadline + 1);
+    _mineBlocks(_blocksDeadline + 1);
     oracle.escalateDispute(_disputeId);
 
     /// We check that the dispute was escalated

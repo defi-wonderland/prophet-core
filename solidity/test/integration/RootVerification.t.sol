@@ -7,7 +7,6 @@ import {
   ISparseMerkleTreeRequestModule,
   IOracle,
   ITreeVerifier,
-  IAccountingExtension,
   IERC20
 } from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
@@ -16,9 +15,9 @@ import {
 } from '../../contracts/modules/dispute/RootVerificationModule.sol';
 
 contract Integration_RootVerification is IntegrationBase {
-  SparseMerkleTreeL32Verifier _treeVerifier;
+  SparseMerkleTreeL32Verifier internal _treeVerifier;
 
-  bytes32 _requestId;
+  bytes32 internal _requestId;
   bytes32[32] internal _treeBranches = [
     bytes32('branch1'),
     bytes32('branch2'),

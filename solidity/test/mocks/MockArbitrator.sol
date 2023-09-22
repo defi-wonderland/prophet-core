@@ -12,7 +12,7 @@ contract MockArbitrator is IArbitrator {
     _answer = IOracle.DisputeStatus.Won;
   }
 
-  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool) {
-    return true;
+  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool _supported) {
+    _supported = true;
   }
 }

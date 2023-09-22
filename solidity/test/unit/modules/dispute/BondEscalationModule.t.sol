@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
   BondEscalationModule,
-  Module,
   IOracle,
   IBondEscalationModule
 } from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
@@ -84,19 +82,19 @@ contract BondEscalationModule_UnitTest is Test {
   address public disputer;
 
   // Mock bondSize
-  uint256 bondSize;
+  uint256 public bondSize;
 
   // Mock max number of escalations
-  uint256 maxEscalations;
+  uint256 public maxEscalations;
 
   // Mock bond escalation deadline
-  uint256 bondEscalationDeadline;
+  uint256 public bondEscalationDeadline;
 
   // Mock tyingBuffer
-  uint256 tyingBuffer;
+  uint256 public tyingBuffer;
 
   // Mock challengePeriod
-  uint256 challengePeriod;
+  uint256 public challengePeriod;
 
   // Events
   event PledgedInFavorOfDisputer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
@@ -973,10 +971,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -1003,10 +1001,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers - 1;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers - 1;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -1034,10 +1032,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
@@ -1061,10 +1059,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers + 1;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers + 1;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.mockCall(
       address(accounting),
@@ -1085,7 +1083,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
     uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
-    assertEq(_forPledges, numForPledgers + 1);
+    assertEq(_forPledges, _numForPledgers + 1);
 
     uint256 _userPledges = bondEscalationModule.forPledges(_requestId, address(this));
     assertEq(_userPledges, 1);
@@ -1164,10 +1162,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1194,10 +1192,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, tyingBuffer, challengePeriod
     );
 
-    uint256 numAgainstPledgers = 2;
-    uint256 numForPledgers = numAgainstPledgers - 1;
+    uint256 _numAgainstPledgers = 2;
+    uint256 _numForPledgers = _numAgainstPledgers - 1;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1225,10 +1223,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numForPledgers = 2;
-    uint256 numAgainstPledgers = numForPledgers;
+    uint256 _numForPledgers = 2;
+    uint256 _numAgainstPledgers = _numForPledgers;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
@@ -1252,10 +1250,10 @@ contract BondEscalationModule_UnitTest is Test {
       _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, challengePeriod
     );
 
-    uint256 numAgainstPledgers = 2;
-    uint256 numForPledgers = numAgainstPledgers + 1;
+    uint256 _numAgainstPledgers = 2;
+    uint256 _numForPledgers = _numAgainstPledgers + 1;
 
-    _setBondEscalationData(_requestId, numForPledgers, numAgainstPledgers);
+    _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
 
     vm.mockCall(
       address(accounting),
@@ -1276,7 +1274,7 @@ contract BondEscalationModule_UnitTest is Test {
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
     uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
-    assertEq(_forPledges, numAgainstPledgers + 1);
+    assertEq(_forPledges, _numAgainstPledgers + 1);
 
     uint256 _userPledges = bondEscalationModule.againstPledges(_requestId, address(this));
     assertEq(_userPledges, 1);
@@ -1482,8 +1480,8 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _totalForPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
     assertEq(_totalForPledges, _numForPledgers);
 
-    for (uint256 i; i < _numForPledgers; i++) {
-      assertEq(bondEscalationModule.forPledges(_requestId, _expectedForPledgers[i]), 1);
+    for (uint256 _i; _i < _numForPledgers; _i++) {
+      assertEq(bondEscalationModule.forPledges(_requestId, _expectedForPledgers[_i]), 1);
     }
   }
 
@@ -1506,8 +1504,8 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _totalAgainstPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
     assertEq(_totalAgainstPledges, _numAgainstPledgers);
 
-    for (uint256 i; i < _numAgainstPledgers; i++) {
-      assertEq(bondEscalationModule.againstPledges(_requestId, _expectedAgainstPledgers[i]), 1);
+    for (uint256 _i; _i < _numAgainstPledgers; _i++) {
+      assertEq(bondEscalationModule.againstPledges(_requestId, _expectedAgainstPledgers[_i]), 1);
     }
   }
 
@@ -1586,14 +1584,14 @@ contract BondEscalationModule_UnitTest is Test {
     address _forPledger;
     address _againstPledger;
 
-    for (uint256 i; i < _numForPledgers; i++) {
-      _forPledger = makeAddr(string.concat('forPledger', Strings.toString(i)));
-      _forPledgers[i] = _forPledger;
+    for (uint256 _i; _i < _numForPledgers; _i++) {
+      _forPledger = makeAddr(string.concat('forPledger', Strings.toString(_i)));
+      _forPledgers[_i] = _forPledger;
     }
 
-    for (uint256 j; j < _numAgainstPledgers; j++) {
-      _againstPledger = makeAddr(string.concat('againstPledger', Strings.toString(j)));
-      _againstPledgers[j] = _againstPledger;
+    for (uint256 _j; _j < _numAgainstPledgers; _j++) {
+      _againstPledger = makeAddr(string.concat('againstPledger', Strings.toString(_j)));
+      _againstPledgers[_j] = _againstPledger;
     }
 
     // IBondEscalationModule.BondEscalation memory _escalation = bondEscalationModule.getEscalationData(_requestId);

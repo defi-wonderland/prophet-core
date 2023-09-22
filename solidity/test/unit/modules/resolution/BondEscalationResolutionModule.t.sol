@@ -1,23 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
   BondEscalationResolutionModule,
-  Module,
   IOracle,
   IBondEscalationAccounting,
   IBondEscalationResolutionModule,
   IERC20
 } from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-
-import {IRequestModule} from '../../../../interfaces/modules/request/IRequestModule.sol';
-import {IResponseModule} from '../../../../interfaces/modules/response/IResponseModule.sol';
-import {IDisputeModule} from '../../../../interfaces/modules/dispute/IDisputeModule.sol';
-import {IResolutionModule} from '../../../../interfaces/modules/resolution/IResolutionModule.sol';
-import {IFinalityModule} from '../../../../interfaces/modules/finality/IFinalityModule.sol';
 
 import {IModule} from '../../../../contracts/Module.sol';
 
@@ -99,16 +91,16 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
   address public pledgerAgainst;
 
   // Mock percentageDiff
-  uint256 percentageDiff;
+  uint256 public percentageDiff;
 
   // Mock pledge threshold
-  uint256 pledgeThreshold;
+  uint256 public pledgeThreshold;
 
   // Mock time until main deadline
-  uint256 timeUntilDeadline;
+  uint256 public timeUntilDeadline;
 
   // Mock time to break inequality
-  uint256 timeToBreakInequality;
+  uint256 public timeToBreakInequality;
 
   // Events
   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
@@ -1223,14 +1215,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     address _pledger;
     uint256 _pledge;
 
-    for (uint256 i; i < _numOfPledgers; i++) {
-      _pledger = makeAddr(string.concat('pledger', Strings.toString(i)));
-      _pledgers[i] = _pledger;
+    for (uint256 _i; _i < _numOfPledgers; _i++) {
+      _pledger = makeAddr(string.concat('pledger', Strings.toString(_i)));
+      _pledgers[_i] = _pledger;
     }
 
-    for (uint256 j; j < _numOfPledgers; j++) {
-      _pledge = _amount / (j + 100);
-      _pledgedAmounts[j] = _pledge;
+    for (uint256 _j; _j < _numOfPledgers; _j++) {
+      _pledge = _amount / (_j + 100);
+      _pledgedAmounts[_j] = _pledge;
     }
 
     return (_pledgers, _pledgedAmounts);

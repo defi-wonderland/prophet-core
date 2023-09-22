@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_Finalization is IntegrationBase {
-  bytes _responseData;
+  bytes internal _responseData;
 
-  address _finalizer = makeAddr('finalizer');
+  address internal _finalizer = makeAddr('finalizer');
 
   function setUp() public override {
     super.setUp();

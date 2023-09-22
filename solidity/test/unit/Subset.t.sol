@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {Subset} from '../../contracts/libraries/Subset.sol';
@@ -13,19 +12,19 @@ contract Subset_UnitTest is Test {
   using Subset for bytes32[];
   using Subset for mapping(uint256 => bytes32);
 
-  bytes32[] dummy;
+  bytes32[] public dummy;
 
-  mapping(uint256 => bytes32) dummySet;
-  uint256 setSize;
+  mapping(uint256 => bytes32) public dummySet;
+  uint256 public setSize;
 
   /**
    * @notice
    */
   function setUp() public {
-    for (uint256 i; i < 30; i++) {
-      dummy.push(bytes32(keccak256(abi.encodePacked(i))));
+    for (uint256 _i; _i < 30; _i++) {
+      dummy.push(bytes32(keccak256(abi.encodePacked(_i))));
 
-      dummySet[i] = bytes32(keccak256(abi.encodePacked(i)));
+      dummySet[_i] = bytes32(keccak256(abi.encodePacked(_i)));
       setSize++;
     }
   }
@@ -47,8 +46,8 @@ contract Subset_UnitTest is Test {
     assertEq(_list.length, _size, 'Length mismatch');
 
     // Check: correct elements?
-    for (uint256 i; i < _size; i++) {
-      assertEq(_list[i], dummySet[i + _offset], 'Element mismatch');
+    for (uint256 _i; _i < _size; _i++) {
+      assertEq(_list[_i], dummySet[_i + _offset], 'Element mismatch');
     }
   }
 
@@ -83,8 +82,8 @@ contract Subset_UnitTest is Test {
     assertEq(_list.length, setSize - _offset, 'Length mismatch');
 
     // Check: correct elements?
-    for (uint256 i; i < _list.length; i++) {
-      assertEq(_list[i], dummySet[i + _offset], 'Element mismatch');
+    for (uint256 _i; _i < _list.length; _i++) {
+      assertEq(_list[_i], dummySet[_i + _offset], 'Element mismatch');
     }
   }
 
@@ -105,8 +104,8 @@ contract Subset_UnitTest is Test {
     assertEq(_list.length, _size, 'Length mismatch');
 
     // Check: correct elements?
-    for (uint256 i; i < _size; i++) {
-      assertEq(_list[i], dummy[i + _offset], 'Element mismatch');
+    for (uint256 _i; _i < _size; _i++) {
+      assertEq(_list[_i], dummy[_i + _offset], 'Element mismatch');
     }
   }
 
@@ -141,8 +140,8 @@ contract Subset_UnitTest is Test {
     assertEq(_list.length, dummy.length - _offset, 'Length mismatch');
 
     // Check: correct elements?
-    for (uint256 i; i < _list.length; i++) {
-      assertEq(_list[i], dummy[i + _offset], 'Element mismatch');
+    for (uint256 _i; _i < _list.length; _i++) {
+      assertEq(_list[_i], dummy[_i + _offset], 'Element mismatch');
     }
   }
 }

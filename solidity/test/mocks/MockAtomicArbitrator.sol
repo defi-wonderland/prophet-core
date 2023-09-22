@@ -5,7 +5,7 @@ import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract MockAtomicArbitrator is IArbitrator {
-  IOracle.DisputeStatus answer;
+  IOracle.DisputeStatus public answer;
   IOracle public oracle;
 
   constructor(IOracle _oracle) {
@@ -18,11 +18,11 @@ contract MockAtomicArbitrator is IArbitrator {
     oracle.resolveDispute(_dispute);
   }
 
-  function getAnswer(bytes32 /* _dispute */ ) external view returns (IOracle.DisputeStatus) {
-    return answer;
+  function getAnswer(bytes32 /* _dispute */ ) external view returns (IOracle.DisputeStatus _answer) {
+    _answer = answer;
   }
 
-  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool) {
-    return true;
+  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool _supported) {
+    _supported = true;
   }
 }

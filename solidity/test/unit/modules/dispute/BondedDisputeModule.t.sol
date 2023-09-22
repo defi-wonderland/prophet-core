@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -96,11 +95,11 @@ contract BondedDisputeModule_UnitTest is Test {
     vm.prank(address(oracle));
     vm.record();
     bondedDisputeModule.disputeEscalated(mockId);
-    (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(bondedDisputeModule));
+    (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(bondedDisputeModule));
 
     // Check: no storage access?
-    assertEq(reads.length, 0);
-    assertEq(writes.length, 0);
+    assertEq(_reads.length, 0);
+    assertEq(_writes.length, 0);
   }
 
   /**

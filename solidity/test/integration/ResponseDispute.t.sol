@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_ResponseDispute is IntegrationBase {
-  bytes _responseData;
-  bytes32 _requestId;
-  bytes32 _responseId;
+  bytes internal _responseData;
+  bytes32 internal _requestId;
+  bytes32 internal _responseId;
 
   function setUp() public override {
     super.setUp();

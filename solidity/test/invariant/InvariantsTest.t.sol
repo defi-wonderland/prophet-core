@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {Oracle} from '../../contracts/Oracle.sol';
@@ -16,14 +15,7 @@ import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {WETH9} from './imports/WETH9.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import {
-  IOracle,
-  IRequestModule,
-  IResponseModule,
-  IDisputeModule,
-  IResolutionModule,
-  IFinalityModule
-} from '../../interfaces/IOracle.sol';
+import {IOracle, IFinalityModule} from '../../interfaces/IOracle.sol';
 
 /**
  * @title Invariant tests

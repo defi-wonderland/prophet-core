@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -116,8 +115,8 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
 
     // Hardcoding data (as it is not the case tested) to avoid vm.assume issues
     bytes[] memory _targetData = new bytes[](_targets.length);
-    for (uint256 i = 0; i < _targets.length; i++) {
-      _targetData[i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
+    for (uint256 _i = 0; _i < _targets.length; _i++) {
+      _targetData[_i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
     }
 
     bytes memory _requestData =

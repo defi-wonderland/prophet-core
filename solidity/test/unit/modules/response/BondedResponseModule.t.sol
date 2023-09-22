@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
   BondedResponseModule,
   IBondedResponseModule,
-  Module,
   IOracle,
   IAccountingExtension,
   IERC20
@@ -45,7 +43,7 @@ contract BondedResponseModule_UnitTest is Test {
   // Mock EOA proposer
   address public proposer;
 
-  uint256 _baseDisputeWindow = 12 hours;
+  uint256 internal _baseDisputeWindow = 12 hours;
 
   event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
   event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
@@ -343,12 +341,12 @@ contract BondedResponseModule_UnitTest is Test {
     vm.assume(_deadline > block.timestamp);
     vm.startPrank(address(oracle));
 
-    address validModule = makeAddr('valid module');
+    address _validModule = makeAddr('valid module');
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _baseDisputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, validModule)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, validModule)));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, _validModule)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, _validModule)));
 
     IOracle.Response memory _mockResponse = IOracle.Response({
       createdAt: block.timestamp,
@@ -370,7 +368,7 @@ contract BondedResponseModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
     );
 
-    bondedResponseModule.finalizeRequest(_requestId, validModule);
+    bondedResponseModule.finalizeRequest(_requestId, _validModule);
   }
   /**
    * @notice Test that the moduleName function returns the correct name

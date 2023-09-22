@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -39,18 +38,18 @@ contract ContractCallRequestModule_UnitTest is Test {
   IAccountingExtension public accounting;
 
   // A mock user for testing
-  address _user = makeAddr('user');
+  address internal _user = makeAddr('user');
 
   // A second mock user for testing
-  address _user2 = makeAddr('user2');
+  address internal _user2 = makeAddr('user2');
 
   // A mock ERC20 token
-  IERC20 _token = IERC20(makeAddr('ERC20'));
+  IERC20 internal _token = IERC20(makeAddr('ERC20'));
 
   // Mock data
-  address _targetContract = address(_token);
-  bytes4 _functionSelector = bytes4(abi.encodeWithSignature('allowance(address,address)'));
-  bytes _dataParams = abi.encode(_user, _user2);
+  address internal _targetContract = address(_token);
+  bytes4 internal _functionSelector = bytes4(abi.encodeWithSignature('allowance(address,address)'));
+  bytes internal _dataParams = abi.encode(_user, _user2);
 
   event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -28,6 +27,13 @@ contract ForTest_HttpRequestModule is HttpRequestModule {
  * @title HTTP Request Module Unit tests
  */
 contract HttpRequestModule_UnitTest is Test {
+  // Mock data
+  string public constant URL = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
+  IHttpRequestModule.HttpMethod public constant METHOD = IHttpRequestModule.HttpMethod.GET;
+  string public constant BODY = '69420';
+
+  IERC20 public immutable TOKEN;
+
   // The target contract
   ForTest_HttpRequestModule public httpRequestModule;
 
@@ -36,13 +42,6 @@ contract HttpRequestModule_UnitTest is Test {
 
   // A mock accounting extension
   IAccountingExtension public accounting;
-
-  // Mock data
-  string constant URL = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
-  IHttpRequestModule.HttpMethod constant METHOD = IHttpRequestModule.HttpMethod.GET;
-  string constant BODY = '69420';
-
-  IERC20 immutable TOKEN;
 
   event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 

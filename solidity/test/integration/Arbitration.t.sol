@@ -6,7 +6,7 @@ import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {MockAtomicArbitrator} from '../mocks/MockAtomicArbitrator.sol';
 
 contract Integration_Arbitration is IntegrationBase {
-  MockAtomicArbitrator _mockAtomicArbitrator;
+  MockAtomicArbitrator internal _mockAtomicArbitrator;
 
   function setUp() public override {
     super.setUp();

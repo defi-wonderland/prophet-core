@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line
 import 'forge-std/Test.sol';
 
 import {
@@ -18,13 +17,13 @@ contract AccountingExtension_UnitTest is Test {
   using stdStorage for StdStorage;
 
   // Events tested
-  event Deposited(address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Withdrew(address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Deposited(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Withdrew(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
   event Paid(
-    bytes32 indexed _requestId, address indexed _beneficiary, address indexed _payer, IERC20 token, uint256 _amount
+    bytes32 indexed _requestId, address indexed _beneficiary, address indexed _payer, IERC20 _token, uint256 _amount
   );
-  event Bonded(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed token, uint256 _amount);
-  event Released(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed token, uint256 _amount);
+  event Bonded(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed _token, uint256 _amount);
+  event Released(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed _token, uint256 _amount);
 
   // The target contract
   AccountingExtension public module;
