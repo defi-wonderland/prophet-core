@@ -69,6 +69,21 @@ contract BondedResponseModule_UnitTest is Test {
     bondedResponseModule = new ForTest_BondedResponseModule(oracle);
   }
 
+  function test_setupRequestRevertsIfInvalidRequest(uint256 _deadline) public {
+    vm.assume(_deadline <= block.timestamp);
+    IBondedResponseModule.RequestParameters memory _requestParams = IBondedResponseModule.RequestParameters({
+      accountingExtension: IAccountingExtension(address(0)),
+      bondToken: IERC20(address(0)),
+      bondSize: 0,
+      deadline: _deadline
+    });
+    // Check: revert if request data is invalid
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidRequest.selector);
+    vm.prank(address(oracle));
+
+    bondedResponseModule.setupRequest(bytes32(0), abi.encode(_requestParams));
+  }
+
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */

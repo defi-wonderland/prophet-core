@@ -46,6 +46,11 @@ interface IBondedResponseModule is IResponseModule {
    */
   error BondedResponseModule_TooLateToDelete();
 
+  /**
+   * @notice Thrown when trying to create an invalid request
+   */
+  error BondedResponseModule_InvalidRequest();
+
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/

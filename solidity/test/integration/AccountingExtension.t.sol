@@ -90,7 +90,14 @@ contract Integration_AccountingExtension is IntegrationBase {
           paymentAmount: _bondAmount
         })
         ),
-      responseModuleData: abi.encode(),
+      responseModuleData: abi.encode(
+        IBondedResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: usdc,
+          bondSize: _bondAmount,
+          deadline: block.timestamp + BLOCK_TIME * 600
+        })
+        ),
       disputeModuleData: abi.encode(),
       resolutionModuleData: abi.encode(),
       finalityModuleData: abi.encode(),

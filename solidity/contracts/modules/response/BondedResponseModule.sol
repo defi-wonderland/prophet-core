@@ -103,4 +103,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     }
     emit RequestFinalized(_requestId, _finalizer);
   }
+
+  /// @inheritdoc Module
+  function _afterSetupRequest(bytes32, bytes calldata _data) internal view override {
+    RequestParameters memory _params = abi.decode(_data, (RequestParameters));
+    if (_params.deadline <= block.timestamp) {
+      revert BondedResponseModule_InvalidRequest();
+    }
+  }
 }
