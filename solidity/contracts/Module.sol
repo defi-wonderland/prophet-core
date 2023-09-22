@@ -22,6 +22,11 @@ abstract contract Module is IModule {
   }
 
   /// @inheritdoc IModule
+  function oracle() external view returns (address _oracle) {
+    _oracle = address(ORACLE);
+  }
+
+  /// @inheritdoc IModule
   function setupRequest(bytes32 _requestId, bytes calldata _data) public virtual onlyOracle {
     requestData[_requestId] = _data;
     _afterSetupRequest(_requestId, _data);

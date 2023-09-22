@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// TODO: Definition of base has to precede definition of derived contract
-// import {IOracle} from './IOracle.sol';
-
 /**
  * @title Module
  * @notice Abstract contract to be inherited by all modules
@@ -31,7 +28,13 @@ interface IModule {
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
   //////////////////////////////////////////////////////////////*/
-  // function ORACLE() external view returns (IOracle _oracle);
+
+  /**
+   * @notice Returns the address of the oracle
+   *
+   * @return _oracle The address of the oracle
+   */
+  function oracle() external view returns (address _oracle);
 
   /**
    * @notice Returns the data of the request associated with the provided id
