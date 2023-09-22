@@ -907,6 +907,7 @@ contract Oracle_UnitTest is Test {
       if (
         IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Active
           || IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Escalated
+          || IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.None
       ) continue;
       // Set the dispute status
       mockDispute.status = IOracle.DisputeStatus(_status);

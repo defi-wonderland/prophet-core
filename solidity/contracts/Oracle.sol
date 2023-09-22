@@ -264,10 +264,8 @@ contract Oracle is IOracle {
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     // Revert if the dispute is not active nor escalated
-    unchecked {
-      if (uint256(_dispute.status) - 1 > 1) {
-        revert Oracle_CannotResolve(_disputeId);
-      }
+    if (_dispute.status > DisputeStatus.Escalated) {
+      revert Oracle_CannotResolve(_disputeId);
     }
 
     Request memory _request = _requests[_dispute.requestId];
