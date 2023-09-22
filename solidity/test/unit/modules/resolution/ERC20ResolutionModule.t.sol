@@ -9,7 +9,6 @@ import {
   IERC20ResolutionModule
 } from '../../../../contracts/modules/resolution/ERC20ResolutionModule.sol';
 import {IOracle} from '../../../../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IModule} from '../../../../interfaces/IModule.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
@@ -41,9 +40,6 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   // A mock oracle
   IOracle public oracle;
 
-  // A mock accounting extension
-  IAccountingExtension public accounting;
-
   // A mock token
   IERC20 public token;
 
@@ -59,14 +55,11 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
 
   /**
-   * @notice Deploy the target and mock oracle+accounting extension
+   * @notice Deploy the target and mock oracle extension
    */
   function setUp() public {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
-
-    accounting = IAccountingExtension(makeAddr('AccountingExtension'));
-    vm.etch(address(accounting), hex'069420');
 
     token = IERC20(makeAddr('ERC20'));
     vm.etch(address(token), hex'069420');
@@ -89,13 +82,12 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
    */
   function test_decodeRequestData_returnsCorrectData(
     bytes32 _requestId,
-    address _accountingExtension,
     address _token,
     uint256 _minVotesForQuorum,
     uint256 _votingTimeWindow
   ) public {
     // Mock data
-    bytes memory _requestData = abi.encode(_accountingExtension, _token, _minVotesForQuorum, _votingTimeWindow);
+    bytes memory _requestData = abi.encode(_token, _minVotesForQuorum, _votingTimeWindow);
 
     // Store the mock request
     module.forTest_setRequestData(_requestId, _requestData);
@@ -104,7 +96,6 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     IERC20ResolutionModule.RequestParameters memory _params = module.decodeRequestData(_requestId);
 
     // Check: decoded values match original values?
-    assertEq(address(_params.accountingExtension), _accountingExtension);
     assertEq(address(_params.votingToken), _token);
     assertEq(_params.minVotesForQuorum, _minVotesForQuorum);
     assertEq(_params.timeUntilDeadline, _votingTimeWindow);
@@ -154,9 +145,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     uint256 _votingTimeWindow = 40_000;
 
     // Store mock request data with 40_000 voting time window
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
-    );
+    module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Mock token transfer (user must have approved token spending)
     vm.mockCall(
@@ -270,9 +259,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     uint256 _minVotesForQuorum = 1;
     uint256 _votingTimeWindow = 40_000;
 
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
-    );
+    module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Jump to timestamp
     vm.warp(_timestamp);
@@ -295,9 +282,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store request data
     uint256 _votingTimeWindow = 40_000;
 
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
-    );
+    module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Store escalation data with `startTime` 100_000 and votes 0
     module.forTest_setEscalationData(
@@ -365,9 +350,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     uint256 _minVotesForQuorum = 1;
     uint256 _votingTimeWindow = 500_000;
 
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
-    );
+    module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Jump to timestamp
     vm.warp(_timestamp);
@@ -392,9 +375,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     uint256 _votingTimeWindow = 40_000;
     uint256 _minVotesForQuorum = 1;
 
-    module.forTest_setRequestData(
-      _requestId, abi.encode(address(accounting), token, _minVotesForQuorum, _votingTimeWindow)
-    );
+    module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Store escalation data with `startTime` 100_000 and votes 0
     module.forTest_setEscalationData(

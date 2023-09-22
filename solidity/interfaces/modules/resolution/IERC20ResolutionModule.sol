@@ -21,14 +21,11 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Parameters of the request as stored in the module
-   * @param accountingExtension The accounting extension used to bond and release tokens
    * @param votingToken The token used to vote
    * @param minVotesForQuorum The minimum amount of votes to win the dispute
    * @param timeUntilDeadline The time until the voting phase ends
    */
   struct RequestParameters {
-    // TODO check if accountExtension is needed
-    IAccountingExtension accountingExtension;
     IERC20 votingToken;
     uint256 minVotesForQuorum;
     uint256 timeUntilDeadline;
