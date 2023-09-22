@@ -98,6 +98,10 @@ contract BondEscalationAccounting_UnitTest is Test {
     bytes32 indexed _requestId, bytes32 indexed _disputeId, address indexed _pledger, IERC20 _token, uint256 _amount
   );
 
+  event PledgeReleased(
+    bytes32 indexed _requestId, bytes32 indexed _disputeId, address indexed _pledger, IERC20 _token, uint256 _amount
+  );
+
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -458,6 +462,26 @@ contract BondEscalationAccounting_UnitTest is Test {
       _amount: _amount
     });
     assertEq(bondEscalationAccounting.balanceOf(_randomPledger, token), _amount);
+  }
+
+  function test_releasePledgeEmitsEvent(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+
+    bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount);
+
+    address _randomPledger = makeAddr('randomPledger');
+
+    vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
+    emit PledgeReleased(_requestId, _disputeId, _randomPledger, token, _amount);
+
+    bondEscalationAccounting.releasePledge({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _randomPledger,
+      _token: token,
+      _amount: _amount
+    });
   }
 
   ////////////////////////////////////////////////////////////////////
