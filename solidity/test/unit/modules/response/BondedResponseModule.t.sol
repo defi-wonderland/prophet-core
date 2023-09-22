@@ -45,6 +45,8 @@ contract BondedResponseModule_UnitTest is Test {
   // Mock EOA proposer
   address public proposer;
 
+  uint256 _baseDisputeWindow = 12 hours;
+
   event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
   event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
@@ -75,7 +77,8 @@ contract BondedResponseModule_UnitTest is Test {
       accountingExtension: IAccountingExtension(address(0)),
       bondToken: IERC20(address(0)),
       bondSize: 0,
-      deadline: _deadline
+      deadline: _deadline,
+      disputeWindow: _baseDisputeWindow
     });
     // Check: revert if request data is invalid
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidRequest.selector);
@@ -87,9 +90,14 @@ contract BondedResponseModule_UnitTest is Test {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+  function test_decodeRequestData(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow
+  ) public {
     // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     // Get the returned values
@@ -100,15 +108,23 @@ contract BondedResponseModule_UnitTest is Test {
     assertEq(address(_params.bondToken), address(token));
     assertEq(_params.bondSize, _bondSize);
     assertEq(_params.deadline, _deadline);
+    assertEq(_params.disputeWindow, _disputeWindow);
   }
 
   /**
    * @notice Test that the propose function works correctly and triggers _afterPropose (which bonds)
    */
-  function test_propose(bytes32 _requestId, uint256 _bondSize, uint256 _deadline, bytes calldata _responseData) public {
+  function test_propose(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow,
+    bytes calldata _responseData
+  ) public {
     vm.assume(_deadline > block.timestamp);
+    vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
     // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     // Mock getting the request's responses to verify that the caller can propose
@@ -146,11 +162,13 @@ contract BondedResponseModule_UnitTest is Test {
     bytes32 _requestId,
     uint256 _bondSize,
     uint256 _deadline,
+    uint256 _disputeWindow,
     bytes calldata _responseData
   ) public {
     vm.assume(_deadline > block.timestamp);
+    vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
     // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     // Mock getting the request's responses to verify that the caller can propose
@@ -183,7 +201,7 @@ contract BondedResponseModule_UnitTest is Test {
   ) public {
     vm.assume(_timestamp > 0);
     // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _baseDisputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     vm.warp(_timestamp);
@@ -222,12 +240,18 @@ contract BondedResponseModule_UnitTest is Test {
   /**
    * @notice Test that the propose function is only callable by the oracle
    */
-  function test_finalizeRequestCalls(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+  function test_finalizeRequestCalls(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow
+  ) public {
     vm.assume(_deadline > block.timestamp);
+    vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
     vm.startPrank(address(oracle));
 
     // Check revert if deadline has not passed
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
@@ -239,7 +263,7 @@ contract BondedResponseModule_UnitTest is Test {
     // Check correct calls are made if deadline has passed
     _deadline = block.timestamp;
 
-    _data = abi.encode(accounting, token, _bondSize, _deadline);
+    _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     IOracle.Response memory _mockResponse = IOracle.Response({
@@ -262,15 +286,22 @@ contract BondedResponseModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
     );
 
+    vm.warp(block.timestamp + _disputeWindow);
     bondedResponseModule.finalizeRequest(_requestId, address(this));
   }
 
-  function test_finalizeRequestEmitsEvent(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
+  function test_finalizeRequestEmitsEvent(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow
+  ) public {
     vm.assume(_deadline > block.timestamp);
+    vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
     vm.startPrank(address(oracle));
 
     // Check revert if deadline has not passed
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
@@ -278,7 +309,7 @@ contract BondedResponseModule_UnitTest is Test {
     // Check correct calls are made if deadline has passed
     _deadline = block.timestamp;
 
-    _data = abi.encode(accounting, token, _bondSize, _deadline);
+    _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     IOracle.Response memory _mockResponse = IOracle.Response({
@@ -301,6 +332,7 @@ contract BondedResponseModule_UnitTest is Test {
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
     emit RequestFinalized(_requestId, address(this));
 
+    vm.warp(block.timestamp + _disputeWindow);
     bondedResponseModule.finalizeRequest(_requestId, address(this));
   }
 
@@ -312,7 +344,7 @@ contract BondedResponseModule_UnitTest is Test {
     vm.startPrank(address(oracle));
 
     address validModule = makeAddr('valid module');
-    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline);
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _baseDisputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, validModule)), abi.encode(true));

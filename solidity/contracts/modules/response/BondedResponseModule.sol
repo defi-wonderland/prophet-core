@@ -94,6 +94,10 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     if (_response.createdAt != 0) {
+      if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
+        revert BondedResponseModule_TooEarlyToFinalize();
+      }
+
       _params.accountingExtension.release({
         _bonder: _response.proposer,
         _requestId: _requestId,

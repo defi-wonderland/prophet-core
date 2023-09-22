@@ -29,7 +29,8 @@ contract Integration_ResponseProposal is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: IERC20(USDC_ADDRESS),
           bondSize: _expectedBondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(

@@ -86,7 +86,8 @@ contract Integration_RootVerification is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: IERC20(USDC_ADDRESS),
           bondSize: _expectedBondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(
@@ -125,7 +126,7 @@ contract Integration_RootVerification is IntegrationBase {
     vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_correctRoot));
 
-    vm.warp(_expectedDeadline + 1);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
 
     oracle.finalize(_requestId, _responseId);
   }

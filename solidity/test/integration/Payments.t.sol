@@ -35,7 +35,7 @@ contract Integration_Payments is IntegrationBase {
     assertEq(_proposerBondedBalanceBefore, _bondSize);
 
     // Warp to finalization time.
-    vm.warp(_expectedDeadline + 1);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
     // Finalize request/response
     oracle.finalize(_requestId, _responseId);
 
@@ -78,7 +78,7 @@ contract Integration_Payments is IntegrationBase {
     assertEq(_proposerBondedBalanceBefore, _bondSize);
 
     // Warp to finalization time.
-    vm.warp(_expectedDeadline + 1);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
     // Finalize request/response.
     oracle.finalize(_requestId, _responseId);
 
@@ -221,7 +221,8 @@ contract Integration_Payments is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: _paymentToken,
           bondSize: _bondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(

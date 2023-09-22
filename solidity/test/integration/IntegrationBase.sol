@@ -67,6 +67,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   uint256 _expectedReward = 30 ether;
   uint256 _expectedDeadline;
   uint256 _expectedCallbackValue = 42;
+  uint256 _baseDisputeWindow = 12 hours;
   bytes32 _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
 
   function setUp() public virtual {

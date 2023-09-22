@@ -32,7 +32,8 @@ contract Integration_ResponseDispute is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: IERC20(USDC_ADDRESS),
           bondSize: _expectedBondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(
@@ -95,7 +96,9 @@ contract Integration_ResponseDispute is IntegrationBase {
           paymentAmount: _expectedReward
         })
         ),
-      responseModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline),
+      responseModuleData: abi.encode(
+        _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _baseDisputeWindow
+        ),
       disputeModuleData: abi.encode(
         _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _mockArbitrator
         ),
@@ -129,7 +132,7 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_alreadyFinalized() public {
-    vm.warp(_expectedDeadline + 1);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
     oracle.finalize(_requestId, _responseId);
 
     vm.prank(disputer);

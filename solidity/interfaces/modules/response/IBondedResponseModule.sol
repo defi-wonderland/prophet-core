@@ -61,12 +61,14 @@ interface IBondedResponseModule is IResponseModule {
    * @param bondToken The token used for bonds in the request
    * @param bondSize The amount of `_bondToken` to bond to propose a response and dispute
    * @param deadline The timestamp after which no responses can be proposed
+   * @param disputeWindow The time buffer required to finalize a request
    */
   struct RequestParameters {
     IAccountingExtension accountingExtension;
     IERC20 bondToken;
     uint256 bondSize;
     uint256 deadline;
+    uint256 disputeWindow;
   }
 
   /*///////////////////////////////////////////////////////////////

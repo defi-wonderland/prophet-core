@@ -95,7 +95,8 @@ contract Integration_AccountingExtension is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: usdc,
           bondSize: _bondAmount,
-          deadline: block.timestamp + BLOCK_TIME * 600
+          deadline: block.timestamp + BLOCK_TIME * 600,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(),

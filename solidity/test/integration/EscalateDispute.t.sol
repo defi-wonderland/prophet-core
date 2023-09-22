@@ -92,7 +92,8 @@ contract Integration_EscalateDispute is IntegrationBase {
           accountingExtension: _accounting,
           bondToken: IERC20(USDC_ADDRESS),
           bondSize: _expectedBondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: _disputeModuleData,

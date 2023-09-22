@@ -33,6 +33,7 @@ contract Integration_Finalization is IntegrationBase {
     bytes32 _requestId = oracle.createRequest(_request);
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
+    vm.warp(block.timestamp + _baseDisputeWindow);
     vm.prank(_finalizer);
     oracle.finalize(_requestId, _responseId);
   }
@@ -58,6 +59,7 @@ contract Integration_Finalization is IntegrationBase {
     // Check: all low-level calls are made?
     vm.expectCall(_callbackTarget, _calldata);
 
+    vm.warp(block.timestamp + _baseDisputeWindow);
     vm.prank(_finalizer);
     oracle.finalize(_requestId, _responseId);
 
@@ -121,8 +123,37 @@ contract Integration_Finalization is IntegrationBase {
   }
 
   /**
+   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   */
+  function test_revertFinalizeInDisputeWindow(uint256 _timestamp) public {
+    address _callbackTarget = makeAddr('target');
+    vm.etch(_callbackTarget, hex'069420');
+
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+
+    IOracle.NewRequest memory _request = _customFinalizationRequest(
+      address(_callbackModule),
+      abi.encode(ICallbackModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
+    );
+
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(_request);
+
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+
+    vm.warp(_timestamp);
+    vm.prank(_finalizer);
+    if (_timestamp < _expectedDeadline + _baseDisputeWindow) {
+      vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
+    }
+    oracle.finalize(_requestId, _responseId);
+  }
+  /**
    * @notice Test to check that finalizing a request without disputes triggers callback calls and executes without reverting.
    */
+
   function test_finalizeWithUndisputedResponse(bytes calldata _calldata) public {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
@@ -140,6 +171,7 @@ contract Integration_Finalization is IntegrationBase {
 
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
+    vm.warp(block.timestamp + _baseDisputeWindow);
     vm.prank(_finalizer);
     oracle.finalize(_requestId, _responseId);
   }
@@ -202,7 +234,8 @@ contract Integration_Finalization is IntegrationBase {
           accountingExtension: _accountingExtension,
           bondToken: IERC20(USDC_ADDRESS),
           bondSize: _expectedBondSize,
-          deadline: _expectedDeadline
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(
