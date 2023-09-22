@@ -7,11 +7,12 @@ import {ISparseMerkleTreeRequestModule} from '../../../interfaces/modules/reques
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {ITreeVerifier} from '../../../interfaces/ITreeVerifier.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
     _moduleName = 'SparseMerkleTreeRequestModule';
   }

@@ -10,7 +10,7 @@ import {IBondEscalationAccounting} from '../../../interfaces/extensions/IBondEsc
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModule {
   using SafeERC20 for IERC20;
@@ -25,12 +25,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  /**
-   * @notice Returns module name.
-   *
-   * @return _moduleName The name of the module.
-   *
-   */
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'BondEscalationResolutionModule';
   }

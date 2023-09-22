@@ -9,7 +9,7 @@ import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingEx
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 // TODO: Discuss about this module's incentives for voters. Right now there are no incentives for them to vote. There's the possibility of adding the bonded amount of the disputer/proposer as rewards
 //       but that would get highly diluted - and due to the nature of how updateDisputeStatus work, this would need a custom dispute module that doesn't settle payment between proposer and disputer
@@ -28,6 +28,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'ERC20ResolutionModule';
   }

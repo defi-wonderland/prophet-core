@@ -5,11 +5,12 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IHttpRequestModule} from '../../../interfaces/modules/request/IHttpRequestModule.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract HttpRequestModule is Module, IHttpRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
     _moduleName = 'HttpRequestModule';
   }

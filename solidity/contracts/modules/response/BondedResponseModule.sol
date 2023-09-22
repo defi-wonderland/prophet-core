@@ -6,11 +6,12 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
     _moduleName = 'BondedResponseModule';
   }

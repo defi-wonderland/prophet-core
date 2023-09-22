@@ -10,7 +10,7 @@ import {IOracle} from '../../../interfaces/IOracle.sol';
 import {ITreeVerifier} from '../../../interfaces/ITreeVerifier.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract RootVerificationModule is Module, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;
@@ -22,6 +22,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'RootVerificationModule';
   }

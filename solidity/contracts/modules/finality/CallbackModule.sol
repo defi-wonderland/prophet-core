@@ -3,11 +3,12 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {ICallbackModule} from '../../../interfaces/modules/finality/ICallbackModule.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract CallbackModule is Module, ICallbackModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
     _moduleName = 'CallbackModule';
   }

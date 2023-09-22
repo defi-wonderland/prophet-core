@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IMultipleCallbacksModule} from '../../../interfaces/modules/finality/IMultipleCallbacksModule.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -13,6 +13,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
+  /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
     _moduleName = 'MultipleCallbacksModule';
   }

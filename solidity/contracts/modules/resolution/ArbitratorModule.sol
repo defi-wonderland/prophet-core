@@ -5,7 +5,7 @@ import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitra
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
 
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract ArbitratorModule is Module, IArbitratorModule {
   /**
@@ -17,6 +17,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'ArbitratorModule';
   }

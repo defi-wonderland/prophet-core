@@ -7,13 +7,14 @@ import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircu
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract CircuitResolverModule is Module, ICircuitResolverModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
 
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'CircuitResolverModule';
   }

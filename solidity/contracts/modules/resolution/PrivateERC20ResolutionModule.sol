@@ -8,7 +8,7 @@ import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
-import {Module} from '../../Module.sol';
+import {Module, IModule} from '../../Module.sol';
 
 contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
@@ -27,6 +27,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
     return 'PrivateERC20ResolutionModule';
   }
