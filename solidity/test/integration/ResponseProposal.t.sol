@@ -159,7 +159,7 @@ contract Integration_ResponseProposal is IntegrationBase {
   }
 
   function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
-    vm.assume(_timestamp > _expectedDeadline);
+    vm.assume(_timestamp > _expectedDeadline + _baseDisputeWindow);
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
