@@ -2,25 +2,34 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import {IBondEscalationResolutionModule} from
-  '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IBondEscalationAccounting} from '../../../interfaces/extensions/IBondEscalationAccounting.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+
+import {
+  IBondEscalationResolutionModule,
+  IResolutionModule
+} from '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
+import {IOracle} from '../../../interfaces/IOracle.sol';
+import {IBondEscalationAccounting} from '../../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 import {Module, IModule} from '../../Module.sol';
 
 contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModule {
   using SafeERC20 for IERC20;
 
+  /// @inheritdoc IBondEscalationResolutionModule
   uint256 public constant BASE = 1e18;
 
+  /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
+
+  /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => InequalityData _inequalityData) public inequalityData;
 
+  /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => mapping(address _pledger => uint256 pledges)) public pledgesForDispute;
+
+  /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => mapping(address _pledger => uint256 pledges)) public pledgesAgainstDispute;
 
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -30,29 +39,19 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     return 'BondEscalationResolutionModule';
   }
 
+  /// @inheritdoc IBondEscalationResolutionModule
   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
     _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
-  /**
-   * @notice Starts the resolution process for a given dispute.
-   *
-   * @param _disputeId The ID of the dispute to start the resolution for.
-   */
+  /// @inheritdoc IResolutionModule
   function startResolution(bytes32 _disputeId) external onlyOracle {
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
     escalationData[_disputeId].startTime = uint128(block.timestamp);
     emit ResolutionStarted(_requestId, _disputeId);
   }
 
-  /**
-   * @notice Allows users to pledge in favor of a given dispute. This means the user believes the proposed answer is
-   *         incorrect and therefore wants the disputer to win his dispute.
-   *
-   * @param _requestId    The ID of the request associated with the dispute.
-   * @param _disputeId    The ID of the dispute to pledge in favor of.
-   * @param _pledgeAmount The amount of pledges to pledge.
-   */
+  /// @inheritdoc IBondEscalationResolutionModule
   function pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
     EscalationData storage _escalationData = escalationData[_disputeId];
 
@@ -91,18 +90,6 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     });
     emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
-    /*
-      If the pledge threshold is not reached, we simply return as the threshold is the trigger that initiates the status-based pledging system.
-      Once the threshold has been reached there are three possible statuses:
-      1) Equalized:             The percentage difference between the for and against pledges is smaller than the set percentageDiff. This state allows any of the two
-                                parties to pledge. When the percentageDiff is surpassed, the status changes to AgainstTurnToEqualize or ForTurnToEqualize depending on
-                                which side surpassed the percentageDiff. When this happens, only the respective side can pledge.
-      2) AgainstTurnToEqualize: If the for pledges surpassed the percentageDiff, a timer is started and the against party has a set amount of time to
-                                reduce the percentageDiff so that the status is Equalized again, or to surpass the percentageDiff so that the status changes to ForTurnToEqualize. 
-                                Until this happens, only the people pledging against a dispute can pledge.
-                                If the timer runs out without the status changing, then the dispute is considered finalized and the for party wins.
-      3) ForTurnToEqualize:     The same as AgainsTurnToEqualize but for the parties that wish to pledge in favor a given dispute.
-    */
     if (_updatedTotalVotes >= _params.pledgeThreshold) {
       uint256 _updatedForVotes = _escalationData.pledgesFor;
       uint256 _againstVotes = _escalationData.pledgesAgainst;
@@ -115,9 +102,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
       int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
 
-      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
-        return;
-      } else if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
+      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) return;
+
+      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
         _inequalityData.inequalityStatus = InequalityStatus.AgainstTurnToEqualize;
         _inequalityData.time = block.timestamp;
       } else if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
@@ -128,14 +115,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     }
   }
 
-  /**
-   * @notice Allows users to pledge against a given dispute. This means the user believes the proposed answer is
-   *         correct and therefore wants the disputer to lose his dispute.
-   *
-   * @param _requestId    The ID of the request associated with the dispute.
-   * @param _disputeId    The ID of the dispute to pledge against of.
-   * @param _pledgeAmount The amount of pledges to pledge.
-   */
+  /// @inheritdoc IBondEscalationResolutionModule
   function pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
     EscalationData storage _escalationData = escalationData[_disputeId];
 
@@ -174,18 +154,6 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     });
     emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
-    /*
-      If the pledge threshold is not reached, we simply return as the threshold is the trigger that initiates the status-based pledging system.
-      Once the threshold has been reached there are three possible statuses:
-      1) Equalized:             The percentage difference between the for and against pledges is smaller than the set percentageDiff. This state allows any of the two
-                                parties to pledge. When the percentageDiff is surpassed, the status changes to AgainstTurnToEqualize or ForTurnToEqualize depending on
-                                which side surpassed the percentageDiff. When this happens, only the respective side can pledge.
-      2) AgainstTurnToEqualize: If the for pledges surpassed the percentageDiff, a timer is started and the against party has a set amount of time to
-                                reduce the percentageDiff so that the status is Equalized again, or to surpass the percentageDiff so that the status changes to ForTurnToEqualize. 
-                                Until this happens, only the people pledging against a dispute can pledge.
-                                If the timer runs out without the status changing, then the dispute is considered finalized and the for party wins.
-      3) ForTurnToEqualize:     The same as AgainsTurnToEqualize but for the parties that wish to pledge in favor a given dispute.
-    */
     if (_updatedTotalVotes >= _params.pledgeThreshold) {
       uint256 _updatedAgainstVotes = _escalationData.pledgesAgainst;
       uint256 _forVotes = _escalationData.pledgesFor;
@@ -197,9 +165,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
       int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
 
-      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
-        return;
-      } else if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
+      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) return;
+
+      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
         _inequalityData.inequalityStatus = InequalityStatus.ForTurnToEqualize;
         _inequalityData.time = block.timestamp;
       } else if (_inequalityData.inequalityStatus == InequalityStatus.AgainstTurnToEqualize) {
@@ -210,13 +178,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     }
   }
 
-  /**
-   * @notice Resolves a dispute.
-   *
-   * @dev Disputes can only be resolved if the deadline has expired, or if the part in charge of equalizing didn't do so in time.
-   *
-   * @param _disputeId The ID of the dispute to resolve.
-   */
+  /// @inheritdoc IResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
     EscalationData storage _escalationData = escalationData[_disputeId];
 
@@ -259,15 +221,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     emit DisputeResolved(_requestId, _disputeId, _disputeStatus);
   }
 
-  /**
-   * @notice Allows user to claim his corresponding pledges after a dispute is resolved.
-   *
-   * @dev Winning pledgers will claim their pledges along with their reward. In case of no resolution, users can
-   *      claim their pledges back. Losing pledgers will go to the rewards of the winning pledgers.
-   *
-   * @param _requestId The ID of the request associated with dispute.
-   * @param _disputeId The ID of the dispute the user wants to claim pledges from.
-   */
+  /// @inheritdoc IBondEscalationResolutionModule
   function claimPledge(bytes32 _requestId, bytes32 _disputeId) external {
     EscalationData storage _escalationData = escalationData[_disputeId];
 
@@ -294,10 +248,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _amount: _amountToRelease
       });
       emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
-      return;
-    }
-
-    if (_escalationData.resolution == Resolution.DisputerLost) {
+    } else if (_escalationData.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
 
@@ -312,34 +263,33 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _amount: _amountToRelease
       });
       emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
-      return;
-    }
+    } else if (_escalationData.resolution == Resolution.NoResolution) {
+      uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
+      uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
 
-    // At this point the only possible resolution state is NoResolution
-    uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
-    uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
+      if (_pledgerBalanceFor > 0) {
+        pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
+        _params.accountingExtension.releasePledge({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _pledger: msg.sender,
+          _token: _params.bondToken,
+          _amount: _pledgerBalanceFor
+        });
+        emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor);
+      }
 
-    if (_pledgerBalanceFor > 0) {
-      pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
-      _params.accountingExtension.releasePledge({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _amount: _pledgerBalanceFor
-      });
-      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor);
-    }
-    if (_pledgerBalanceAgainst > 0) {
-      pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
-      _params.accountingExtension.releasePledge({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _amount: _pledgerBalanceAgainst
-      });
-      emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst);
+      if (_pledgerBalanceAgainst > 0) {
+        pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
+        _params.accountingExtension.releasePledge({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _pledger: msg.sender,
+          _token: _params.bondToken,
+          _amount: _pledgerBalanceAgainst
+        });
+        emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst);
+      }
     }
   }
 }

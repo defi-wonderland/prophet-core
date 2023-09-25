@@ -17,7 +17,7 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
   */
 interface IRootVerificationModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
-                              LOGIC
+                              STRUCTS
   //////////////////////////////////////////////////////////////*/
 
   /**
