@@ -47,5 +47,3 @@ The oracle supports 2 ways of finalizing a request.
 Due to the modular and open nature of the framework, the oracle does not have any rules or validations, and a request is deemed correct unless it reverts on creation (`setupRequest`). It’s the requester’s responsibility to choose sensible parameters and avoid the request being unattractive to proposers and disputers, impossible to answer or finalize.
 
 The same can be said about engaging with a request. Off-chain validation must be done prior to proposing or disputing any response to avoid the loss of funds. We strongly encourage keeping a list of trusted modules and extensions and avoid interactions with unverified ones.
-
-## 5. Failure Modes
