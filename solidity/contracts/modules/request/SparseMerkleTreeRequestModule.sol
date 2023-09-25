@@ -6,7 +6,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {ISparseMerkleTreeRequestModule} from '../../../interfaces/modules/request/ISparseMerkleTreeRequestModule.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {ITreeVerifier} from '../../../interfaces/ITreeVerifier.sol';
 import {Module, IModule} from '../../Module.sol';
 
 contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule {

@@ -7,11 +7,12 @@ import {
   SparseMerkleTreeRequestModule,
   ISparseMerkleTreeRequestModule,
   IOracle,
-  ITreeVerifier,
   IAccountingExtension,
   IERC20
 } from '../../../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 import {IModule} from '../../../../interfaces/IModule.sol';
+import {ITreeVerifier} from '../../../../interfaces/ITreeVerifier.sol';
+
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */

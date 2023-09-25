@@ -6,13 +6,13 @@ import {
   SparseMerkleTreeRequestModule,
   ISparseMerkleTreeRequestModule,
   IOracle,
-  ITreeVerifier,
   IERC20
 } from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
 import {
   RootVerificationModule, IRootVerificationModule
 } from '../../contracts/modules/dispute/RootVerificationModule.sol';
+import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
 
 contract Integration_RootVerification is IntegrationBase {
   SparseMerkleTreeL32Verifier internal _treeVerifier;
