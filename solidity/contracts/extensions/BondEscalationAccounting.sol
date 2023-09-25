@@ -80,8 +80,8 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
 
     uint256 _amountPerPledger = _result.amountPerPledger;
     uint256 _numberOfPledges = _result.forVotesWon
-      ? _result.bondEscalationModule.forPledges(_requestId, _pledger)
-      : _result.bondEscalationModule.againstPledges(_requestId, _pledger);
+      ? _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
+      : _result.bondEscalationModule.pledgesAgainstDispute(_requestId, _pledger);
 
     IERC20 _token = _result.token;
     uint256 _claimAmount = _amountPerPledger * _numberOfPledges;

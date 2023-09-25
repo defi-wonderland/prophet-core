@@ -1082,10 +1082,10 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
-    assertEq(_forPledges, _numForPledgers + 1);
+    uint256 _pledgesForDispute = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
+    assertEq(_pledgesForDispute, _numForPledgers + 1);
 
-    uint256 _userPledges = bondEscalationModule.forPledges(_requestId, address(this));
+    uint256 _userPledges = bondEscalationModule.pledgesForDispute(_requestId, address(this));
     assertEq(_userPledges, 1);
   }
 
@@ -1273,10 +1273,10 @@ contract BondEscalationModule_UnitTest is Test {
 
     bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
-    uint256 _forPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
-    assertEq(_forPledges, _numAgainstPledgers + 1);
+    uint256 _pledgesForDispute = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
+    assertEq(_pledgesForDispute, _numAgainstPledgers + 1);
 
-    uint256 _userPledges = bondEscalationModule.againstPledges(_requestId, address(this));
+    uint256 _userPledges = bondEscalationModule.pledgesAgainstDispute(_requestId, address(this));
     assertEq(_userPledges, 1);
   }
 
@@ -1460,53 +1460,6 @@ contract BondEscalationModule_UnitTest is Test {
     assertEq(_bondEscalationDeadline, _params.bondEscalationDeadline);
     assertEq(_tyingBuffer, _params.tyingBuffer);
     assertEq(_challengePeriod, _params.challengePeriod);
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  //                  Tests for forPledges
-  ////////////////////////////////////////////////////////////////////
-
-  /**
-   * @notice Tests that forPledges fetches the pledgers that pledged in favor the dispute correctly
-   */
-  function test_fetchPledgerForDispute(bytes32 _requestId, bytes32 _disputeId) public {
-    uint256 _numForPledgers = 10;
-    uint256 _numAgainstPledgers;
-
-    (address[] memory _expectedForPledgers,) = _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
-
-    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
-
-    uint256 _totalForPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesForDispute;
-    assertEq(_totalForPledges, _numForPledgers);
-
-    for (uint256 _i; _i < _numForPledgers; _i++) {
-      assertEq(bondEscalationModule.forPledges(_requestId, _expectedForPledgers[_i]), 1);
-    }
-  }
-
-  ////////////////////////////////////////////////////////////////////
-  //                  Tests for againstPledges
-  ////////////////////////////////////////////////////////////////////
-
-  /**
-   * @notice Tests that againstPledges fetches the pledgers that pledged against the dispute correctly
-   */
-  function test_fetchPledgerAgainstDispute(bytes32 _requestId, bytes32 _disputeId) public {
-    uint256 _numForPledgers;
-    uint256 _numAgainstPledgers = 10;
-
-    (, address[] memory _expectedAgainstPledgers) =
-      _setBondEscalationData(_requestId, _numForPledgers, _numAgainstPledgers);
-
-    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
-
-    uint256 _totalAgainstPledges = bondEscalationModule.getEscalationData(_requestId).amountOfPledgesAgainstDispute;
-    assertEq(_totalAgainstPledges, _numAgainstPledgers);
-
-    for (uint256 _i; _i < _numAgainstPledgers; _i++) {
-      assertEq(bondEscalationModule.againstPledges(_requestId, _expectedAgainstPledgers[_i]), 1);
-    }
   }
 
   ////////////////////////////////////////////////////////////////////

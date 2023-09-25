@@ -11,6 +11,10 @@ import {IBondEscalationAccounting} from '../../extensions/IBondEscalationAccount
  * @notice Module allowing users to have the first dispute of a request go through the bond escalation mechanism.
  */
 interface IBondEscalationModule is IDisputeModule {
+  /*///////////////////////////////////////////////////////////////
+                              EVENTS
+  //////////////////////////////////////////////////////////////*/
+
   /**
    * @notice A pledge has been made in favor of a dispute.
    *
@@ -39,6 +43,10 @@ interface IBondEscalationModule is IDisputeModule {
   event BondEscalationStatusUpdated(
     bytes32 indexed _requestId, bytes32 indexed _disputeId, BondEscalationStatus _status
   );
+
+  /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Thrown when trying to escalate a dispute going through the bond escalation module before its deadline.
@@ -94,6 +102,10 @@ interface IBondEscalationModule is IDisputeModule {
    */
   error BondEscalationModule_InvalidEscalationParameters();
 
+  /*///////////////////////////////////////////////////////////////
+                              ENUMS
+  //////////////////////////////////////////////////////////////*/
+
   /**
    * @notice Enum holding all the possible statuses of a dispute going through the bond escalation mechanism.
    */
@@ -105,17 +117,21 @@ interface IBondEscalationModule is IDisputeModule {
     DisputerWon // An escalated dispute has been settled and the disputer won.
   }
 
+  /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
   /**
    * @notice Parameters of the request as stored in the module
-   * @param _accountingExtension         Address of the accounting extension associated with the given request
-   * @param _bondToken                   Address of the token associated with the given request
-   * @param _bondSize                    Amount to bond to dispute or propose an answer for the given request
-   * @param _numberOfEscalations         Maximum allowed escalations or pledges for each side during the bond
-   *                                      escalation process
-   * @param _bondEscalationDeadline      Timestamp at which bond escalation process finishes when pledges are not tied
-   * @param _tyingBuffer                 Number of seconds to extend the bond escalation process to allow the losing
-   *                                      party to tie if at the end of the initial deadline the pledges weren't tied.
-   * @param _challengePeriod             Number of seconds disputers have to challenge the proposed response since its creation.
+   *
+   * @param _accountingExtension        Address of the accounting extension associated with the given request
+   * @param _bondToken                  Address of the token associated with the given request
+   * @param _bondSize                   Amount to bond to dispute or propose an answer for the given request
+   * @param _numberOfEscalations        Maximum allowed escalations or pledges for each side during the bond escalation process
+   * @param _bondEscalationDeadline     Timestamp at which bond escalation process finishes when pledges are not tied
+   * @param _tyingBuffer                Number of seconds to extend the bond escalation process to allow the losing
+   *                                    party to tie if at the end of the initial deadline the pledges weren't tied.
+   * @param _challengePeriod            Number of seconds disputers have to challenge the proposed response since its creation.
    */
   struct RequestParameters {
     IBondEscalationAccounting accountingExtension;
@@ -127,12 +143,58 @@ interface IBondEscalationModule is IDisputeModule {
     uint256 challengePeriod;
   }
 
+  /**
+   * @notice Data of a dispute going through the bond escalation.
+   *
+   * @param disputeId                       The id of the dispute being bond-escalated.
+   * @param status                          The status of the bond escalation.
+   * @param amountOfPledgesForDispute       The amount of pledges made in favor of the dispute.
+   * @param amountOfPledgesAgainstDispute   The amount of pledges made against the dispute.
+   */
   struct BondEscalation {
     bytes32 disputeId;
     BondEscalationStatus status;
     uint256 amountOfPledgesForDispute;
     uint256 amountOfPledgesAgainstDispute;
   }
+
+  /*///////////////////////////////////////////////////////////////
+                              VARIABLES
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Returns the escalation data for a request.
+   * @param _requestId The id of the request to get its escalation data.
+   * @return _escalation The struct containing the escalation data.
+   */
+  function getEscalationData(bytes32 _requestId) external view returns (BondEscalation memory _escalation);
+
+  /**
+   * @notice Decodes the request data associated with a request id.
+   * @param _requestId The id of the request to decode.
+   * @return _params The struct containing the parameters for the request
+   */
+  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
+
+  /**
+   * @notice Returns the amount of pledges that a particular pledger has made for a given dispute.
+   * @param _requestId The id of the request to get the pledges for.
+   * @param _pledger The address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger for the dispute.
+   */
+  function pledgesForDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
+
+  /**
+   * @notice Returns the amount of pledges that a particular pledger has made against a given dispute.
+   * @param _requestId The id of the request to get the pledges for.
+   * @param _pledger The address of the pledger to get the pledges for.
+   * @return _numPledges The number of pledges made by the pledger against the dispute.
+   */
+  function pledgesAgainstDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
+
+  /*///////////////////////////////////////////////////////////////
+                              LOGIC
+  //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Disputes a response
@@ -208,50 +270,4 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _requestId requestId of the request to settle the bond escalation process for.
    */
   function settleBondEscalation(bytes32 _requestId) external;
-
-  /**
-   * @notice Returns the escalation data for a request.
-   * @param _requestId id of the request to get its escalation data.
-   * @return _escalation The struct containing the escalation data.
-   */
-  function getEscalationData(bytes32 _requestId) external view returns (BondEscalation memory _escalation);
-
-  /**
-   * @notice Decodes the request data associated to a request id.
-   * @param _requestId id of the request to decode.
-   * @return _params The struct containing the parameters for the request
-   */
-  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
-
-  /**
-   * @notice Returns the amount of pledges that a particular pledger has made for a given dispute.
-   * @param _requestId id of the request to get the pledges for.
-   * @param _pledger   address of the pledger to get the pledges for.
-   * @return _numPledges The number of pledges made by the pledger for the dispute.
-   */
-  function forPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
-
-  /**
-   * @notice Returns the amount of pledges that a particular pledger has made against a given dispute.
-   * @param _requestId id of the request to get the pledges for.
-   * @param _pledger   address of the pledger to get the pledges for.
-   * @return _numPledges The number of pledges made by the pledger against the dispute.
-   */
-  function againstPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
-
-  /**
-   * @notice Returns the amount of pledges that a particular pledger has made for a given dispute.
-   * @param _requestId id of the request to get the pledges for.
-   * @param _pledger   address of the pledger to get the pledges for.
-   * @return _numPledges The number of pledges made by the pledger for the dispute.
-   */
-  function pledgesForDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
-
-  /**
-   * @notice Returns the amount of pledges that a particular pledger has made against a given dispute.
-   * @param _requestId id of the request to get the pledges for.
-   * @param _pledger   address of the pledger to get the pledges for.
-   * @return _numPledges The number of pledges made by the pledger against the dispute.
-   */
-  function pledgesAgainstDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges);
 }

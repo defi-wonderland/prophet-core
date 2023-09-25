@@ -344,12 +344,12 @@ contract BondEscalationAccounting_UnitTest is Test {
 
     vm.mockCall(
       address(_bondEscalationModule),
-      abi.encodeCall(IBondEscalationModule.forPledges, (_requestId, pledger)),
+      abi.encodeCall(IBondEscalationModule.pledgesForDispute, (_requestId, pledger)),
       abi.encode(_pledges)
     );
 
     vm.expectCall(
-      address(_bondEscalationModule), abi.encodeCall(IBondEscalationModule.forPledges, (_requestId, pledger))
+      address(_bondEscalationModule), abi.encodeCall(IBondEscalationModule.pledgesForDispute, (_requestId, pledger))
     );
 
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
@@ -382,12 +382,12 @@ contract BondEscalationAccounting_UnitTest is Test {
 
     vm.mockCall(
       address(_bondEscalationModule),
-      abi.encodeCall(IBondEscalationModule.againstPledges, (_requestId, pledger)),
+      abi.encodeCall(IBondEscalationModule.pledgesAgainstDispute, (_requestId, pledger)),
       abi.encode(_pledges)
     );
 
     vm.expectCall(
-      address(_bondEscalationModule), abi.encodeCall(IBondEscalationModule.againstPledges, (_requestId, pledger))
+      address(_bondEscalationModule), abi.encodeCall(IBondEscalationModule.pledgesAgainstDispute, (_requestId, pledger))
     );
 
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));

@@ -7,16 +7,16 @@ import {IOracle} from '../../../interfaces/IOracle.sol';
 import {Module, IModule} from '../../Module.sol';
 
 contract BondEscalationModule is Module, IBondEscalationModule {
-  /**
-   * @notice Struct containing all the data for a given escalation.
-   */
-  mapping(bytes32 _requestId => BondEscalation) internal _escalations;
-
   /// @inheritdoc IBondEscalationModule
   mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesForDispute;
 
   /// @inheritdoc IBondEscalationModule
   mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesAgainstDispute;
+
+  /**
+   * @notice Struct containing all the data for a given escalation.
+   */
+  mapping(bytes32 _requestId => BondEscalation) internal _escalations;
 
   /**
    * @notice Mapping storing all dispute IDs to request IDs.
@@ -259,7 +259,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       revert BondEscalationModule_DisputeNotEscalated();
     }
 
-    _params = decodeRequestData(_dispute.requestId);
+    _params = decodeRequestData(_requestId);
 
     if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationOver();
@@ -297,15 +297,5 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function getEscalationData(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
     _escalation = _escalations[_requestId];
-  }
-
-  /// @inheritdoc IBondEscalationModule
-  function forPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges) {
-    _numPledges = pledgesForDispute[_requestId][_pledger];
-  }
-
-  /// @inheritdoc IBondEscalationModule
-  function againstPledges(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges) {
-    _numPledges = pledgesAgainstDispute[_requestId][_pledger];
   }
 }
