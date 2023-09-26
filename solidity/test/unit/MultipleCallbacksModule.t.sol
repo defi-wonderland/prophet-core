@@ -64,7 +64,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     address _target = _targets[0];
     bytes calldata _data = __data[0];
 
-    assumeNoPrecompiles(_target);
+    assumeNotPrecompile(_target);
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data

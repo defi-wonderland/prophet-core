@@ -66,7 +66,7 @@ contract CallbackModule_UnitTest is Test {
     bool _hasCode,
     bytes calldata _data
   ) public {
-    assumeNoPrecompiles(_target);
+    assumeNotPrecompile(_target);
     vm.assume(_target.code.length == 0);
     bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
 
@@ -84,7 +84,7 @@ contract CallbackModule_UnitTest is Test {
    * @notice Test that finalizeRequest calls the _target.callback with the correct data
    */
   function test_finalizeRequestTriggersCallback(bytes32 _requestId, address _target, bytes calldata _data) public {
-    assumeNoPrecompiles(_target);
+    assumeNotPrecompile(_target);
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
@@ -100,7 +100,7 @@ contract CallbackModule_UnitTest is Test {
   }
 
   function test_finalizeRequestEmitsEvent(bytes32 _requestId, address _target, bytes calldata _data) public {
-    assumeNoPrecompiles(_target);
+    assumeNotPrecompile(_target);
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
