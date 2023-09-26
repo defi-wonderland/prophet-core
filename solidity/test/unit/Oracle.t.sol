@@ -13,6 +13,7 @@ import {
   IResolutionModule,
   IFinalityModule
 } from '../../interfaces/IOracle.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
 
@@ -22,10 +23,12 @@ import {IModule} from '../../interfaces/IModule.sol';
 contract ForTest_Oracle is Oracle {
   constructor() Oracle() {}
 
+  using EnumerableSet for EnumerableSet.Bytes32Set;
+
   function forTest_setResponse(Response calldata _response) external returns (bytes32 _responseId) {
     _responseId = keccak256(abi.encodePacked(msg.sender, address(this), _response.requestId));
     _responses[_responseId] = _response;
-    _responseIds[_response.requestId].push(_responseId);
+    _responseIds[_response.requestId].add(_responseId);
   }
 
   function forTest_setDispute(bytes32 _disputeId, Dispute calldata _dispute) external {

@@ -3,9 +3,11 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../interfaces/IOracle.sol';
 import {Subset} from './libraries/Subset.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
   using Subset for mapping(uint256 => bytes32);
+  using EnumerableSet for EnumerableSet.Bytes32Set;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -27,7 +29,7 @@ contract Oracle is IOracle {
   /**
    * @notice The list of the response ids for each request
    */
-  mapping(bytes32 _requestId => bytes32[] _responseId) internal _responseIds;
+  mapping(bytes32 _requestId => EnumerableSet.Bytes32Set _responseId) internal _responseIds;
 
   /**
    * @notice The finalized response for each request
@@ -168,7 +170,7 @@ contract Oracle is IOracle {
     }
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
-    _responseIds[_requestId].push(_responseId);
+    _responseIds[_requestId].add(_responseId);
 
     emit Oracle_ResponseProposed(_requestId, _proposer, _responseId);
   }
@@ -188,18 +190,8 @@ contract Oracle is IOracle {
     _request.responseModule.deleteResponse(_response.requestId, _responseId, msg.sender);
 
     delete _responses[_responseId];
+    _responseIds[_response.requestId].remove(_responseId);
 
-    uint256 _length = _responseIds[_response.requestId].length;
-    for (uint256 _i = 0; _i < _length;) {
-      if (_responseIds[_response.requestId][_i] == _responseId) {
-        _responseIds[_response.requestId][_i] = _responseIds[_response.requestId][_length - 1];
-        _responseIds[_response.requestId].pop();
-        break;
-      }
-      unchecked {
-        ++_i;
-      }
-    }
     emit Oracle_ResponseDeleted(_response.requestId, msg.sender, _responseId);
   }
 
@@ -311,7 +303,7 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
-    _ids = _responseIds[_requestId];
+    _ids = _responseIds[_requestId]._inner._values;
   }
 
   /// @inheritdoc IOracle
@@ -341,12 +333,11 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    bytes32[] memory _requestResponseIds = _responseIds[_requestId];
-    uint256 _responsesAmount = _requestResponseIds.length;
+    uint256 _responsesAmount = _responseIds[_requestId].length();
 
     if (_responsesAmount != 0) {
       for (uint256 _i = 0; _i < _responsesAmount;) {
-        bytes32 _responseId = _requestResponseIds[_i];
+        bytes32 _responseId = _responseIds[_requestId].at(_i);
         bytes32 _disputeId = disputeOf[_responseId];
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 
