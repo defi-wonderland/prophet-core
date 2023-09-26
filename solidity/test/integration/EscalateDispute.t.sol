@@ -55,9 +55,8 @@ contract Integration_EscalateDispute is IntegrationBase {
     assertTrue(_dispute.status == IOracle.DisputeStatus.Escalated);
 
     /// The BondEscalationModule should now have the escalation status escalated
-    IBondEscalationModule.BondEscalation memory _bondEscalationData =
-      _bondEscalationModule.getEscalationData(_requestId);
-    assertTrue(_bondEscalationData.status == IBondEscalationModule.BondEscalationStatus.Escalated);
+    IBondEscalationModule.BondEscalation memory _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+    assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.Escalated);
 
     /// The ArbitratorModule should have updated the status of the dispute
     assertTrue(_arbitratorModule.getStatus(_disputeId) == IArbitratorModule.ArbitrationStatus.Active);

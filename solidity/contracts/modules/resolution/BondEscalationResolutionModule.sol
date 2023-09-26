@@ -10,7 +10,6 @@ import {
   IResolutionModule
 } from '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IBondEscalationAccounting} from '../../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 import {Module, IModule} from '../../Module.sol';
 
@@ -21,7 +20,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   uint256 public constant BASE = 1e18;
 
   /// @inheritdoc IBondEscalationResolutionModule
-  mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
+  mapping(bytes32 _disputeId => Escalation _escalation) public escalations;
 
   /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => InequalityData _inequalityData) public inequalityData;
@@ -47,22 +46,22 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   /// @inheritdoc IResolutionModule
   function startResolution(bytes32 _disputeId) external onlyOracle {
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
-    escalationData[_disputeId].startTime = uint128(block.timestamp);
+    escalations[_disputeId].startTime = uint128(block.timestamp);
     emit ResolutionStarted(_requestId, _disputeId);
   }
 
   /// @inheritdoc IBondEscalationResolutionModule
   function pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
-    EscalationData storage _escalationData = escalationData[_disputeId];
+    Escalation storage _escalation = escalations[_disputeId];
 
-    if (_escalationData.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
+    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
 
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
     RequestParameters memory _params = decodeRequestData(_requestId);
 
     {
-      uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
+      uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
 
       if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
 
@@ -76,10 +75,10 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       }
     }
 
-    _escalationData.pledgesFor += _pledgeAmount;
+    _escalation.pledgesFor += _pledgeAmount;
     pledgesForDispute[_disputeId][msg.sender] += _pledgeAmount;
 
-    uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
+    uint256 _updatedTotalVotes = _escalation.pledgesFor + _escalation.pledgesAgainst;
 
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
@@ -91,8 +90,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     if (_updatedTotalVotes >= _params.pledgeThreshold) {
-      uint256 _updatedForVotes = _escalationData.pledgesFor;
-      uint256 _againstVotes = _escalationData.pledgesAgainst;
+      uint256 _updatedForVotes = _escalation.pledgesFor;
+      uint256 _againstVotes = _escalation.pledgesAgainst;
 
       uint256 _newForVotesPercentage = FixedPointMathLib.mulDivDown(_updatedForVotes, BASE, _updatedTotalVotes);
       uint256 _againstVotesPercentage = FixedPointMathLib.mulDivDown(_againstVotes, BASE, _updatedTotalVotes);
@@ -117,16 +116,16 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   /// @inheritdoc IBondEscalationResolutionModule
   function pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
-    EscalationData storage _escalationData = escalationData[_disputeId];
+    Escalation storage _escalation = escalations[_disputeId];
 
-    if (_escalationData.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
+    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
 
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
     RequestParameters memory _params = decodeRequestData(_requestId);
 
     {
-      uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
+      uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
 
       if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
 
@@ -140,10 +139,10 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       }
     }
 
-    _escalationData.pledgesAgainst += _pledgeAmount;
+    _escalation.pledgesAgainst += _pledgeAmount;
     pledgesAgainstDispute[_disputeId][msg.sender] += _pledgeAmount;
 
-    uint256 _updatedTotalVotes = _escalationData.pledgesFor + _escalationData.pledgesAgainst;
+    uint256 _updatedTotalVotes = _escalation.pledgesFor + _escalation.pledgesAgainst;
 
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
@@ -155,8 +154,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
 
     if (_updatedTotalVotes >= _params.pledgeThreshold) {
-      uint256 _updatedAgainstVotes = _escalationData.pledgesAgainst;
-      uint256 _forVotes = _escalationData.pledgesFor;
+      uint256 _updatedAgainstVotes = _escalation.pledgesAgainst;
+      uint256 _forVotes = _escalation.pledgesFor;
 
       uint256 _forVotesPercentage = FixedPointMathLib.mulDivDown(_forVotes, BASE, _updatedTotalVotes);
       uint256 _newAgainstVotesPercentage = FixedPointMathLib.mulDivDown(_updatedAgainstVotes, BASE, _updatedTotalVotes);
@@ -180,10 +179,10 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   /// @inheritdoc IResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
-    EscalationData storage _escalationData = escalationData[_disputeId];
+    Escalation storage _escalation = escalations[_disputeId];
 
-    if (_escalationData.resolution != Resolution.Unresolved) revert BondEscalationResolutionModule_AlreadyResolved();
-    if (_escalationData.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
+    if (_escalation.resolution != Resolution.Unresolved) revert BondEscalationResolutionModule_AlreadyResolved();
+    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
 
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
 
@@ -193,27 +192,27 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     uint256 _inequalityTimerDeadline = _inequalityData.time + _params.timeToBreakInequality;
 
-    uint256 _pledgingDeadline = _escalationData.startTime + _params.timeUntilDeadline;
+    uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
 
     // Revert if we have not yet reached the deadline and the timer has not passed
     if (block.timestamp < _pledgingDeadline && block.timestamp < _inequalityTimerDeadline) {
       revert BondEscalationResolutionModule_PledgingPhaseNotOver();
     }
 
-    uint256 _pledgesFor = _escalationData.pledgesFor;
-    uint256 _pledgesAgainst = _escalationData.pledgesAgainst;
+    uint256 _pledgesFor = _escalation.pledgesFor;
+    uint256 _pledgesAgainst = _escalation.pledgesAgainst;
     uint256 _totalPledges = _pledgesFor + _pledgesAgainst;
 
     IOracle.DisputeStatus _disputeStatus;
 
     if (_totalPledges < _params.pledgeThreshold || _pledgesFor == _pledgesAgainst) {
-      _escalationData.resolution = Resolution.NoResolution;
+      _escalation.resolution = Resolution.NoResolution;
       _disputeStatus = IOracle.DisputeStatus.NoResolution;
     } else if (_pledgesFor > _pledgesAgainst) {
-      _escalationData.resolution = Resolution.DisputerWon;
+      _escalation.resolution = Resolution.DisputerWon;
       _disputeStatus = IOracle.DisputeStatus.Won;
     } else if (_pledgesAgainst > _pledgesFor) {
-      _escalationData.resolution = Resolution.DisputerLost;
+      _escalation.resolution = Resolution.DisputerLost;
       _disputeStatus = IOracle.DisputeStatus.Lost;
     }
 
@@ -223,9 +222,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   /// @inheritdoc IBondEscalationResolutionModule
   function claimPledge(bytes32 _requestId, bytes32 _disputeId) external {
-    EscalationData storage _escalationData = escalationData[_disputeId];
+    Escalation storage _escalation = escalations[_disputeId];
 
-    if (_escalationData.resolution == Resolution.Unresolved) revert BondEscalationResolutionModule_NotResolved();
+    if (_escalation.resolution == Resolution.Unresolved) revert BondEscalationResolutionModule_NotResolved();
 
     RequestParameters memory _params = decodeRequestData(_requestId);
     uint256 _pledgerBalanceBefore;
@@ -233,12 +232,12 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     uint256 _amountToRelease;
     uint256 _reward;
 
-    if (_escalationData.resolution == Resolution.DisputerWon) {
+    if (_escalation.resolution == Resolution.DisputerWon) {
       _pledgerBalanceBefore = pledgesForDispute[_disputeId][msg.sender];
       pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
 
-      _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesFor);
-      _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesAgainst, _pledgerProportion, BASE);
+      _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesFor);
+      _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _params.accountingExtension.releasePledge({
         _requestId: _requestId,
@@ -248,12 +247,12 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _amount: _amountToRelease
       });
       emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
-    } else if (_escalationData.resolution == Resolution.DisputerLost) {
+    } else if (_escalation.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
 
-      _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalationData.pledgesAgainst);
-      _reward = FixedPointMathLib.mulDivDown(_escalationData.pledgesFor, _pledgerProportion, BASE);
+      _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesAgainst);
+      _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _params.accountingExtension.releasePledge({
         _requestId: _requestId,
@@ -263,7 +262,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _amount: _amountToRelease
       });
       emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
-    } else if (_escalationData.resolution == Resolution.NoResolution) {
+    } else if (_escalation.resolution == Resolution.NoResolution) {
       uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
       uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
 

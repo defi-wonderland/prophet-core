@@ -20,11 +20,11 @@ contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
     requestData[_requestId] = _data;
   }
 
-  function forTest_setEscalationData(
+  function forTest_setEscalation(
     bytes32 _disputeId,
-    PrivateERC20ResolutionModule.EscalationData calldata __escalationData
+    PrivateERC20ResolutionModule.Escalation calldata __escalation
   ) public {
-    escalationData[_disputeId] = __escalationData;
+    escalations[_disputeId] = __escalation;
   }
 
   function forTest_setVoterData(
@@ -98,9 +98,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
    * @notice Test that the startResolution is correctly called and the committing phase is started
    */
   function test_startResolution(bytes32 _disputeId) public {
-    module.forTest_setEscalationData(
-      _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 0, totalVotes: 0})
-    );
+    module.forTest_setEscalation(_disputeId, IPrivateERC20ResolutionModule.Escalation({startTime: 0, totalVotes: 0}));
 
     // Check: does revert if called by address != oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
@@ -113,7 +111,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
 
-    (uint256 _startTime,) = module.escalationData(_disputeId);
+    (uint256 _startTime,) = module.escalations(_disputeId);
 
     // Check: startTime is set to block.timestamp?
     assertEq(_startTime, block.timestamp);
@@ -133,9 +131,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     // Store mock escalation data with startTime 100_000
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -261,9 +259,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -297,9 +295,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     address _voter
   ) public {
     // Store mock escalation data with startTime 100_000
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -333,7 +331,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.prank(_voter);
     module.revealVote(_requestId, _disputeId, _amountOfVotes, _salt);
 
-    (, uint256 _totalVotes) = module.escalationData(_disputeId);
+    (, uint256 _totalVotes) = module.escalations(_disputeId);
     // Check: totalVotes is updated?
     assertEq(_totalVotes, _amountOfVotes);
 
@@ -367,9 +365,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   ) public {
     vm.assume(_timestamp >= 100_000 && (_timestamp <= 140_000 || _timestamp > 180_000));
 
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -417,9 +415,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.assume(_salt != _wrongSalt);
     vm.assume(_voter != _wrongVoter);
 
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -477,8 +475,8 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     );
 
     // Store escalation data with starttime 100_000 and votes 0
-    module.forTest_setEscalationData(
-      _disputeId, IPrivateERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
+    module.forTest_setEscalation(
+      _disputeId, IPrivateERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0})
     );
 
     uint256 _votersAmount = 5;
@@ -526,9 +524,9 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IPrivateERC20ResolutionModule.EscalationData({
+      IPrivateERC20ResolutionModule.Escalation({
         startTime: 1,
         totalVotes: 0 // Initial amount of votes
       })

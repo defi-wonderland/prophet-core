@@ -295,7 +295,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   /// @inheritdoc IBondEscalationModule
-  function getEscalationData(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
+  function getEscalation(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
     _escalation = _escalations[_requestId];
   }
 }

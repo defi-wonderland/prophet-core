@@ -19,11 +19,8 @@ contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
     requestData[_requestId] = _data;
   }
 
-  function forTest_setEscalationData(
-    bytes32 _disputeId,
-    ERC20ResolutionModule.EscalationData calldata __escalationData
-  ) public {
-    escalationData[_disputeId] = __escalationData;
+  function forTest_setEscalation(bytes32 _disputeId, ERC20ResolutionModule.Escalation calldata __escalation) public {
+    escalations[_disputeId] = __escalation;
   }
 
   function forTest_setVotes(bytes32 _disputeId, address _voter, uint256 _amountOfVotes) public {
@@ -114,7 +111,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
 
-    (uint256 _startTime,) = module.escalationData(_disputeId);
+    (uint256 _startTime,) = module.escalations(_disputeId);
 
     // Check: `startTime` is set to block.timestamp?
     assertEq(_startTime, block.timestamp);
@@ -131,9 +128,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
     // Store mock escalation data with startTime 100_000
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IERC20ResolutionModule.EscalationData({
+      IERC20ResolutionModule.Escalation({
         startTime: 100_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -161,7 +158,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.prank(_voter);
     module.castVote(_requestId, _disputeId, _amountOfVotes);
 
-    (, uint256 _totalVotes) = module.escalationData(_disputeId);
+    (, uint256 _totalVotes) = module.escalations(_disputeId);
     // Check: totalVotes is updated?
     assertEq(_totalVotes, _amountOfVotes);
 
@@ -249,9 +246,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    module.forTest_setEscalationData(
-      _disputeId, IERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
-    );
+    module.forTest_setEscalation(_disputeId, IERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0}));
 
     // Store request data
     uint256 _minVotesForQuorum = 1;
@@ -283,9 +278,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Store escalation data with `startTime` 100_000 and votes 0
-    module.forTest_setEscalationData(
-      _disputeId, IERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
-    );
+    module.forTest_setEscalation(_disputeId, IERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0}));
 
     uint256 _votersAmount = 5;
 
@@ -336,9 +329,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    module.forTest_setEscalationData(
+    module.forTest_setEscalation(
       _disputeId,
-      IERC20ResolutionModule.EscalationData({
+      IERC20ResolutionModule.Escalation({
         startTime: 500_000,
         totalVotes: 0 // Initial amount of votes
       })
@@ -376,9 +369,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
     // Store escalation data with `startTime` 100_000 and votes 0
-    module.forTest_setEscalationData(
-      _disputeId, IERC20ResolutionModule.EscalationData({startTime: 100_000, totalVotes: 0})
-    );
+    module.forTest_setEscalation(_disputeId, IERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0}));
 
     uint256 _votersAmount = 3;
 

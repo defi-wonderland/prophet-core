@@ -5,7 +5,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IERC20ResolutionModule} from '../../../interfaces/modules/resolution/IERC20ResolutionModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
@@ -19,7 +18,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @inheritdoc IERC20ResolutionModule
-  mapping(bytes32 _disputeId => EscalationData _escalationData) public escalationData;
+  mapping(bytes32 _disputeId => Escalation _escalation) public escalations;
 
   /// @inheritdoc IERC20ResolutionModule
   mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) public votes;
@@ -40,7 +39,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   /// @inheritdoc IERC20ResolutionModule
   function startResolution(bytes32 _disputeId) external onlyOracle {
-    escalationData[_disputeId].startTime = block.timestamp;
+    escalations[_disputeId].startTime = block.timestamp;
     emit VotingPhaseStarted(block.timestamp, _disputeId);
   }
 
@@ -50,17 +49,17 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
 
-    EscalationData memory _escalationData = escalationData[_disputeId];
-    if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
+    Escalation memory _escalation = escalations[_disputeId];
+    if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
     RequestParameters memory _params = decodeRequestData(_requestId);
-    uint256 _deadline = _escalationData.startTime + _params.timeUntilDeadline;
+    uint256 _deadline = _escalation.startTime + _params.timeUntilDeadline;
     if (block.timestamp >= _deadline) revert ERC20ResolutionModule_VotingPhaseOver();
 
     votes[_disputeId][msg.sender] += _numberOfVotes;
 
     _voters[_disputeId].add(msg.sender);
-    escalationData[_disputeId].totalVotes += _numberOfVotes;
+    escalations[_disputeId].totalVotes += _numberOfVotes;
 
     _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
@@ -73,16 +72,16 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
 
-    EscalationData memory _escalationData = escalationData[_disputeId];
+    Escalation memory _escalation = escalations[_disputeId];
     // 1. Check that the dispute is actually escalated
-    if (_escalationData.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
+    if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
     // 2. Check that voting deadline is over
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
-    uint256 _deadline = _escalationData.startTime + _params.timeUntilDeadline;
+    uint256 _deadline = _escalation.startTime + _params.timeUntilDeadline;
     if (block.timestamp < _deadline) revert ERC20ResolutionModule_OnGoingVotingPhase();
 
-    uint256 _quorumReached = _escalationData.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
+    uint256 _quorumReached = _escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
     address[] memory __voters = _voters[_disputeId].values();
 

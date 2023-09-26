@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../../IOracle.sol';
 import {IResolutionModule} from './IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBondEscalationAccounting} from '../../extensions/IBondEscalationAccounting.sol';
@@ -154,7 +153,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    *                                   parties to pledge. When the percentageDiff is surpassed, the status changes to AgainstTurnToEqualize or ForTurnToEqualize depending on
    *                                   which side surpassed the percentageDiff. When this happens, only the respective side can pledge.
    * @param ForTurnToEqualize      If the for pledges surpassed the percentageDiff, a timer is started and the against party has a set amount of time to
-   *                                   reduce the percentageDiff so that the status is Equalized again, or to surpass the percentageDiff so that the status changes to ForTurnToEqualize. 
+   *                                   reduce the percentageDiff so that the status is Equalized again, or to surpass the percentageDiff so that the status changes to ForTurnToEqualize.
    *                                   Until this happens, only the people pledging against a dispute can pledge.
    *                                   If the timer runs out without the status changing, then the dispute is considered finalized and the for party wins.
    * @param AgainstTurnToEqualize  The same as AgainstTurnToEqualize but for the parties that wish to pledge in favor a given dispute.
@@ -222,7 +221,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @param _pledgesFor     The amount of pledges in favor of the dispute.
    * @param _pledgesAgainst The amount of pledges against the dispute.
    */
-  struct EscalationData {
+  struct Escalation {
     Resolution resolution;
     uint128 startTime;
     uint256 pledgesFor;
@@ -250,7 +249,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @return _pledgesFor The amount of pledges in favor of the dispute.
    * @return _pledgesAgainst The amount of pledges against the dispute.
    */
-  function escalationData(bytes32 _disputeId)
+  function escalations(bytes32 _disputeId)
     external
     view
     returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);

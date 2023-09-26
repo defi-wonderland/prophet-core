@@ -167,7 +167,7 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _requestId The id of the request to get its escalation data.
    * @return _escalation The struct containing the escalation data.
    */
-  function getEscalationData(bytes32 _requestId) external view returns (BondEscalation memory _escalation);
+  function getEscalation(bytes32 _requestId) external view returns (BondEscalation memory _escalation);
 
   /**
    * @notice Decodes the request data associated with a request id.

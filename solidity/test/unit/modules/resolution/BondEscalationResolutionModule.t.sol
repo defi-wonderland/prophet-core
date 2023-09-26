@@ -6,10 +6,10 @@ import 'forge-std/Test.sol';
 import {
   BondEscalationResolutionModule,
   IOracle,
-  IBondEscalationAccounting,
   IBondEscalationResolutionModule,
   IERC20
 } from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 import {IModule} from '../../../../contracts/Module.sol';
 
@@ -29,11 +29,11 @@ contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModul
     requestData[_requestId] = _data;
   }
 
-  function forTest_setEscalationData(
+  function forTest_setEscalation(
     bytes32 _disputeId,
-    BondEscalationResolutionModule.EscalationData calldata __escalationData
+    BondEscalationResolutionModule.Escalation calldata __escalation
   ) public {
-    escalationData[_disputeId] = __escalationData;
+    escalations[_disputeId] = __escalation;
   }
 
   function forTest_setInequalityData(
@@ -182,7 +182,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     Specs:
       0. Should do the appropiate calls and emit the appropiate events
       1. Should revert if caller is not the dispute module
-      2. Should set escalationData.startTime to block.timestamp
+      2. Should set escalation.startTime to block.timestamp
   */
 
   function test_startResolution(bytes32 _disputeId, bytes32 _requestId) public {
@@ -200,7 +200,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.startResolution(_disputeId);
 
-    (, uint128 _startTime,,) = module.escalationData(_disputeId);
+    (, uint128 _startTime,,) = module.escalations(_disputeId);
 
     assertEq(_startTime, uint128(block.timestamp));
   }
@@ -235,14 +235,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 0;
     uint256 _pledgesFor = 0;
     uint256 _pledgesAgainst = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
 
     // Test revert when deadline over
     _startTime = 1;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     uint256 _timeUntilDeadline = block.timestamp - _startTime;
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, timeToBreakInequality);
@@ -257,7 +257,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setInequalityData(_disputeId, _inequalityStatus, _time);
 
     _startTime = uint128(block.timestamp);
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     _timeUntilDeadline = 10_000;
     uint256 _timeToBreakInequality = 5000;
@@ -302,7 +302,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
       IBondEscalationResolutionModule.InequalityStatus.Equalized;
 
     // set all data
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
     _setRequestData(_requestId, percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
     _setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -326,7 +326,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     // test
     vm.startPrank(pledgerFor);
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-    (,, uint256 _realPledgesFor,) = module.escalationData(_disputeId);
+    (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
     assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
@@ -364,7 +364,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
       IBondEscalationResolutionModule.InequalityStatus.Equalized;
 
     // set all data
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
     _setRequestData(_requestId, _percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
     _setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -388,7 +388,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     // test
     vm.startPrank(pledgerFor);
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-    (,, uint256 _realPledgesFor,) = module.escalationData(_disputeId);
+    (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
@@ -420,14 +420,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _pledgesAgainst = (_pledgeAmount + _pledgesFor) * 301 / 200;
 
     // Resetting the pledges values
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     // event
     vm.expectEmit(true, true, true, true, address(module));
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-    (,, _realPledgesFor,) = module.escalationData(_disputeId);
+    (,, _realPledgesFor,) = module.escalations(_disputeId);
     (_status, _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
@@ -452,14 +452,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _pledgesAgainst = (_pledgeAmount + _pledgesFor);
 
     // Resetting the pledges values
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     // event
     vm.expectEmit(true, true, true, true, address(module));
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-    (,, _realPledgesFor,) = module.escalationData(_disputeId);
+    (,, _realPledgesFor,) = module.escalations(_disputeId);
     (_status, _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
@@ -501,14 +501,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 0;
     uint256 _pledgesFor = 0;
     uint256 _pledgesAgainst = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
 
     // Test revert when deadline over
     _startTime = 1;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     uint256 _timeUntilDeadline = block.timestamp - _startTime;
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, timeToBreakInequality);
@@ -523,7 +523,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setInequalityData(_disputeId, _inequalityStatus, _time);
 
     _startTime = uint128(block.timestamp);
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     _timeUntilDeadline = 10_000;
     uint256 _timeToBreakInequality = 5000;
@@ -568,7 +568,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
       IBondEscalationResolutionModule.InequalityStatus.Equalized;
 
     // set all data
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
     _setRequestData(_requestId, percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
     _setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -592,7 +592,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     // test
     vm.startPrank(pledgerAgainst);
     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-    (,,, uint256 _realPledgesAgainst) = module.escalationData(_disputeId);
+    (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
@@ -633,7 +633,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
       IBondEscalationResolutionModule.InequalityStatus.Equalized;
 
     // set all data
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
     _setRequestData(_requestId, _percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
     _setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -657,7 +657,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     // test
     vm.startPrank(pledgerAgainst);
     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-    (,,, uint256 _realPledgesAgainst) = module.escalationData(_disputeId);
+    (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
@@ -689,14 +689,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _pledgesFor = (_pledgeAmount + _pledgesAgainst) * 301 / 200;
 
     // Resetting the pledges values
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     // event
     vm.expectEmit(true, true, true, true, address(module));
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-    (,,, _realPledgesAgainst) = module.escalationData(_disputeId);
+    (,,, _realPledgesAgainst) = module.escalations(_disputeId);
     (_status, _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
@@ -721,14 +721,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _pledgesFor = (_pledgeAmount + _pledgesAgainst);
 
     // Resetting the pledges values
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     // event
     vm.expectEmit(true, true, true, true, address(module));
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-    (,,, _realPledgesAgainst) = module.escalationData(_disputeId);
+    (,,, _realPledgesAgainst) = module.escalations(_disputeId);
     (_status, _timer) = module.inequalityData(_disputeId);
 
     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
@@ -765,7 +765,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 0;
     uint256 _pledgesFor = 0;
     uint256 _pledgesAgainst = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AlreadyResolved.selector);
     vm.prank(address(oracle));
@@ -773,7 +773,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Revert if dispute not escalated
     _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
     vm.prank(address(oracle));
@@ -795,7 +795,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setInequalityData(_disputeId, _inequalityStatus, _time);
 
     _startTime = uint128(block.timestamp);
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseNotOver.selector);
     vm.prank(address(oracle));
@@ -809,7 +809,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 1; // not zero
     uint256 _pledgesFor = 0;
     uint256 _pledgesAgainst = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
@@ -837,7 +837,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
-    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
 
@@ -851,7 +851,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 1; // not zero
     uint256 _pledgesFor = 2000;
     uint256 _pledgesAgainst = 2000;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
@@ -878,7 +878,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
-    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
 
@@ -892,7 +892,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 1; // not zero
     uint256 _pledgesFor = 3000;
     uint256 _pledgesAgainst = 2000;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
@@ -917,7 +917,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
-    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerWon));
 
@@ -931,7 +931,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint128 _startTime = 1; // not zero
     uint256 _pledgesFor = 2000;
     uint256 _pledgesAgainst = 3000;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
@@ -958,7 +958,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
 
-    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalationData(_disputeId);
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerLost));
 
@@ -979,7 +979,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
 
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     address _randomPledger = makeAddr('randomPledger');
 
@@ -1010,7 +1010,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
 
     uint128 _startTime = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _totalPledgesFor, _totalPledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _totalPledgesFor, _totalPledgesAgainst);
 
     address _randomPledger = makeAddr('randomPledger');
 
@@ -1058,7 +1058,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
 
     uint128 _startTime = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _totalPledgesFor, _totalPledgesAgainst);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _totalPledgesFor, _totalPledgesAgainst);
 
     address _randomPledger = makeAddr('randomPledger');
 
@@ -1101,7 +1101,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality);
 
     uint128 _startTime = 0;
-    _setMockEscalationData(_disputeId, _resolution, _startTime, _userForPledge, _userAgainstPledge);
+    _setMockEscalation(_disputeId, _resolution, _startTime, _userForPledge, _userAgainstPledge);
 
     address _randomPledger = makeAddr('randomPledger');
 
@@ -1194,16 +1194,16 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     module.forTest_setInequalityData(_disputeId, _inequalityData);
   }
 
-  function _setMockEscalationData(
+  function _setMockEscalation(
     bytes32 _disputeId,
     IBondEscalationResolutionModule.Resolution _resolution,
     uint128 _startTime,
     uint256 _pledgesFor,
     uint256 _pledgesAgainst
   ) internal {
-    BondEscalationResolutionModule.EscalationData memory _escalationData =
-      IBondEscalationResolutionModule.EscalationData(_resolution, _startTime, _pledgesFor, _pledgesAgainst);
-    module.forTest_setEscalationData(_disputeId, _escalationData);
+    BondEscalationResolutionModule.Escalation memory _escalation =
+      IBondEscalationResolutionModule.Escalation(_resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    module.forTest_setEscalation(_disputeId, _escalation);
   }
 
   function _createPledgers(

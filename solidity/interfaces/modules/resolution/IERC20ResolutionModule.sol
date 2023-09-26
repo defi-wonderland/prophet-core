@@ -3,8 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IResolutionModule} from './IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
-import {IOracle} from '../../IOracle.sol';
 
 /**
  * @title ERC20ResolutionModule
@@ -36,7 +34,7 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @param startTime The timestamp at which the dispute was escalated
    * @param totalVotes The total amount of votes cast for the dispute
    */
-  struct EscalationData {
+  struct Escalation {
     uint256 startTime;
     uint256 totalVotes;
   }
@@ -109,7 +107,7 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @return _startTime The timestamp at which the dispute was escalated
    * @return _totalVotes The total amount of votes cast for the dispute
    */
-  function escalationData(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
+  function escalations(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
 
   function votes(bytes32 _disputeId, address _voter) external view returns (uint256 _votes);
 
