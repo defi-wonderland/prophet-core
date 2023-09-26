@@ -2,11 +2,9 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from '../interfaces/IOracle.sol';
-import {Subset} from './libraries/Subset.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
-  using Subset for mapping(uint256 => bytes32);
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   /// @inheritdoc IOracle
@@ -98,7 +96,24 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
-    return _requestIds.getSubset(_startFrom, _batchSize, totalRequestCount);
+    if (_batchSize > totalRequestCount) {
+      return _list;
+    }
+
+    if (_batchSize > totalRequestCount - _startFrom) {
+      _batchSize = totalRequestCount - _startFrom;
+    }
+
+    _list = new bytes32[](_batchSize);
+
+    uint256 _index;
+    while (_index < _batchSize) {
+      _list[_index] = _requestIds[_startFrom + _index];
+
+      unchecked {
+        ++_index;
+      }
+    }
   }
 
   /// @inheritdoc IOracle
