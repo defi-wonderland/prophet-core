@@ -5,7 +5,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../interfaces/modules/IPrivateERC20ResolutionModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {Module} from '../Module.sol';

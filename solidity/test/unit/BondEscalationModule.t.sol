@@ -8,14 +8,14 @@ import {
   BondEscalationModule,
   Module,
   IOracle,
-  IBondEscalationAccounting,
-  IBondEscalationModule,
-  IERC20
+  IBondEscalationModule
 } from '../../contracts/modules/BondEscalationModule.sol';
 
 import {IModule} from '../../contracts/Module.sol';
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
 
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**

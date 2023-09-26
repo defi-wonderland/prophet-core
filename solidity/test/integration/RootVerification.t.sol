@@ -5,13 +5,12 @@ import './IntegrationBase.sol';
 import {
   SparseMerkleTreeRequestModule,
   ISparseMerkleTreeRequestModule,
-  IOracle,
-  ITreeVerifier,
-  IAccountingExtension,
-  IERC20
+  IOracle
 } from '../../contracts/modules/SparseMerkleTreeRequestModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
 import {RootVerificationModule, IRootVerificationModule} from '../../contracts/modules/RootVerificationModule.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
 
 contract Integration_RootVerification is IntegrationBase {
   SparseMerkleTreeL32Verifier _treeVerifier;

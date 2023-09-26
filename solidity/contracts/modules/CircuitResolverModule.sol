@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {ICircuitResolverModule} from '../../interfaces/modules/ICircuitResolverModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 import {Module} from '../Module.sol';
 

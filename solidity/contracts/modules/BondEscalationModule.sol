@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 import {IBondEscalationModule} from '../../interfaces/modules/IBondEscalationModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 import {IModule} from '../../interfaces/IModule.sol';
-import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 import {Module} from '../Module.sol';
 

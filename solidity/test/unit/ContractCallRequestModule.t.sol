@@ -7,12 +7,12 @@ import 'forge-std/Test.sol';
 import {
   ContractCallRequestModule,
   IContractCallRequestModule,
-  IOracle,
-  IAccountingExtension,
-  IERC20
+  IOracle
 } from '../../contracts/modules/ContractCallRequestModule.sol';
-
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IModule} from '../../interfaces/IModule.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */

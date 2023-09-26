@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../IOracle.sol';
 import {IResolutionModule} from './IResolutionModule.sol';
-import {IModule} from '../IModule.sol';
 
 interface ISequentialResolutionModule is IOracle, IResolutionModule {
   /*///////////////////////////////////////////////////////////////

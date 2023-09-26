@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {IResolutionModule} from './IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IAccountingExtension} from '../extensions/IAccountingExtension.sol';
-import {IOracle} from '../IOracle.sol';
 
 /*
   * @title PrivateERC20ResolutionModule

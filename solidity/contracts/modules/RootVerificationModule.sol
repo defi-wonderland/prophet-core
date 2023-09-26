@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {MerkleLib} from '../libraries/MerkleLib.sol';
 
 import {IRootVerificationModule} from '../../interfaces/modules/IRootVerificationModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
-import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 import {Module} from '../Module.sol';
 

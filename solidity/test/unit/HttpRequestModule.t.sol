@@ -4,14 +4,11 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line
 import 'forge-std/Test.sol';
 
-import {
-  HttpRequestModule,
-  IHttpRequestModule,
-  IOracle,
-  IAccountingExtension,
-  IERC20
-} from '../../contracts/modules/HttpRequestModule.sol';
+import {HttpRequestModule, IHttpRequestModule, IOracle} from '../../contracts/modules/HttpRequestModule.sol';
+import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {IModule} from '../../interfaces/IModule.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */

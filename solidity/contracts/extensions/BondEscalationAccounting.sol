@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 
 import {AccountingExtension} from './AccountingExtension.sol';
 

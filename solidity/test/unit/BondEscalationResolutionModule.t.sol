@@ -8,19 +8,13 @@ import {
   BondEscalationResolutionModule,
   Module,
   IOracle,
-  IBondEscalationAccounting,
-  IBondEscalationResolutionModule,
-  IERC20
+  IBondEscalationResolutionModule
 } from '../../contracts/modules/BondEscalationResolutionModule.sol';
 
-import {IRequestModule} from '../../interfaces/modules/IRequestModule.sol';
-import {IResponseModule} from '../../interfaces/modules/IResponseModule.sol';
-import {IDisputeModule} from '../../interfaces/modules/IDisputeModule.sol';
-import {IResolutionModule} from '../../interfaces/modules/IResolutionModule.sol';
-import {IFinalityModule} from '../../interfaces/modules/IFinalityModule.sol';
-
 import {IModule} from '../../contracts/Module.sol';
+import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
 
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
