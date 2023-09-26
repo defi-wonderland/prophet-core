@@ -75,8 +75,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_requestId);
 
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
-    if (block.timestamp > _response.createdAt + _params.challengePeriod) {
-      revert BondEscalationModule_ChallengePeriodOver();
+    if (block.timestamp > _response.createdAt + _params.disputeWindow) {
+      revert BondEscalationModule_DisputeWindowOver();
     }
 
     BondEscalation storage _escalation = _escalations[_requestId];

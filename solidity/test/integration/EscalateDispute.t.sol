@@ -30,7 +30,7 @@ contract Integration_EscalateDispute is IntegrationBase {
           maxNumberOfEscalations: 1,
           bondEscalationDeadline: _expectedDeadline,
           tyingBuffer: 0,
-          challengePeriod: 0
+          disputeWindow: 0
         })
       ),
       _arbitratorModule,

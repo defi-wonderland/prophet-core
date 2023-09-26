@@ -94,9 +94,9 @@ interface IBondEscalationModule is IDisputeModule {
    */
   error BondEscalationModule_CanOnlySurpassByOnePledge();
   /**
-   * @notice Thrown when trying to dispute a response after the challenge period expired.
+   * @notice Thrown when trying to dispute a response after the dispute period expired.
    */
-  error BondEscalationModule_ChallengePeriodOver();
+  error BondEscalationModule_DisputeWindowOver();
   /**
    * @notice Thrown when trying to set up a request with invalid bond size or maximum amount of escalations.
    */
@@ -131,7 +131,7 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _bondEscalationDeadline     Timestamp at which bond escalation process finishes when pledges are not tied
    * @param _tyingBuffer                Number of seconds to extend the bond escalation process to allow the losing
    *                                    party to tie if at the end of the initial deadline the pledges weren't tied.
-   * @param _challengePeriod            Number of seconds disputers have to challenge the proposed response since its creation.
+   * @param _disputeWindow              Number of seconds disputers have to challenge the proposed response since its creation.
    */
   struct RequestParameters {
     IBondEscalationAccounting accountingExtension;
@@ -140,7 +140,7 @@ interface IBondEscalationModule is IDisputeModule {
     uint256 maxNumberOfEscalations;
     uint256 bondEscalationDeadline;
     uint256 tyingBuffer;
-    uint256 challengePeriod;
+    uint256 disputeWindow;
   }
 
   /**
