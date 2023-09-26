@@ -28,13 +28,13 @@ The Accounting Extension is a contract that allows users to deposit and bond fun
 
 - Payments: The Accounting Extension allows for payments to be made from one user to another. This usually means rewards for correct proposers and disputers and slashing malicious actors. It's done by unlocking and transferring the bonded tokens from the payer to the receiver's balance. Payments can only be initiated by modules.
 
-- Releasing Bonds: Bonds can be released by valid modules, which moves the bonded tokens back to the user's balance, making them available for withdrawal or bonding to a different request.
+- Releasing Bonds: Bonds can be released by allowed modules, which moves the bonded tokens back to the user's balance, making them available for withdrawal or bonding to a different request.
 
 ## 4. Gotchas
 
 - Token Approval: Before depositing ERC20 tokens (other than ETH), users must first approve the Accounting Extension to transfer the tokens on their behalf.
 
-- Bonding Requirement: Users can only withdraw tokens that are not currently bonded. If a user has bonded tokens for a request, those tokens are locked until they are released by a valid module. Attempting to withdraw bonded tokens will result in an error. Attempting to slash or pay out tokens that are not locked will also result in a transaction being reverted.
+- Bonding Requirement: Users can only withdraw tokens that are not currently bonded. If a user has bonded tokens for a request, those tokens are locked until they are released by a allowed module. Attempting to withdraw bonded tokens will result in an error. Attempting to slash or pay out tokens that are not locked will also result in a transaction being reverted.
 
 - ETH Deposits: When depositing ETH, the contract automatically wraps it into WETH. Users should be aware of this, as it means that when they withdraw, they will receive WETH, not ETH. They will need to unwrap the WETH to get back ETH.
 

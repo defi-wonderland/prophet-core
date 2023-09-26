@@ -299,9 +299,9 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule) {
     Request memory _request = _requests[_requestId];
-    _validModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
+    _allowedModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
       || address(_request.disputeModule) == _module || address(_request.resolutionModule) == _module
       || address(_request.finalityModule) == _module;
   }

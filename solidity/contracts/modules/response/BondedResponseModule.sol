@@ -86,7 +86,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   ) external override(IBondedResponseModule, Module) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_requestId);
 
-    bool _isModule = ORACLE.validModule(_requestId, _finalizer);
+    bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
 
     if (!_isModule && block.timestamp < _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();

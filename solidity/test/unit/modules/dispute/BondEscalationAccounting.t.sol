@@ -114,14 +114,14 @@ contract BondEscalationAccounting_UnitTest is Test {
   ////////////////////////////////////////////////////////////////////
   //                      Tests for pledge
   ////////////////////////////////////////////////////////////////////
-  function test_pledgeRevertIfInvalidModule(
+  function test_pledgeRevertIfDisallowedModule(
     address _pledger,
     bytes32 _requestId,
     bytes32 _disputeId,
     uint256 _amount
   ) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
     bondEscalationAccounting.pledge({
       _pledger: _pledger,
@@ -139,8 +139,8 @@ contract BondEscalationAccounting_UnitTest is Test {
     uint256 _amount
   ) public {
     vm.assume(_amount > 0);
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
     bondEscalationAccounting.pledge({
       _pledger: _pledger,
@@ -152,8 +152,8 @@ contract BondEscalationAccounting_UnitTest is Test {
   }
 
   function test_pledgeSuccessfulCall(address _pledger, bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     bondEscalationAccounting.forTest_setBalanceOf(_pledger, token, _amount);
 
@@ -181,14 +181,14 @@ contract BondEscalationAccounting_UnitTest is Test {
   ////////////////////////////////////////////////////////////////////
   //                 Tests for onSettleBondEscalation
   ////////////////////////////////////////////////////////////////////
-  function test_onSettleBondEscalationRevertIfInvalidModule(
+  function test_onSettleBondEscalationRevertIfDisallowedModule(
     bytes32 _requestId,
     bytes32 _disputeId,
     uint256 _numOfWinningPledgers,
     uint256 _amountPerPledger
   ) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
     bondEscalationAccounting.onSettleBondEscalation({
       _requestId: _requestId,
@@ -211,8 +211,8 @@ contract BondEscalationAccounting_UnitTest is Test {
     vm.assume(_amountPerPledger < type(uint256).max / _numOfWinningPledgers);
 
     vm.assume(_requestId != bytes32(0));
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     bondEscalationAccounting.forTest_setEscalationResult(
       _disputeId, _requestId, true, token, _amountPerPledger, IBondEscalationModule(address(this))
@@ -241,8 +241,8 @@ contract BondEscalationAccounting_UnitTest is Test {
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     address[] memory _winningPledgers = _createWinningPledgersArray(_numOfWinningPledgers);
 
@@ -272,8 +272,8 @@ contract BondEscalationAccounting_UnitTest is Test {
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     address[] memory _winningPledgers = _createWinningPledgersArray(_numOfWinningPledgers);
     uint256 _totalAmountToPay = _amountPerPledger * _winningPledgers.length;
@@ -404,14 +404,14 @@ contract BondEscalationAccounting_UnitTest is Test {
   ////////////////////////////////////////////////////////////////////
   //                 Tests for releasePledge
   ////////////////////////////////////////////////////////////////////
-  function test_releasePledgeRevertIfInvalidModule(
+  function test_releasePledgeRevertIfDisallowedModule(
     bytes32 _requestId,
     bytes32 _disputeId,
     address _pledger,
     uint256 _amount
   ) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
     bondEscalationAccounting.releasePledge({
       _requestId: _requestId,
@@ -424,8 +424,8 @@ contract BondEscalationAccounting_UnitTest is Test {
 
   function test_releaseRevertIfInsufficientFunds(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
     vm.assume(_amount < type(uint256).max);
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount);
     uint256 _underflowAmount = _amount + 1;
@@ -441,8 +441,8 @@ contract BondEscalationAccounting_UnitTest is Test {
   }
 
   function test_releaseSuccessfulCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount);
 
@@ -459,8 +459,8 @@ contract BondEscalationAccounting_UnitTest is Test {
   }
 
   function test_releasePledgeEmitsEvent(bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount);
 

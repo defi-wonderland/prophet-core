@@ -155,8 +155,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   // ============ ORACLE Proxy =============
 
   /// @inheritdoc IOracle
-  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule) {
-    _validModule = ORACLE.validModule(_requestId, _module);
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule) {
+    _allowedModule = ORACLE.allowedModule(_requestId, _module);
   }
 
   /// @inheritdoc IOracle

@@ -986,9 +986,9 @@ contract Oracle_UnitTest is Test {
   }
 
   /**
-   * @notice Test if valid module returns correct bool for the modules
+   * @notice Test if allowed module returns correct bool for the modules
    */
-  function test_validModule(address _notAModule) public {
+  function test_allowedModule(address _notAModule) public {
     // Fuzz any address not in the modules of the request
     vm.assume(
       _notAModule != address(requestModule) && _notAModule != address(responseModule)
@@ -1001,14 +1001,14 @@ contract Oracle_UnitTest is Test {
     bytes32 _requestId = _dummyRequestIds[0];
 
     // Check: the correct modules are recognized as valid
-    assertTrue(oracle.validModule(_requestId, address(requestModule)));
-    assertTrue(oracle.validModule(_requestId, address(responseModule)));
-    assertTrue(oracle.validModule(_requestId, address(disputeModule)));
-    assertTrue(oracle.validModule(_requestId, address(resolutionModule)));
-    assertTrue(oracle.validModule(_requestId, address(finalityModule)));
+    assertTrue(oracle.allowedModule(_requestId, address(requestModule)));
+    assertTrue(oracle.allowedModule(_requestId, address(responseModule)));
+    assertTrue(oracle.allowedModule(_requestId, address(disputeModule)));
+    assertTrue(oracle.allowedModule(_requestId, address(resolutionModule)));
+    assertTrue(oracle.allowedModule(_requestId, address(finalityModule)));
 
-    // Check: any other address is not recognized as valid module
-    assertFalse(oracle.validModule(_requestId, _notAModule));
+    // Check: any other address is not recognized as allowed module
+    assertFalse(oracle.allowedModule(_requestId, _notAModule));
   }
 
   /**

@@ -204,7 +204,7 @@ contract Integration_RequestCreation is IntegrationBase {
     // oracle.createRequest(_invalidDeadlineRequest);
   }
 
-  function test_createRequestWithInvalidModule() public {
+  function test_createRequestWithDisallowedModule() public {
     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
 
     IOracle.NewRequest memory _request = _standardRequest();

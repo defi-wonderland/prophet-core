@@ -25,12 +25,12 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
     address _pledger,
-    // TODO: leaving this request id here for the valid module check until the audit fix is defined
+    // TODO: leaving this request id here for the allowed module check until the audit fix is defined
     bytes32 _requestId,
     bytes32 _disputeId,
     IERC20 _token,
     uint256 _amount
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
@@ -50,7 +50,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     // TODO: check that flooring at _amountPerPledger calculation doesn't mess with this check
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
       revert BondEscalationAccounting_InsufficientFunds();
@@ -103,7 +103,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     address _pledger,
     IERC20 _token,
     uint256 _amount
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     if (pledges[_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     balanceOf[_pledger][_token] += _amount;

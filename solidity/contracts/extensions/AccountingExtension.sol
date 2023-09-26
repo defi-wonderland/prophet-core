@@ -25,10 +25,10 @@ contract AccountingExtension is IAccountingExtension {
   }
 
   /**
-   * @notice Checks that the caller is a valid module used in the request.
+   * @notice Checks that the caller is a allowed module used in the request.
    */
-  modifier onlyValidModule(bytes32 _requestId) {
-    if (!ORACLE.validModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
+  modifier onlyAllowedModule(bytes32 _requestId) {
+    if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
     _;
   }
 
@@ -61,7 +61,7 @@ contract AccountingExtension is IAccountingExtension {
     address _receiver,
     IERC20 _token,
     uint256 _amount
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     if (bondedAmountOf[_payer][_token][_requestId] < _amount) {
       revert AccountingExtension_InsufficientFunds();
     }
@@ -81,7 +81,7 @@ contract AccountingExtension is IAccountingExtension {
     bytes32 _requestId,
     IERC20 _token,
     uint256 _amount
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();
 
     bondedAmountOf[_bonder][_token][_requestId] += _amount;
@@ -99,7 +99,7 @@ contract AccountingExtension is IAccountingExtension {
     bytes32 _requestId,
     IERC20 _token,
     uint256 _amount
-  ) external onlyValidModule(_requestId) {
+  ) external onlyAllowedModule(_requestId) {
     if (bondedAmountOf[_bonder][_token][_requestId] < _amount) revert AccountingExtension_InsufficientFunds();
 
     balanceOf[_bonder][_token] += _amount;

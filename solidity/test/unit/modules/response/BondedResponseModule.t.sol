@@ -252,8 +252,8 @@ contract BondedResponseModule_UnitTest is Test {
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))));
 
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
     bondedResponseModule.finalizeRequest(_requestId, address(this));
@@ -302,7 +302,7 @@ contract BondedResponseModule_UnitTest is Test {
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _disputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, address(this))), abi.encode(false));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false));
 
     // Check correct calls are made if deadline has passed
     _deadline = block.timestamp;
@@ -335,18 +335,18 @@ contract BondedResponseModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test that the finalize function can be called by a valid module before the time window.
+   * @notice Test that the finalize function can be called by a allowed module before the time window.
    */
   function test_finalizeRequestEarlyByModule(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
     vm.assume(_deadline > block.timestamp);
     vm.startPrank(address(oracle));
 
-    address _validModule = makeAddr('valid module');
+    address _allowedModule = makeAddr('allowed module');
     bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _baseDisputeWindow);
     bondedResponseModule.forTest_setRequestData(_requestId, _data);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, _validModule)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.validModule, (_requestId, _validModule)));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _allowedModule)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _allowedModule)));
 
     IOracle.Response memory _mockResponse = IOracle.Response({
       createdAt: block.timestamp,
@@ -368,7 +368,7 @@ contract BondedResponseModule_UnitTest is Test {
       address(accounting), abi.encodeCall(IAccountingExtension.release, (proposer, _requestId, token, _bondSize))
     );
 
-    bondedResponseModule.finalizeRequest(_requestId, _validModule);
+    bondedResponseModule.finalizeRequest(_requestId, _allowedModule);
   }
   /**
    * @notice Test that the moduleName function returns the correct name

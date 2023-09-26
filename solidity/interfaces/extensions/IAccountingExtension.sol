@@ -68,7 +68,7 @@ interface IAccountingExtension {
   error AccountingExtension_InsufficientFunds();
 
   /**
-   * @notice Thrown when an `onlyValidModule` function is called by something
+   * @notice Thrown when an `onlyAllowedModule` function is called by something
    * else than a module being used in the corresponding request
    */
   error AccountingExtension_UnauthorizedModule();
@@ -119,7 +119,7 @@ interface IAccountingExtension {
   function withdraw(IERC20 _token, uint256 _amount) external;
 
   /**
-   * @notice Allows a valid module to transfer bonded tokens from one user to another
+   * @notice Allows a allowed module to transfer bonded tokens from one user to another
    * @dev Only the virtual balances in the accounting extension are modified. The token contract
    * is not called nor its balances modified.
    * @param _requestId The id of the request handling the user's tokens
@@ -131,7 +131,7 @@ interface IAccountingExtension {
   function pay(bytes32 _requestId, address _payer, address _receiver, IERC20 _token, uint256 _amount) external;
 
   /**
-   * @notice Allows a valid module to bond a user's tokens for a request
+   * @notice Allows a allowed module to bond a user's tokens for a request
    * @param _bonder The address of the user to bond tokens for
    * @param _requestId The id of the request the user is bonding for
    * @param _token The address of the token being bonded
@@ -140,7 +140,7 @@ interface IAccountingExtension {
   function bond(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount) external;
 
   /**
-   * @notice Allows a valid module to release a user's tokens
+   * @notice Allows a allowed module to release a user's tokens
    * @param _bonder The address of the user to release tokens for
    * @param _requestId The id of the request where the tokens were bonded
    * @param _token The address of the token being released

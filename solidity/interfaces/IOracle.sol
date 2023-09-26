@@ -461,9 +461,9 @@ interface IOracle {
    * @notice Checks if the given address is a module used in the request
    * @param _requestId The id of the request
    * @param _module The address to check
-   * @return _validModule If the module is a part of the request
+   * @return _allowedModule If the module is a part of the request
    */
-  function validModule(bytes32 _requestId, address _module) external view returns (bool _validModule);
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule);
 
   /**
    * @notice Returns the finalized response ID for a given request

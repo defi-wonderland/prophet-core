@@ -429,10 +429,10 @@ contract SequentialResolutionModule_UnitTest is Base {
 }
 
 contract SequentialResolutionModuleOracleProxy_UnitTest is Base {
-  function test_validModuleCallsOracle() public {
-    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.validModule.selector), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.validModule.selector, requestId, module));
-    module.validModule(requestId, address(module));
+  function test_allowedModuleCallsOracle() public {
+    vm.mockCall(address(oracle), abi.encodeWithSelector(IOracle.allowedModule.selector), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeWithSelector(IOracle.allowedModule.selector, requestId, module));
+    module.allowedModule(requestId, address(module));
   }
 
   function test_getDisputeCallsOracle() public {
