@@ -2,6 +2,8 @@
 
 ## What is Prophet?
 
+Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules. It moves away from a one-fits-all resolution system and provides customizable modules that can be fine-tuned to meet the unique requirements of each user. With its emphasis on complete control and modularity across all aspects of the system, Prophet is an open-source public good for the Optimism community.
+
 - **Optimistic**: Prophet is an optimistic oracle, meaning that in most cases a request will be answered without any disputes. This allows for a fast and cheap capturing of the information.
 - **Modular**: The framework is designed to support countless use cases by enabling the users to choose the logic of their requests. The users can choose from a variety of modules and extensions.
 - **Permissionless**: Asking for or providing the data requires no approvals from any centralized party. Additionally, anyone is free to expand the system by building new modules and extensions.

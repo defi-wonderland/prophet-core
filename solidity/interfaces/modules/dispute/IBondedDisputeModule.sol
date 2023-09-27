@@ -9,8 +9,8 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
 /*
   * @title BondedDisputeModule
   * @notice Module allowing users to dispute a proposed response
-  * by bonding tokens. According to the result of the dispute, 
-  * the tokens are either returned to the disputer or to the proposer. 
+  * by bonding tokens. According to the result of the dispute,
+  * the tokens are either returned to the disputer or to the proposer.
   */
 interface IBondedDisputeModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////

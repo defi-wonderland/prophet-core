@@ -14,7 +14,7 @@ In Prophet, examples of Dispute modules include:
 
 - Pre-dispute: This type of Dispute modules aims to settle disputes before they reach the Resolution module. `BondEscalationModule` is an example of a pre-dispute module.
 
-- Atomical dispute: This type of dispute relies on an external contract to atomically resolve the dispute as soon as it's started. In this case the Resolution module might not be needed at all. `CircuitResolverModule` and `RootVerificationModule` are examples of atomical dispute modules. 
+- Atomical dispute: This type of dispute relies on an external contract to atomically resolve the dispute as soon as it's started. In this case the Resolution module might not be needed at all. `CircuitResolverModule` and `RootVerificationModule` are examples of atomical dispute modules.
 
 ## Developing a Dispute Module
 

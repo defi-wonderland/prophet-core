@@ -3,8 +3,6 @@
 # Documentation
 
 - [Getting Started](content/intro/README.md)
-
-  - [Introduction to Prophet](content/intro/prophet.md)
   - [Prophet Framework 101](content/intro/framework.md)
 
 - [Core Contracts](content/core/README.md)
@@ -49,7 +47,6 @@
   - [Bond Escalation Accounting](content/extensions/bond_escalation_accounting.md)
 
 - [Libraries](content/libraries/README.md)
-  - [Subset](content/libraries/subset.md)
   - [MerkleLib](content/libraries/merkle_lib.md)
 
 # Technical Documentation

@@ -1,5 +1,7 @@
 # Bond Escalation Resolution Module
 
+See [IBondEscalationResolutionModule.sol](/solidity/interfaces/modules/resolution/IBondEscalationResolutionModule.sol/interface.IBondEscalationResolutionModule.md) for more details.
+
 ## 1. Introduction
 
 The `BondEscalationResolutionModule` is a resolution module that handles the bond escalation resolution process for disputes. During the resolution, the sides take turns pledging for or against a dispute by bonding tokens.
@@ -9,9 +11,7 @@ The `BondEscalationResolutionModule` is a resolution module that handles the bon
 ### Key Methods
 
 - `pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount)`: Allows users to pledge in favor of a given dispute.
-
 - `pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount)`: Allows users to pledge against a given dispute.
-
 - `claimPledge(bytes32 _requestId, bytes32 _disputeId)`: Allows user to claim his corresponding pledges after a dispute is resolved.
 
 ### Request Parameters

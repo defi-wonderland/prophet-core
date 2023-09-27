@@ -1,12 +1,14 @@
 # Arbitrator Module
 
+See [IArbitratorModule.sol](/solidity/interfaces/modules/resolution/IArbitratorModule.sol/interface.IArbitratorModule.md) for more details.
+
 ## 1. Introduction
 
 The Arbitrator Module is a part of the dispute resolution system. It allows an external arbitrator contract to resolve a dispute. The module provides methods to start the arbitration process, resolve the dispute, and get the status and validity of a dispute.
 
 ## 2. Contract Details
 
-### Key Methods:
+### Key Methods
 
 - `getStatus(bytes32 _disputeId)`: Returns the arbitration status of a dispute.
 - `isValid(bytes32 _disputeId)`: Indicates whether the dispute has been arbitrated.
@@ -16,7 +18,7 @@ The Arbitrator Module is a part of the dispute resolution system. It allows an e
 
 ### Request Parameters
 
-- `_arbitrator`: The address of the arbitrator. The contract must follow the `IArbitrator` interface.
+- `arbitrator`: The address of the arbitrator. The contract must follow the `IArbitrator` interface.
 
 ## 3. Key Mechanisms & Concepts
 
@@ -30,7 +32,5 @@ The process starts with the `startResolution` function, which sets the dispute s
 ## 4. Gotchas
 
 - The status of the arbitration is stored in the `_disputeData` mapping along with the dispute status. They're both packed in a `uint256`.
-
 - The `startResolution` function will revert if the arbitrator address is the address zero.
-
 - If the chosen arbitrator does not implement `resolve` nor `getAnswer` function, the dispute will get stuck in the `Active` state.

@@ -1,5 +1,7 @@
 # Bond Escalation Accounting Extension
 
+See [IBondEscalationAccounting.sol](/solidity/interfaces/extensions/IBondEscalationAccounting.sol/interface.IBondEscalationAccounting.md) for more details.
+
 ## 1. Introduction
 
 The `BondEscalationAccounting` contract is an extension that allows users to deposit and pledge funds to be used for bond escalation. It provides mechanisms for pledging tokens and paying out rewards to the winning pledgers.
@@ -9,13 +11,10 @@ The `BondEscalationAccounting` contract is an extension that allows users to dep
 ### Key Methods
 
 - `deposit`: This function allows a user to deposit a specific amount of a token into the accounting extension. If ETH is being deposited, it is wrapped to WETH.
-
 - `withdraw`: By calling this function, a user can withdraw a specific amount of a token from the accounting extension.
-
 - `pledge`: This function allows a user to pledge a certain amount of tokens for a specific dispute. The pledged tokens are deducted from the user's balance and added to the total pledges for the dispute.
-
-- `payWinningPledgers`: This function is used to pay the winning pledgers of a dispute. The losing side of the dispute is slashed and the slashed tokens are distributed to the winning pledgers.
-
+- `settleBondEscalation`: This function unlocks the rewards for the winners.
+- `claimEscalationReward`: Calculates and transfers the caller's part of the reward to them.
 - `releasePledge`: This function allows a module to release a user's tokens.
 
 ## 3. Key Mechanisms & Concepts
@@ -28,4 +27,4 @@ The `BondEscalationAccounting` contract is an extension that allows users to dep
 
 ## 4. Gotchas
 
-- Token Approval: Before depositing ERC20 tokens (other than ETH), users must first approve the extension to transfer the tokens on their behalf.
+- Before depositing ERC20 tokens, users must first approve the extension to transfer the tokens on their behalf.

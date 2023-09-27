@@ -1,5 +1,7 @@
 # Oracle
 
+See [IOracle.sol](/solidity/interfaces/IOracle.sol/interface.IOracle.md) for more details.
+
 ## 1. Introduction
 
 The Oracle serves as the central part of the Prophet framework. It performs the following functions:
@@ -13,7 +15,7 @@ The Oracle does not handle any transfers, utilizing the extensions for that func
 
 ## 2. Contract Details
 
-### Key Methods:
+### Key Methods
 
 - `createRequest`: Creates a new request.
 - `proposeResponse`: Proposes a response to a request.

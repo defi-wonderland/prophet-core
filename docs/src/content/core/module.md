@@ -1,12 +1,14 @@
 # Module
 
+See [IModule.sol](/solidity/interfaces/IModule.sol/interface.IModule.md) for more details.
+
 ## 1. Introduction
 
 `Module` is an abstract contract that defines common functions and modifiers. A module is supposed to inherit the abstract contract and implement specific logic in one of the hooks, for example `_afterSetupRequest`.
 
 ## 2. Contract Details
 
-### Key Methods:
+### Key Methods
 
 All public functions in the abstract contract are callable only by the oracle.
 
@@ -17,7 +19,7 @@ All public functions in the abstract contract are callable only by the oracle.
 
 ### Request Data
 
-The `requestData` is a mapping that associates each request's unique identifier (`_requestId`) with its corresponding parameters. This mapping is public, allowing for the data of any request to be accessed using its ID.
+The `requestData` is a mapping that associates each request's unique identifier (`requestId`) with its corresponding parameters. This mapping is public, allowing for the data of any request to be accessed using its ID.
 
 ## 4. Gotchas
 

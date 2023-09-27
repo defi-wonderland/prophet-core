@@ -1,5 +1,7 @@
 # Sparse Merkle Tree Request Module
 
+See [ISparseMerkleTreeRequestModule.sol](/solidity/interfaces/modules/request/ISparseMerkleTreeRequestModule.sol/interface.ISparseMerkleTreeRequestModule.md) for more details.
+
 ## 1. Introduction
 
 The `SparseMerkleTreeRequestModule` is a contract that allows a user to request the calculation of a Merkle tree after inserting a set of leaves.
@@ -9,7 +11,6 @@ The `SparseMerkleTreeRequestModule` is a contract that allows a user to request 
 ### Key Methods
 
 - `decodeRequestData(bytes32 _requestId)`: This function decodes the request data for a given request ID. It returns a RequestParameters struct that contains the parameters for the request.
-
 - `finalizeRequest(bytes32 _requestId, address _finalizer)`: This function is called by the Oracle to finalize the request. It either pays the proposer for the response or releases the requester's bond if no response was submitted.
 
 ### Request Parameters

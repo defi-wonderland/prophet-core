@@ -7,8 +7,8 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
 
 /*
   * @title PrivateERC20ResolutionModule
-  * @notice Module allowing users to vote on a dispute using ERC20 
-  * tokens through a commit/reveal pattern. 
+  * @notice Module allowing users to vote on a dispute using ERC20
+  * tokens through a commit/reveal pattern.
   */
 interface IPrivateERC20ResolutionModule is IResolutionModule {
   /*///////////////////////////////////////////////////////////////

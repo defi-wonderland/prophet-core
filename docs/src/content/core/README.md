@@ -11,6 +11,6 @@ For more detailed information about each contract, please refer to the respectiv
 
 For the Request, Response, Dispute, Resolution and Finality modules, please refer to the respective sections in the [Modules](../modules/README.md) documentation.
 
-For more technical details about the interfaces of the core contracts, please refer to the [Interfaces](../../solidity/interfaces/README.md) section in the technical documentation.
+For more technical details about the interfaces of the core contracts, please refer to the `Interfaces` section in the technical documentation.
 
 ⚠️ Please note that the code has not been audited yet, so use it with caution.

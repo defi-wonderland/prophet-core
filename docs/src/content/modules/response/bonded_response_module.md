@@ -1,12 +1,14 @@
 # Bonded Response Module
 
+See [IBondedResponseModule.sol](/solidity/interfaces/modules/response/IBondedResponseModule.sol/interface.IBondedResponseModule.md) for more details.
+
 ## 1. Introduction
 
 The Bonded Response Module is a contract that allows users to propose a response for a request by bonding tokens.
 
 ## 2. Contract Details
 
-### Key Methods:
+### Key Methods
 
 - `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
 - `propose(bytes32 _requestId, address _proposer, bytes calldata _responseData)`: Proposes a response for a request, bonding the proposer's tokens.
@@ -15,10 +17,10 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ### Request Parameters
 
-- `_accountingExtension`: The address holding the bonded tokens. It must implement the `IAccountingExtension` interface.
-- `_bondToken`: The ERC20 token used for bonding.
-- `_bondSize`: The amount of tokens the disputer must bond to be able to dispute a response.
-- `_deadline`: The timestamp at which the module stops accepting new responses for a request and it becomes finalizable.
+- `accountingExtension`: The address holding the bonded tokens. It must implement the [IAccountingExtension.sol](/solidity/interfaces/extensions/IAccountingExtension.sol/interface.IAccountingExtension.md) interface.
+- `bondToken`: The ERC20 token used for bonding.
+- `bondSize`: The amount of tokens the disputer must bond to be able to dispute a response.
+- `deadline`: The timestamp at which the module stops accepting new responses for a request and it becomes finalizable.
 
 ## 3. Key Mechanisms & Concepts
 

@@ -454,7 +454,7 @@ contract BondEscalationModule_UnitTest is Test {
     _mockResponse(_responseId, _requestId);
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
 
-    // Warp to a time after the challengePeriod is over.
+    // Warp to a time after the disputeWindow is over.
     vm.warp(block.timestamp + _disputeWindow + 1);
 
     vm.prank(address(oracle));
@@ -463,7 +463,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that disputeReponse succeeds if someone dispute after the bond escalation deadline is over
+   * @notice Tests that disputeResponse succeeds if someone dispute after the bond escalation deadline is over
    */
   function test_disputeResponseSucceedIfDisputeAfterBondingEscalationDeadline(
     bytes32 _requestId,
@@ -1332,9 +1332,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that settleBondEscalation is called successfully and calls payWinningPledgers with the correct
-   *         arguments. In this case where the disputer won, it should call payWinningPledgers with the users
-   *         that pledger in favor of the dispute as the beneficiaries.
+   * @notice Tests that settleBondEscalation is called successfully.
    */
   function test_settleBondEscalationSuccessfulCallDisputerWon(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _bondSize = 1000;
@@ -1382,9 +1380,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that settleBondEscalation is called successfully and calls payWinningPledgers with the correct
-   *         arguments. In this case where the disputer lost, it should call payWinningPledgers with the users
-   *         that pledger against the dispute as the beneficiaries.
+   * @notice Tests that settleBondEscalation is called successfully.
    */
   function test_settleBondEscalationSuccessfulCallDisputerLost(bytes32 _requestId, bytes32 _disputeId) public {
     uint256 _bondSize = 1000;
@@ -1443,10 +1439,10 @@ contract BondEscalationModule_UnitTest is Test {
     uint256 _maxNumberOfEscalations,
     uint256 _bondEscalationDeadline,
     uint256 _tyingBuffer,
-    uint256 _challengePeriod
+    uint256 _disputeWindow
   ) public {
     _setRequestData(
-      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _challengePeriod
+      _requestId, _bondSize, _maxNumberOfEscalations, _bondEscalationDeadline, _tyingBuffer, _disputeWindow
     );
     IBondEscalationModule.RequestParameters memory _params = bondEscalationModule.decodeRequestData(_requestId);
     assertEq(address(accounting), address(_params.accountingExtension));
@@ -1455,7 +1451,7 @@ contract BondEscalationModule_UnitTest is Test {
     assertEq(_maxNumberOfEscalations, _params.maxNumberOfEscalations);
     assertEq(_bondEscalationDeadline, _params.bondEscalationDeadline);
     assertEq(_tyingBuffer, _params.tyingBuffer);
-    assertEq(_challengePeriod, _params.disputeWindow);
+    assertEq(_disputeWindow, _params.disputeWindow);
   }
 
   ////////////////////////////////////////////////////////////////////

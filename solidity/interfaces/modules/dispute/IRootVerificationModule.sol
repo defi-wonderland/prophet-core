@@ -11,7 +11,7 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
   * @title RootVerificationModule
   * @notice Dispute module allowing disputers to calculate the correct root
   * for a given request and propose it as a response. If the disputer wins the
-  * dispute, he is rewarded with the bond of the proposer. 
+  * dispute, he is rewarded with the bond of the proposer.
   * @dev This module is a pre-dispute module. It allows disputing
   * and resolving a response in a single call.
   */

@@ -1,5 +1,7 @@
 # Private ERC20 Resolution Module
 
+See [IPrivateERC20ResolutionModule.sol](/solidity/interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol/interface.IPrivateERC20ResolutionModule.md) for more details.
+
 ## 1. Introduction
 
 The `PrivateERC20ResolutionModule` is a contract that allows users to vote on a dispute using ERC20 tokens. The voting process follows a commit/reveal pattern to ensure that votes are kept secret until the voting period ends.
@@ -17,11 +19,11 @@ The `PrivateERC20ResolutionModule` is a contract that allows users to vote on a 
 
 ### Request Parameters
 
-- `_accountingExtension`: The address of the accounting extension associated with the given request.
-- `_votingToken`: The address of the token used for voting.
-- `_minVotesForQuorum`: The minimum number of votes required for a dispute to be resolved.
-- `_committingTimeWindow`: The time window for the committing phase.
-- `_revealingTimeWindow`: The time window for the revealing phase.
+- `accountingExtension`: The address of the accounting extension associated with the given request.
+- `votingToken`: The address of the token used for voting.
+- `minVotesForQuorum`: The minimum number of votes required for a dispute to be resolved.
+- `committingTimeWindow`: The time window for the committing phase.
+- `revealingTimeWindow`: The time window for the revealing phase.
 
 ## 3. Key Mechanisms & Concepts
 

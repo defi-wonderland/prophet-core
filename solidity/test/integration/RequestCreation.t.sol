@@ -194,14 +194,13 @@ contract Integration_RequestCreation is IntegrationBase {
     vm.prank(requester);
     oracle.createRequest(_invalidTokenRequest);
 
-    // TODO: response module does not check passed data. review later.
     // Request with past deadline.
-    // IOracle.NewRequest memory _invalidDeadlineRequest = _standardRequest();
-    // _invalidDeadlineRequest.responseModuleData =
-    //   abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, block.timestamp - 1 hours);
+    IOracle.NewRequest memory _invalidDeadlineRequest = _standardRequest();
+    _invalidDeadlineRequest.responseModuleData =
+      abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, block.timestamp - 1 hours);
 
-    // vm.expectRevert();
-    // oracle.createRequest(_invalidDeadlineRequest);
+    vm.expectRevert();
+    oracle.createRequest(_invalidDeadlineRequest);
   }
 
   function test_createRequestWithDisallowedModule() public {

@@ -182,7 +182,7 @@ interface IBondEscalationAccounting is IAccountingExtension {
   /**
    * @notice Pledges the given amount of token to the provided dispute id of the provided request id
    *
-   * @dev This function must be called by a allowed module
+   * @dev This function must be called by an allowed module
    *
    * @param _pledger           Address of the pledger
    * @param _requestId         The ID of the bond-escalated request
@@ -194,7 +194,7 @@ interface IBondEscalationAccounting is IAccountingExtension {
 
   /**
    * @notice Updates the accounting of the given dispute to reflect the result of the bond escalation
-   * @dev This function must be called by a allowed module
+   * @dev This function must be called by an allowed module
    *
    * @param _requestId              The ID of the bond-escalated request
    * @param _disputeId              The ID of the bond-escalated dispute
@@ -215,7 +215,7 @@ interface IBondEscalationAccounting is IAccountingExtension {
   /**
    * @notice Releases a given amount of funds to the pledger
    *
-   * @dev This function must be called by a allowed module
+   * @dev This function must be called by an allowed module
    *
    * @param _requestId         The ID of the bond-escalated request
    * @param _disputeId         The ID of the bond-escalated dispute

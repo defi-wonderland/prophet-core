@@ -7,7 +7,7 @@ import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingEx
 
 /*
   * @title HttpRequestModule
-  * @notice Module allowing users to request HTTP calls 
+  * @notice Module allowing users to request HTTP calls
   */
 interface IHttpRequestModule is IRequestModule {
   /*///////////////////////////////////////////////////////////////

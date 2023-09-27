@@ -1,20 +1,22 @@
 # Callback Module
 
+See [ICallbackModule.sol](/solidity/interfaces/modules/finality/ICallbackModule.sol/interface.ICallbackModule.md) for more details.
+
 ## 1. Introduction
 
 The Callback Module is a finality module that allows users to call a function on a contract as a result of a request being finalized. It is useful to notify a contract about the outcome of a request.
 
 ## 2. Contract Details
 
-### Key Methods:
+### Key Methods
 
 - `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
 - `finalizeRequest(bytes32 _requestId, address)`: Executing the callback call on the target.
 
 ### Request Parameters
 
-- `_target`: The target address for the callback.
-- `_data`: The calldata forwarded to the target.
+- `target`: The target address for the callback.
+- `data`: The calldata forwarded to the target.
 
 ## 3. Key Mechanisms & Concepts
 

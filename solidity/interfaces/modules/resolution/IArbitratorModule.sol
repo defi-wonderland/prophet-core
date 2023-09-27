@@ -6,7 +6,7 @@ import {IResolutionModule} from './IResolutionModule.sol';
 /*
   * @title ArbitratorModule
   * @notice Module allowing an external arbitrator contract
-  * to resolve a dispute. 
+  * to resolve a dispute.
   */
 interface IArbitratorModule is IResolutionModule {
   /*///////////////////////////////////////////////////////////////

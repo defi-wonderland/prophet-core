@@ -335,7 +335,7 @@ contract BondedResponseModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test that the finalize function can be called by a allowed module before the time window.
+   * @notice Test that the finalize function can be called by an allowed module before the time window.
    */
   function test_finalizeRequestEarlyByModule(bytes32 _requestId, uint256 _bondSize, uint256 _deadline) public {
     vm.assume(_deadline > block.timestamp);

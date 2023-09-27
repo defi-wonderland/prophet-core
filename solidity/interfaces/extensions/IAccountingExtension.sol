@@ -5,7 +5,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 /*
-  * @title AccountingExtension 
+  * @title AccountingExtension
   * @notice Extension allowing users to deposit and bond funds
   * to be used for payments and disputes.
   */

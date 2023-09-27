@@ -36,7 +36,7 @@ interface IMultipleCallbacksModule is IFinalityModule {
   error MultipleCallbackModule_InvalidParameters();
 
   /*///////////////////////////////////////////////////////////////
-                              STRUCTS 
+                              STRUCTS
   //////////////////////////////////////////////////////////////*/
 
   /**

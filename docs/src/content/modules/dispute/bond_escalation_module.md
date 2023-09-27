@@ -1,5 +1,7 @@
 # Bond Escalation Module
 
+See [IBondEscalationModule.sol](/solidity/interfaces/modules/dispute/IBondEscalationModule.sol/interface.IBondEscalationModule.md) for more details.
+
 ## 1. Introduction
 
 The Bond Escalation Module is a contract that allows users to have the first dispute of a request go through the bond escalation mechanism. This mechanism allows for a dispute to be escalated by pledging more funds in favor or against the dispute. The module is designed to prevent last-second breaking of ties by adding a tying buffer at the end of the bond escalation deadline.
@@ -16,15 +18,13 @@ The Bond Escalation Module is a contract that allows users to have the first dis
 
 ### Request Parameters
 
-The request parameters for the Bond Escalation Module are:
-
 - `accountingExtension`: The address of the accounting extension associated with the given request.
 - `bondToken`: The address of the token associated with the given request.
 - `bondSize`: The amount to bond to dispute or propose an answer for the given request.
 - `numberOfEscalations`: The maximum allowed escalations or pledges for each side during the bond escalation process.
 - `bondEscalationDeadline`: The timestamp at which bond escalation process finishes when pledges are not tied.
 - `tyingBuffer`: The number of seconds to extend the bond escalation process to allow the losing party to tie if at the end of the initial deadline the pledges weren't tied.
-- `challengePeriod`: The number of seconds disputers have to challenge the proposed response since its creation.
+- `disputeWindow`: The number of seconds disputers have to challenge the proposed response since its creation.
 
 ## 3. Key Mechanisms & Concepts
 
