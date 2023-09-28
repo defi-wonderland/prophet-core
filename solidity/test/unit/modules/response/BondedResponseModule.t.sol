@@ -3,15 +3,16 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 import {
   BondedResponseModule,
   IBondedResponseModule,
-  IOracle,
-  IAccountingExtension,
-  IERC20
+  IModule,
+  IOracle
 } from '../../../../contracts/modules/response/BondedResponseModule.sol';
 
-import {IModule} from '../../../../interfaces/IModule.sol';
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks

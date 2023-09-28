@@ -33,6 +33,9 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
+  /**
+   * @notice Checks that the caller is a valid sub-module
+   */
   modifier onlySubmodule(bytes32 _requestId) {
     if (!_resolutionModules[_getSequenceId(_requestId)].contains(msg.sender)) {
       revert SequentialResolutionModule_OnlySubmodule();
@@ -44,10 +47,10 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   function addResolutionModuleSequence(IResolutionModule[] memory _modules) external returns (uint256 _sequenceId) {
     _sequenceId = ++currentSequenceId;
     EnumerableSet.AddressSet storage _setModules = _resolutionModules[_sequenceId];
-    for (uint256 i; i < _modules.length; ++i) {
-      _setModules.add(address(_modules[i]));
+    for (uint256 _i; _i < _modules.length; ++_i) {
+      _setModules.add(address(_modules[_i]));
     }
-    emit SequentialResolutionModule_ResolutionSequenceAdded(_sequenceId, _modules);
+    emit ResolutionSequenceAdded(_sequenceId, _modules);
   }
 
   /// @inheritdoc ISequentialResolutionModule
@@ -67,8 +70,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
     uint256 _length = _modules.length();
     uint256 _count = (_batchSize > _length - _startFrom) ? _length - _startFrom : _batchSize;
     _list = new IResolutionModule[](_count);
-    for (uint256 i; i < _count; ++i) {
-      _list[i] = IResolutionModule(_modules.at(_startFrom + i));
+    for (uint256 _i; _i < _count; ++_i) {
+      _list[_i] = IResolutionModule(_modules.at(_startFrom + _i));
     }
   }
 
@@ -88,8 +91,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
     address _finalizer
   ) external virtual override(Module, IModule) onlyOracle {
     EnumerableSet.AddressSet storage _modules = _resolutionModules[_getSequenceId(_requestId)];
-    for (uint256 i; i < _modules.length(); ++i) {
-      IResolutionModule(_modules.at(i)).finalizeRequest(_requestId, _finalizer);
+    for (uint256 _i; _i < _modules.length(); ++_i) {
+      IResolutionModule(_modules.at(_i)).finalizeRequest(_requestId, _finalizer);
     }
   }
 
@@ -127,8 +130,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal override {
     RequestParameters memory _params = _decodeData(_data);
     EnumerableSet.AddressSet storage _modules = _resolutionModules[_params.sequenceId];
-    for (uint256 i; i < _modules.length(); ++i) {
-      IResolutionModule(_modules.at(i)).setupRequest(_requestId, _params.submoduleData[i]);
+    for (uint256 _i; _i < _modules.length(); ++_i) {
+      IResolutionModule(_modules.at(_i)).setupRequest(_requestId, _params.submoduleData[_i]);
     }
   }
 
@@ -246,6 +249,8 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
 
   // ============ ORACLE Proxy not implemented =============
 
+  // solhint-disable defi-wonderland/named-return-values
+
   // This functions use msg.sender in the oracle implementation and cannot be called from a the sequential resolution module
   /// @inheritdoc IOracle
   function createRequest(IOracle.NewRequest memory) external pure returns (bytes32) {
@@ -276,4 +281,6 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   function deleteResponse(bytes32) external pure {
     revert SequentialResolutionModule_NotImplemented();
   }
+
+  // solhint-enable defi-wonderland/named-return-values
 }

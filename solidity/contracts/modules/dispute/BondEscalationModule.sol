@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
+
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract BondEscalationModule is Module, IBondEscalationModule {
@@ -153,9 +155,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _winningPledgersLength: _won ? _escalation.amountOfPledgesForDispute : _escalation.amountOfPledgesAgainstDispute
       });
     }
-    emit DisputeStatusChanged(
-      _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
-    );
+    emit DisputeStatusChanged({
+      _requestId: _dispute.requestId,
+      _responseId: _dispute.responseId,
+      _disputer: _dispute.disputer,
+      _proposer: _dispute.proposer,
+      _status: _dispute.status
+    });
   }
 
   ////////////////////////////////////////////////////////////////////

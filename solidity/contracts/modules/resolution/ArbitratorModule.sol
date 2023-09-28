@@ -5,6 +5,7 @@ import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitra
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IArbitrator, IOracle} from '../../../interfaces/IArbitrator.sol';
 
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract ArbitratorModule is Module, IArbitratorModule {

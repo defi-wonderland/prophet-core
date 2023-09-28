@@ -198,7 +198,8 @@ contract Oracle is IOracle {
     if (_responses[_responseId].proposer != _proposer) {
       revert Oracle_CannotTamperParticipant();
     }
-    emit Oracle_ResponseProposed(_requestId, _proposer, _responseId);
+
+    emit ResponseProposed(_requestId, _proposer, _responseId);
   }
 
   /// @inheritdoc IOracle
@@ -218,7 +219,7 @@ contract Oracle is IOracle {
     delete _responses[_responseId];
     _responseIds[_response.requestId].remove(_responseId);
 
-    emit Oracle_ResponseDeleted(_response.requestId, msg.sender, _responseId);
+    emit ResponseDeleted(_response.requestId, msg.sender, _responseId);
   }
 
   /// @inheritdoc IOracle
@@ -253,7 +254,7 @@ contract Oracle is IOracle {
       _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
     }
 
-    emit Oracle_ResponseDisputed(msg.sender, _responseId, _disputeId);
+    emit ResponseDisputed(msg.sender, _responseId, _disputeId);
   }
 
   /// @inheritdoc IOracle
@@ -278,7 +279,7 @@ contract Oracle is IOracle {
       _request.resolutionModule.startResolution(_disputeId);
     }
 
-    emit Oracle_DisputeEscalated(msg.sender, _disputeId);
+    emit DisputeEscalated(msg.sender, _disputeId);
   }
 
   /// @inheritdoc IOracle
@@ -298,7 +299,7 @@ contract Oracle is IOracle {
 
     _request.resolutionModule.resolveDispute(_disputeId);
 
-    emit Oracle_DisputeResolved(msg.sender, _disputeId);
+    emit DisputeResolved(msg.sender, _disputeId);
   }
 
   /// @inheritdoc IOracle
@@ -311,7 +312,7 @@ contract Oracle is IOracle {
     _dispute.status = _status;
     _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
 
-    emit Oracle_DisputeStatusUpdated(_disputeId, _status);
+    emit DisputeStatusUpdated(_disputeId, _status);
   }
 
   /// @inheritdoc IOracle
@@ -405,7 +406,7 @@ contract Oracle is IOracle {
     _request.responseModule.finalizeRequest(_requestId, msg.sender);
     _request.requestModule.finalizeRequest(_requestId, msg.sender);
 
-    emit Oracle_RequestFinalized(_requestId, msg.sender);
+    emit OracleRequestFinalized(_requestId, msg.sender);
   }
 
   /**
@@ -446,7 +447,7 @@ contract Oracle is IOracle {
       _request.finalityModule.setupRequest(_requestId, _request.finalityModuleData);
     }
 
-    emit Oracle_RequestCreated(_requestId, msg.sender);
+    emit RequestCreated(_requestId, msg.sender);
   }
 
   /**

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
-import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
+
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract ContractCallRequestModule is Module, IContractCallRequestModule {

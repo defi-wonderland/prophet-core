@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../../IOracle.sol';
 import {IResolutionModule} from './IResolutionModule.sol';
-import {IModule} from '../../IModule.sol';
 
 interface ISequentialResolutionModule is IOracle, IResolutionModule {
   /*///////////////////////////////////////////////////////////////
@@ -13,7 +12,7 @@ interface ISequentialResolutionModule is IOracle, IResolutionModule {
   /**
    * @notice Emitted when a new resolution sequence is added
    */
-  event SequentialResolutionModule_ResolutionSequenceAdded(uint256 _sequenceId, IResolutionModule[] _modules);
+  event ResolutionSequenceAdded(uint256 _sequenceId, IResolutionModule[] _modules);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS

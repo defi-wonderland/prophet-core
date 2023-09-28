@@ -12,6 +12,7 @@
     "const-name-snakecase": "off",
     "no-inline-assembly": "off",
     "no-empty-blocks": "off",
+    "func-named-parameters": ["error", 4],
     "private-vars-leading-underscore": ["warn", { "strict": false }],
     "defi-wonderland/non-state-vars-leading-underscore": ["warn"],
     "defi-wonderland/contract-data-order": ["warn"],

@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IMultipleCallbacksModule} from '../../../interfaces/modules/finality/IMultipleCallbacksModule.sol';
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
@@ -44,7 +45,6 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
-      // solhint-disable-next-line
       _params.targets[_i].call(_params.data[_i]);
       emit Callback(_requestId, _params.targets[_i], _params.data[_i]);
       unchecked {

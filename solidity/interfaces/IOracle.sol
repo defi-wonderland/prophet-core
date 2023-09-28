@@ -21,7 +21,7 @@ interface IOracle {
    * @param _requestId The id of the created request
    * @param _requester The address of the user who created the request
    */
-  event Oracle_RequestCreated(bytes32 indexed _requestId, address indexed _requester);
+  event RequestCreated(bytes32 indexed _requestId, address indexed _requester);
 
   /**
    * @notice Emitted when a response is proposed
@@ -29,7 +29,7 @@ interface IOracle {
    * @param _proposer The address of the user who proposed the response
    * @param _responseId The id of the proposed response
    */
-  event Oracle_ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
+  event ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
 
   /**
    * @notice Emitted when a response is disputed
@@ -37,35 +37,35 @@ interface IOracle {
    * @param _responseId The id of the response being disputed
    * @param _disputeId The id of the dispute
    */
-  event Oracle_ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
+  event ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
 
   /**
    * @notice Emitted when a request is finalized
    * @param _requestId The id of the request being finalized
    * @param _caller The address of the user who finalized the request
    */
-  event Oracle_RequestFinalized(bytes32 indexed _requestId, address indexed _caller);
+  event OracleRequestFinalized(bytes32 indexed _requestId, address indexed _caller);
 
   /**
    * @notice Emitted when a dispute is escalated
    * @param _caller The address of the user who escalated the dispute
    * @param _disputeId The id of the dispute being escalated
    */
-  event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
 
   /**
    * @notice Emitted when a dispute's status changes
    * @param _disputeId The id of the dispute
    * @param _status The new dispute status
    */
-  event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _status);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _status);
 
   /**
    * @notice Emitted when a dispute is resolved
    * @param _caller The address of the user who resolved the dispute
    * @param _disputeId The id of the dispute being resolved
    */
-  event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
 
   /**
    * @notice Emitted when a response is deleted
@@ -73,7 +73,7 @@ interface IOracle {
    * @param _caller The address of the user who deleted the response
    * @param _responseId The id of the deleted response
    */
-  event Oracle_ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
+  event ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS

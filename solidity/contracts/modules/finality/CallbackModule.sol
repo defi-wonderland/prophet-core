@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {ICallbackModule} from '../../../interfaces/modules/finality/ICallbackModule.sol';
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract CallbackModule is Module, ICallbackModule {
@@ -33,7 +34,6 @@ contract CallbackModule is Module, ICallbackModule {
     address _finalizer
   ) external override(Module, ICallbackModule) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_requestId);
-    // solhint-disable-next-line
     _params.target.call(_params.data);
     emit Callback(_requestId, _params.target, _params.data);
     emit RequestFinalized(_requestId, _finalizer);

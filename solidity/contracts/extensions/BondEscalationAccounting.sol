@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 
 import {AccountingExtension} from './AccountingExtension.sol';
 
@@ -39,7 +38,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       balanceOf[_pledger][_token] -= _amount;
     }
 
-    emit Pledged(_pledger, _requestId, _disputeId, _token, _amount);
+    emit Pledged({_pledger: _pledger, _requestId: _requestId, _disputeId: _disputeId, _token: _token, _amount: _amount});
   }
 
   /// @inheritdoc IBondEscalationAccounting
@@ -68,7 +67,14 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       bondEscalationModule: IBondEscalationModule(msg.sender)
     });
 
-    emit BondEscalationSettled(_requestId, _disputeId, _forVotesWon, _token, _amountPerPledger, _winningPledgersLength);
+    emit BondEscalationSettled({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _forVotesWon: _forVotesWon,
+      _token: _token,
+      _amountPerPledger: _amountPerPledger,
+      _winningPledgersLength: _winningPledgersLength
+    });
   }
 
   /// @inheritdoc IBondEscalationAccounting
@@ -93,7 +99,13 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       pledges[_disputeId][_token] -= _claimAmount;
     }
 
-    emit EscalationRewardClaimed(_requestId, _disputeId, _pledger, _result.token, _claimAmount);
+    emit EscalationRewardClaimed({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _pledger,
+      _token: _result.token,
+      _amount: _claimAmount
+    });
   }
 
   /// @inheritdoc IBondEscalationAccounting
@@ -112,6 +124,12 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
       pledges[_disputeId][_token] -= _amount;
     }
 
-    emit PledgeReleased(_requestId, _disputeId, _pledger, _token, _amount);
+    emit PledgeReleased({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: _pledger,
+      _token: _token,
+      _amount: _amount
+    });
   }
 }

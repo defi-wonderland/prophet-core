@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// solhint-disable-next-line no-unused-import
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
@@ -63,13 +65,13 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
   /// @inheritdoc IPrivateERC20ResolutionModule
   function revealVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt) public {
-    Escalation memory escalation = escalations[_disputeId];
-    if (escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
+    Escalation memory _escalation = escalations[_disputeId];
+    if (_escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
     RequestParameters memory _params = decodeRequestData(_requestId);
     (uint256 _revealStartTime, uint256 _revealEndTime) = (
-      escalation.startTime + _params.committingTimeWindow,
-      escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow
+      _escalation.startTime + _params.committingTimeWindow,
+      _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow
     );
     if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
@@ -96,19 +98,19 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (_dispute.createdAt == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert PrivateERC20ResolutionModule_AlreadyResolved();
 
-    Escalation memory escalation = escalations[_disputeId];
-    if (escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
+    Escalation memory _escalation = escalations[_disputeId];
+    if (_escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
-    if (block.timestamp < escalation.startTime + _params.committingTimeWindow) {
+    if (block.timestamp < _escalation.startTime + _params.committingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp < escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
+    if (block.timestamp < _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
-    uint256 _quorumReached = escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
+    uint256 _quorumReached = _escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
     address[] memory __voters = _voters[_disputeId].values();
 

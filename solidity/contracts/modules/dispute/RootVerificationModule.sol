@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {MerkleLib} from '../../libraries/MerkleLib.sol';
 
 import {IRootVerificationModule} from '../../../interfaces/modules/dispute/IRootVerificationModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {ITreeVerifier} from '../../../interfaces/ITreeVerifier.sol';
-import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract RootVerificationModule is Module, IRootVerificationModule {
@@ -60,9 +57,13 @@ contract RootVerificationModule is Module, IRootVerificationModule {
 
     delete _correctRoots[_dispute.requestId];
 
-    emit DisputeStatusChanged(
-      _dispute.requestId, _dispute.responseId, _dispute.disputer, _dispute.proposer, _dispute.status
-    );
+    emit DisputeStatusChanged({
+      _requestId: _dispute.requestId,
+      _responseId: _dispute.responseId,
+      _disputer: _dispute.disputer,
+      _proposer: _dispute.proposer,
+      _status: _dispute.status
+    });
   }
 
   /// @inheritdoc IRootVerificationModule

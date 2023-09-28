@@ -68,14 +68,14 @@ contract Oracle_UnitTest is Test {
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
 
-  event Oracle_RequestCreated(bytes32 indexed _requestId, address indexed _requester);
-  event Oracle_ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
-  event Oracle_ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
-  event Oracle_RequestFinalized(bytes32 indexed _requestId, address indexed _caller);
-  event Oracle_DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
-  event Oracle_DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _newStatus);
-  event Oracle_DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
-  event Oracle_ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
+  event RequestCreated(bytes32 indexed _requestId, address indexed _requester);
+  event ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
+  event ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
+  event OracleRequestFinalized(bytes32 indexed _requestId, address indexed _caller);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _newStatus);
+  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
+  event ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
 
   /**
    * @notice Deploy the target and mock oracle+modules
@@ -190,7 +190,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits RequestCreated event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_RequestCreated(_theoricRequestId, sender);
+    emit RequestCreated(_theoricRequestId, sender);
 
     // Test: create the request
     vm.prank(sender);
@@ -317,7 +317,7 @@ contract Oracle_UnitTest is Test {
 
       // Check: emits RequestCreated event?
       vm.expectEmit(true, true, true, true);
-      emit Oracle_RequestCreated(_theoricRequestId, sender);
+      emit RequestCreated(_theoricRequestId, sender);
     }
 
     vm.prank(sender);
@@ -492,7 +492,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseProposed(_requestId, sender, _responseId);
+    emit ResponseProposed(_requestId, sender, _responseId);
 
     // Test: propose the response
     vm.prank(sender);
@@ -500,7 +500,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseProposed(
+    emit ResponseProposed(
       _requestId, sender, keccak256(abi.encodePacked(sender, address(oracle), _requestId, _responseNonce + 1))
     );
 
@@ -590,7 +590,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseProposed(_requestId, _proposer, _responseId);
+    emit ResponseProposed(_requestId, _proposer, _responseId);
 
     // Test: propose the response
     vm.prank(address(disputeModule));
@@ -598,7 +598,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseProposed(
+    emit ResponseProposed(
       _requestId, _proposer, keccak256(abi.encodePacked(_proposer, address(oracle), _requestId, _responseNonce + 1))
     );
 
@@ -668,7 +668,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseDeleted(_requestId, sender, _responseId);
+    emit ResponseDeleted(_requestId, sender, _responseId);
 
     vm.prank(sender);
     oracle.deleteResponse(_responseId);
@@ -790,7 +790,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits ResponseDisputed event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_ResponseDisputed(sender, _responseId, _disputeId);
+    emit ResponseDisputed(sender, _responseId, _disputeId);
 
     // Test: dispute the response
     vm.prank(sender);
@@ -869,7 +869,7 @@ contract Oracle_UnitTest is Test {
 
         // Check: emits DisputeStatusUpdated event?
         vm.expectEmit(true, true, true, true);
-        emit Oracle_DisputeStatusUpdated(_disputeId, IOracle.DisputeStatus(_newStatus));
+        emit DisputeStatusUpdated(_disputeId, IOracle.DisputeStatus(_newStatus));
 
         // Test: change the status
         vm.prank(address(resolutionModule));
@@ -901,7 +901,7 @@ contract Oracle_UnitTest is Test {
 
     // Check: emits DisputeResolved event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_DisputeResolved(address(this), _disputeId);
+    emit DisputeResolved(address(this), _disputeId);
 
     // Test: resolve the dispute
     oracle.resolveDispute(_disputeId);
@@ -1061,9 +1061,9 @@ contract Oracle_UnitTest is Test {
       vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
     }
 
-    // Check: emits RequestFinalized event?
+    // Check: emits OracleRequestFinalized event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_RequestFinalized(_requestId, _caller);
+    emit OracleRequestFinalized(_requestId, _caller);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1206,9 +1206,9 @@ contract Oracle_UnitTest is Test {
       vm.expectCall(address(finalityModule), abi.encodeCall(IModule.finalizeRequest, (_requestId, _caller)));
     }
 
-    // Check: emits RequestFinalized event?
+    // Check: emits OracleRequestFinalized event?
     vm.expectEmit(true, true, true, true);
-    emit Oracle_RequestFinalized(_requestId, _caller);
+    emit OracleRequestFinalized(_requestId, _caller);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1244,7 +1244,7 @@ contract Oracle_UnitTest is Test {
 
     // Expect dispute escalated event
     vm.expectEmit(true, true, true, true);
-    emit Oracle_DisputeEscalated(address(this), _disputeId);
+    emit DisputeEscalated(address(this), _disputeId);
 
     // Test: escalate the dispute
     oracle.escalateDispute(_disputeId);
@@ -1270,7 +1270,7 @@ contract Oracle_UnitTest is Test {
 
     // Expect dispute escalated event
     vm.expectEmit(true, true, true, true);
-    emit Oracle_DisputeEscalated(address(this), _disputeId);
+    emit DisputeEscalated(address(this), _disputeId);
 
     // Test: escalate the dispute
     oracle.escalateDispute(_disputeId);

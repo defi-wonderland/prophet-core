@@ -32,7 +32,7 @@ contract AccountingExtension is IAccountingExtension {
   }
 
   /**
-   * @notice Checks that the caller is a allowed module used in the request.
+   * @notice Checks that the caller is an allowed module used in the request.
    */
   modifier onlyAllowedModule(bytes32 _requestId) {
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
@@ -84,7 +84,7 @@ contract AccountingExtension is IAccountingExtension {
       bondedAmountOf[_payer][_token][_requestId] -= _amount;
     }
 
-    emit Paid(_requestId, _receiver, _payer, _token, _amount);
+    emit Paid({_requestId: _requestId, _beneficiary: _receiver, _payer: _payer, _token: _token, _amount: _amount});
   }
 
   /// @inheritdoc IAccountingExtension

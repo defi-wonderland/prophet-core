@@ -91,7 +91,7 @@ interface IAccountingExtension {
   /**
    * @notice Returns the interface for the Oracle contract
    */
-  function ORACLE() external view returns (IOracle);
+  function ORACLE() external view returns (IOracle _oracle);
 
   /**
    * @notice Returns the amount of a token a user has bonded

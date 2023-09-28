@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// solhint-disable-next-line no-unused-import
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
-import {
-  IBondEscalationResolutionModule,
-  IResolutionModule
-} from '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
+import {IBondEscalationResolutionModule} from
+  '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
 
+// solhint-disable no-unused-import
+import {IResolutionModule} from '../../../interfaces/modules/resolution/IResolutionModule.sol';
 import {Module, IModule} from '../../Module.sol';
+// solhint-enable no-unused-import
 
 contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModule {
   using SafeERC20 for IERC20;
@@ -246,7 +248,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _token: _params.bondToken,
         _amount: _amountToRelease
       });
-      emit PledgeClaimedDisputerWon(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      emit PledgeClaimedDisputerWon({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _pledgeReleased: _amountToRelease
+      });
     } else if (_escalation.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
@@ -261,7 +269,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _token: _params.bondToken,
         _amount: _amountToRelease
       });
-      emit PledgeClaimedDisputerLost(_requestId, _disputeId, msg.sender, _params.bondToken, _amountToRelease);
+      emit PledgeClaimedDisputerLost({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _pledger: msg.sender,
+        _token: _params.bondToken,
+        _pledgeReleased: _amountToRelease
+      });
     } else if (_escalation.resolution == Resolution.NoResolution) {
       uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
       uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
@@ -275,7 +289,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
           _token: _params.bondToken,
           _amount: _pledgerBalanceFor
         });
-        emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceFor);
+        emit PledgeClaimedNoResolution({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _pledger: msg.sender,
+          _token: _params.bondToken,
+          _pledgeReleased: _pledgerBalanceFor
+        });
       }
 
       if (_pledgerBalanceAgainst > 0) {
@@ -287,7 +307,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
           _token: _params.bondToken,
           _amount: _pledgerBalanceAgainst
         });
-        emit PledgeClaimedNoResolution(_requestId, _disputeId, msg.sender, _params.bondToken, _pledgerBalanceAgainst);
+        emit PledgeClaimedNoResolution({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _pledger: msg.sender,
+          _token: _params.bondToken,
+          _pledgeReleased: _pledgerBalanceAgainst
+        });
       }
     }
   }

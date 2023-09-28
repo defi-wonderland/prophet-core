@@ -3,15 +3,16 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 import {
   RootVerificationModule,
   IRootVerificationModule,
-  IOracle,
-  ITreeVerifier,
-  IAccountingExtension,
-  IERC20
+  IOracle
 } from '../../../../contracts/modules/dispute/RootVerificationModule.sol';
 
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
+import {ITreeVerifier} from '../../../../interfaces/ITreeVerifier.sol';
 import {IModule} from '../../../../interfaces/IModule.sol';
 
 /**

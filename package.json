@@ -35,7 +35,7 @@
   },
   "lint-staged": {
     "*.{js,css,md,ts,sol}": "forge fmt",
-    "*.sol": "solhint --fix 'solidity/**/*.sol'",
+    "*.sol": "solhint --fix 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol' && solhint --fix -c .solhint.tests.json 'solidity/test/**/*.sol'",
     "package.json": "sort-package-json"
   },
   "dependencies": {

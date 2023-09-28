@@ -14,32 +14,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
  */
 interface IERC20ResolutionModule is IResolutionModule {
   /*///////////////////////////////////////////////////////////////
-                              STRUCTS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Parameters of the request as stored in the module
-   * @param votingToken The token used to vote
-   * @param minVotesForQuorum The minimum amount of votes to win the dispute
-   * @param timeUntilDeadline The time until the voting phase ends
-   */
-  struct RequestParameters {
-    IERC20 votingToken;
-    uint256 minVotesForQuorum;
-    uint256 timeUntilDeadline;
-  }
-
-  /**
-   * @notice Escalation data for a dispute
-   * @param startTime The timestamp at which the dispute was escalated
-   * @param totalVotes The total amount of votes cast for the dispute
-   */
-  struct Escalation {
-    uint256 startTime;
-    uint256 totalVotes;
-  }
-
-  /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
 
@@ -96,6 +70,32 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @notice Throws if the dispute has already been resolved
    */
   error ERC20ResolutionModule_AlreadyResolved();
+
+  /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param votingToken The token used to vote
+   * @param minVotesForQuorum The minimum amount of votes to win the dispute
+   * @param timeUntilDeadline The time until the voting phase ends
+   */
+  struct RequestParameters {
+    IERC20 votingToken;
+    uint256 minVotesForQuorum;
+    uint256 timeUntilDeadline;
+  }
+
+  /**
+   * @notice Escalation data for a dispute
+   * @param startTime The timestamp at which the dispute was escalated
+   * @param totalVotes The total amount of votes cast for the dispute
+   */
+  struct Escalation {
+    uint256 startTime;
+    uint256 totalVotes;
+  }
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

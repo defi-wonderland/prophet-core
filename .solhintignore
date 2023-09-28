@@ -4,3 +4,4 @@ out
 
 // NOTE Unrequired linting check
 solidity/test/invariant/imports/WETH9.sol
+solidity/contracts/libraries/MerkleLib.sol

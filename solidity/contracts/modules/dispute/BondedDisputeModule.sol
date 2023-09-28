@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IBondedDisputeModule} from '../../../interfaces/modules/dispute/IBondedDisputeModule.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
-import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
+
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '../../Module.sol';
 
 contract BondedDisputeModule is Module, IBondedDisputeModule {
@@ -104,6 +104,12 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
       });
     }
 
-    emit DisputeStatusChanged(_dispute.requestId, _dispute.responseId, _disputer, _proposer, _status);
+    emit DisputeStatusChanged({
+      _requestId: _dispute.requestId,
+      _responseId: _dispute.responseId,
+      _disputer: _disputer,
+      _proposer: _proposer,
+      _status: _status
+    });
   }
 }
