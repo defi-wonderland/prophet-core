@@ -124,13 +124,13 @@ contract BondedDisputeModule_UnitTest is Test {
     // Mock and expect the call to the accounting extension, initiating the bond
     vm.mockCall(
       address(accountingExtension),
-      abi.encodeCall(IAccountingExtension.bond, (_disputer, _requestId, _token, _bondSize)),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _disputer, _requestId, _token, _bondSize),
       abi.encode()
     );
 
     vm.expectCall(
       address(accountingExtension),
-      abi.encodeCall(IAccountingExtension.bond, (_disputer, _requestId, _token, _bondSize))
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _disputer, _requestId, _token, _bondSize)
     );
 
     // Test: call disputeResponse

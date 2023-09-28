@@ -55,20 +55,26 @@ contract Integration_ResponseDispute is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.stopPrank();
   }
 
   // check that the dispute id is stored in the response struct
   function test_disputeResponse_disputeIdStoredInResponse() public {
     _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     IOracle.Response memory _disputedResponse = oracle.getResponse(_responseId);
     assertEq(_disputedResponse.disputeId, _disputeId);
@@ -126,7 +132,8 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_noBondedFunds() public {
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
     oracle.disputeResponse(_requestId, _responseId);
   }
@@ -142,8 +149,10 @@ contract Integration_ResponseDispute is IntegrationBase {
 
   function test_disputeResponse_alreadyDisputed() public {
     _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     vm.prank(disputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));

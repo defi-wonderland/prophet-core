@@ -158,6 +158,11 @@ interface IOracle {
    */
   error Oracle_CannotDeleteInvalidProposer(address _caller, bytes32 _responseId);
 
+  /**
+   * @notice Thrown when a module tries to tamper with the address of the user
+   */
+  error Oracle_CannotTamperParticipant();
+
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
@@ -464,6 +469,14 @@ interface IOracle {
    * @return _allowedModule If the module is a part of the request
    */
   function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule);
+
+  /**
+   * @notice Checks if the given address is participating in a specific request
+   * @param _requestId The id of the request
+   * @param _user The address to check
+   * @return _isParticipant If the user is a participant of the request
+   */
+  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant);
 
   /**
    * @notice Returns the finalized response ID for a given request

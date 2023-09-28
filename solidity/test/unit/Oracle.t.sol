@@ -483,10 +483,12 @@ contract Oracle_UnitTest is Test {
     // Mock&expect the responseModule propose call:
     vm.mockCall(
       address(responseModule),
-      abi.encodeCall(IResponseModule.propose, (_requestId, sender, _responseData)),
+      abi.encodeCall(IResponseModule.propose, (_requestId, sender, _responseData, sender)),
       abi.encode(_response)
     );
-    vm.expectCall(address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, sender, _responseData)));
+    vm.expectCall(
+      address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, sender, _responseData, sender))
+    );
 
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
@@ -578,11 +580,12 @@ contract Oracle_UnitTest is Test {
     // Mock&expect the responseModule propose call:
     vm.mockCall(
       address(responseModule),
-      abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData)),
+      abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData, address(disputeModule))),
       abi.encode(_response)
     );
     vm.expectCall(
-      address(responseModule), abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData))
+      address(responseModule),
+      abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData, address(disputeModule)))
     );
 
     // Check: emits ResponseProposed event?
@@ -644,7 +647,7 @@ contract Oracle_UnitTest is Test {
 
     vm.mockCall(
       address(responseModule),
-      abi.encodeCall(IResponseModule.propose, (_requestId, sender, bytes('response'))),
+      abi.encodeCall(IResponseModule.propose, (_requestId, sender, bytes('response'), sender)),
       abi.encode(_response)
     );
 

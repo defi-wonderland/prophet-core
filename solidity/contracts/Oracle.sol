@@ -6,6 +6,7 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -28,6 +29,11 @@ contract Oracle is IOracle {
    * @notice The list of the response ids for each request
    */
   mapping(bytes32 _requestId => EnumerableSet.Bytes32Set _responseId) internal _responseIds;
+
+  /**
+   * @notice The list of the participants for each request
+   */
+  mapping(bytes32 _requestId => EnumerableSet.AddressSet _participants) internal _participants;
 
   /**
    * @notice The finalized response for each request
@@ -183,10 +189,15 @@ contract Oracle is IOracle {
     if (_request.finalizedAt != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
+
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
-    _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData);
+    _participants[_requestId].add(_proposer);
+    _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData, msg.sender);
     _responseIds[_requestId].add(_responseId);
 
+    if (_responses[_responseId].proposer != _proposer) {
+      revert Oracle_CannotTamperParticipant();
+    }
     emit Oracle_ResponseProposed(_requestId, _proposer, _responseId);
   }
 
@@ -226,12 +237,17 @@ contract Oracle is IOracle {
     }
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
+    _participants[_requestId].add(msg.sender);
+
     Dispute memory _dispute =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _response.proposer);
     _disputes[_disputeId] = _dispute;
     disputeOf[_responseId] = _disputeId;
-
     _response.disputeId = _disputeId;
+
+    if (_dispute.disputer != msg.sender) {
+      revert Oracle_CannotTamperParticipant();
+    }
 
     if (_dispute.status != DisputeStatus.Active) {
       _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
@@ -304,6 +320,10 @@ contract Oracle is IOracle {
     _allowedModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
       || address(_request.disputeModule) == _module || address(_request.resolutionModule) == _module
       || address(_request.finalityModule) == _module;
+  }
+
+  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
+    _isParticipant = _participants[_requestId].contains(_user);
   }
 
   /// @inheritdoc IOracle
@@ -412,6 +432,7 @@ contract Oracle is IOracle {
     });
 
     _requests[_requestId] = _storedRequest;
+    _participants[_requestId].add(msg.sender);
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
     _request.responseModule.setupRequest(_requestId, _request.responseModuleData);

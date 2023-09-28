@@ -19,13 +19,17 @@ contract Integration_Payments is IntegrationBase {
     // Requester bonds and creates a request.
     _forBondDepositERC20(_accountingExtension, requester, usdc, _rewardSize, _rewardSize);
     IOracle.NewRequest memory _erc20Request = _standardRequest(_rewardSize, _bondSize, usdc);
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_erc20Request);
+    vm.stopPrank();
 
     // Proposer bonds and proposes a response.
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _bondSize, _bondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, bytes('response'));
+    vm.stopPrank();
 
     // Check that both users have had their funds bonded.
     uint256 _requesterBondedBalanceBefore = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
@@ -62,13 +66,17 @@ contract Integration_Payments is IntegrationBase {
     // Requester bonds and creates request.
     _forBondDepositERC20(_accountingExtension, requester, IERC20(address(weth)), _rewardSize, _rewardSize);
     IOracle.NewRequest memory _ethRequest = _standardRequest(_rewardSize, _bondSize, weth);
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_ethRequest);
+    vm.stopPrank();
 
     // Proposer bonds and creates request.
     _forBondDepositERC20(_accountingExtension, proposer, IERC20(address(weth)), _bondSize, _bondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, bytes('response'));
+    vm.stopPrank();
 
     // Check that both users have had their funds bonded.
     uint256 _requesterBondedBalanceBefore = _accountingExtension.bondedAmountOf(requester, weth, _requestId);
@@ -106,18 +114,24 @@ contract Integration_Payments is IntegrationBase {
     // Requester bonds and creates request.
     _forBondDepositERC20(_accountingExtension, requester, usdc, _rewardSize, _rewardSize);
     IOracle.NewRequest memory _erc20Request = _standardRequest(_rewardSize, _bondSize, usdc);
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_erc20Request);
+    vm.stopPrank();
 
     // Proposer bonds and proposes response.
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _bondSize, _bondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, bytes('response'));
+    vm.stopPrank();
 
     // Disputer bonds and disputes response.
     _forBondDepositERC20(_accountingExtension, disputer, usdc, _bondSize, _bondSize);
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     // Overriding dispute status and finalizing.
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
@@ -157,18 +171,24 @@ contract Integration_Payments is IntegrationBase {
     // Requester bonds and creates request.
     _forBondDepositERC20(_accountingExtension, requester, weth, _rewardSize, _rewardSize);
     IOracle.NewRequest memory _erc20Request = _standardRequest(_rewardSize, _bondSize, weth);
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_erc20Request);
+    vm.stopPrank();
 
     // Proposer bonds and proposes response.
     _forBondDepositERC20(_accountingExtension, proposer, weth, _bondSize, _bondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, bytes('response'));
+    vm.stopPrank();
 
     // Disputer bonds and disputes response.
     _forBondDepositERC20(_accountingExtension, disputer, weth, _bondSize, _bondSize);
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     // Overriding dispute status and finalizing.
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);

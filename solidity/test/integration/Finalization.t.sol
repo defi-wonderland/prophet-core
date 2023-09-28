@@ -29,8 +29,11 @@ contract Integration_Finalization is IntegrationBase {
       )
     );
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
+
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
     vm.warp(block.timestamp + _baseDisputeWindow);
@@ -52,8 +55,11 @@ contract Integration_Finalization is IntegrationBase {
       abi.encode(ICallbackModule.RequestParameters({target: _callbackTarget, data: _calldata}))
     );
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
+
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
     // Check: all low-level calls are made?
@@ -82,8 +88,10 @@ contract Integration_Finalization is IntegrationBase {
       abi.encode(ICallbackModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     vm.prank(_finalizer);
 
@@ -106,16 +114,22 @@ contract Integration_Finalization is IntegrationBase {
       abi.encode(ICallbackModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+    vm.stopPrank();
 
     _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     vm.prank(_finalizer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
@@ -136,12 +150,16 @@ contract Integration_Finalization is IntegrationBase {
       abi.encode(ICallbackModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+    vm.stopPrank();
 
     vm.warp(_timestamp);
     vm.prank(_finalizer);
@@ -166,8 +184,10 @@ contract Integration_Finalization is IntegrationBase {
     );
 
     vm.expectCall(_callbackTarget, _calldata);
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
@@ -191,12 +211,17 @@ contract Integration_Finalization is IntegrationBase {
     );
 
     vm.expectCall(_callbackTarget, _calldata);
-    vm.prank(requester);
+
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     bytes32 _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response_data'));
+    vm.stopPrank();
 
     vm.prank(_finalizer);
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
@@ -208,8 +233,10 @@ contract Integration_Finalization is IntegrationBase {
    */
   function _setupFinalizationStage(bytes32 _requestId) internal returns (bytes32 _responseId) {
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+    vm.stopPrank();
 
     vm.warp(_expectedDeadline + 1);
   }

@@ -160,6 +160,11 @@ contract SequentialResolutionModule is Module, ISequentialResolutionModule {
   }
 
   /// @inheritdoc IOracle
+  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
+    _isParticipant = ORACLE.isParticipant(_requestId, _user);
+  }
+
+  /// @inheritdoc IOracle
   function getDispute(bytes32 _disputeId) external view returns (IOracle.Dispute memory _dispute) {
     _dispute = ORACLE.getDispute(_disputeId);
   }

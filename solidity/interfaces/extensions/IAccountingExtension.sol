@@ -68,10 +68,21 @@ interface IAccountingExtension {
   error AccountingExtension_InsufficientFunds();
 
   /**
+   * @notice Thrown when the module bonding user tokens hasn't been approved by the user.
+   */
+  error AccountingExtension_InsufficientAllowance();
+
+  /**
    * @notice Thrown when an `onlyAllowedModule` function is called by something
    * else than a module being used in the corresponding request
    */
   error AccountingExtension_UnauthorizedModule();
+
+  /**
+   * @notice Thrown when an `onlyParticipant` function is called with an address
+   * that is not part of the request.
+   */
+  error AccountingExtension_UnauthorizedUser();
 
   /*///////////////////////////////////////////////////////////////
                             VARIABLES
@@ -140,11 +151,40 @@ interface IAccountingExtension {
   function bond(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount) external;
 
   /**
-   * @notice Allows a allowed module to release a user's tokens
+   * @notice Allows a valid module to bond a user's tokens for a request
+   * @param _bonder The address of the user to bond tokens for
+   * @param _requestId The id of the request the user is bonding for
+   * @param _token The address of the token being bonded
+   * @param _amount The amount of `_token` to bond
+   * @param _sender The address starting the propose call on the Oracle
+   */
+  function bond(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount, address _sender) external;
+
+  /**
+   * @notice Allows a valid module to release a user's tokens
    * @param _bonder The address of the user to release tokens for
    * @param _requestId The id of the request where the tokens were bonded
    * @param _token The address of the token being released
    * @param _amount The amount of `_token` to release
    */
   function release(address _bonder, bytes32 _requestId, IERC20 _token, uint256 _amount) external;
+
+  /**
+   * @notice Allows a user to approve a module for bonding tokens
+   * @param _module The address of the module to be approved
+   */
+  function approveModule(address _module) external;
+
+  /**
+   * @notice Allows a user to revoke a module's approval for bonding tokens
+   * @param _module The address of the module to be revoked
+   */
+  function revokeModule(address _module) external;
+
+  /**
+   * @notice Returns a list of all modules a user has approved
+   * @param _user The address of the user
+   * @return _approvedModules The array of all modules approved by the user
+   */
+  function userApprovedModules(address _user) external view returns (address[] memory _approvedModules);
 }

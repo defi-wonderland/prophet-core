@@ -21,7 +21,9 @@ contract Integration_RequestCreation is IntegrationBase {
     _request.resolutionModuleData = bytes('');
     _request.finalityModuleData = bytes('');
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
@@ -62,7 +64,8 @@ contract Integration_RequestCreation is IntegrationBase {
     // Request with all modules.
     IOracle.NewRequest memory _request = _standardRequest();
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
@@ -107,7 +110,9 @@ contract Integration_RequestCreation is IntegrationBase {
     IOracle.NewRequest memory _request = _standardRequest();
 
     // Check: should not revert as user has bonded.
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     oracle.createRequest(_request);
   }
 
@@ -115,9 +120,11 @@ contract Integration_RequestCreation is IntegrationBase {
     // Request with rewards.
     IOracle.NewRequest memory _request = _standardRequest();
 
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     // Check: should revert with `InsufficientFunds` as user has not deposited.
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
   }
 
@@ -137,7 +144,9 @@ contract Integration_RequestCreation is IntegrationBase {
       })
     );
     // Check: should not revert as user has set no rewards and bonded.
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     oracle.createRequest(_request);
   }
 
@@ -155,8 +164,11 @@ contract Integration_RequestCreation is IntegrationBase {
       })
     );
 
+    vm.startPrank(requester);
+    // Approving the request module to bond the requester tokens
+    _accountingExtension.approveModule(address(_requestModule));
+
     // Check: should not revert as user has set no rewards.
-    vm.prank(requester);
     oracle.createRequest(_request);
   }
 
@@ -167,6 +179,8 @@ contract Integration_RequestCreation is IntegrationBase {
     IOracle.NewRequest memory _request = _standardRequest();
 
     vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     bytes32 _firstRequestId = oracle.createRequest(_request);
     bytes32 _secondRequestId = oracle.createRequest(_request);
     vm.stopPrank();
@@ -190,8 +204,10 @@ contract Integration_RequestCreation is IntegrationBase {
       })
     );
 
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-    vm.prank(requester);
     oracle.createRequest(_invalidTokenRequest);
 
     // Request with past deadline.

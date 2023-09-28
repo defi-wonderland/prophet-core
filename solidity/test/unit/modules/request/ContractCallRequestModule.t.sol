@@ -138,12 +138,16 @@ contract ContractCallRequestModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, _paymentToken, _paymentAmount)),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)', _requester, _requestId, _paymentToken, _paymentAmount
+      ),
       abi.encode(true)
     );
     vm.expectCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, _paymentToken, _paymentAmount))
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)', _requester, _requestId, _paymentToken, _paymentAmount
+      )
     );
 
     vm.prank(address(oracle));

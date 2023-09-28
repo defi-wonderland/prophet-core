@@ -108,16 +108,21 @@ contract Integration_EscalateDispute is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accounting.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accounting, proposer, usdc, _expectedBondSize, _expectedBondSize);
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accounting.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.stopPrank();
 
     _forBondDepositERC20(_accounting, disputer, usdc, _expectedBondSize, _expectedBondSize);
-
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accounting.approveModule(address(_disputeModule));
     _disputeId = oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
   }
 }

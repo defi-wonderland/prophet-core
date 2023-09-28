@@ -113,8 +113,10 @@ contract Integration_RootVerification is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_sparseMerkleTreeModule));
     _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
   }
 
   function test_validResponse() public {
@@ -122,8 +124,10 @@ contract Integration_RootVerification is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_correctRoot));
+    vm.stopPrank();
 
     vm.warp(_expectedDeadline + _baseDisputeWindow);
 
@@ -136,11 +140,15 @@ contract Integration_RootVerification is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_invalidRoot));
+    vm.stopPrank();
 
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_responseModule));
     oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
 
     uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
     uint256 _proposerBondedBalance = _accountingExtension.bondedAmountOf(proposer, usdc, _requestId);
@@ -162,12 +170,15 @@ contract Integration_RootVerification is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_correctRoot));
+    vm.stopPrank();
 
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_responseModule));
     oracle.disputeResponse(_requestId, _responseId);
-
+    vm.stopPrank();
     uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
     uint256 _proposerBondedBalance = _accountingExtension.bondedAmountOf(proposer, usdc, _requestId);
 

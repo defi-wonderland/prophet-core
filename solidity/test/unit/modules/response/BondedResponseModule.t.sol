@@ -117,7 +117,8 @@ contract BondedResponseModule_UnitTest is Test {
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    bytes calldata _responseData
+    bytes calldata _responseData,
+    address _sender
   ) public {
     vm.assume(_deadline > block.timestamp);
     vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
@@ -131,15 +132,21 @@ contract BondedResponseModule_UnitTest is Test {
     // Mock and expect the call to the accounting extension to bond the bondSize
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (proposer, _requestId, token, _bondSize)),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256,address)', proposer, _requestId, token, _bondSize, _sender
+      ),
       abi.encode()
     );
     vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.bond, (proposer, _requestId, token, _bondSize))
+      address(accounting),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256,address)', proposer, _requestId, token, _bondSize, _sender
+      )
     );
 
     vm.prank(address(oracle));
-    IOracle.Response memory _responseReturned = bondedResponseModule.propose(_requestId, proposer, _responseData);
+    IOracle.Response memory _responseReturned =
+      bondedResponseModule.propose(_requestId, proposer, _responseData, _sender);
 
     IOracle.Response memory _responseExpected = IOracle.Response({
       createdAt: block.timestamp,
@@ -161,7 +168,8 @@ contract BondedResponseModule_UnitTest is Test {
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    bytes calldata _responseData
+    bytes calldata _responseData,
+    address _sender
   ) public {
     vm.assume(_deadline > block.timestamp);
     vm.assume(_disputeWindow > 60 && _disputeWindow < 365 days);
@@ -175,7 +183,9 @@ contract BondedResponseModule_UnitTest is Test {
     // Mock and expect the call to the accounting extension to bond the bondSize
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (proposer, _requestId, token, _bondSize)),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256,address)', proposer, _requestId, token, _bondSize, _sender
+      ),
       abi.encode()
     );
 
@@ -184,7 +194,7 @@ contract BondedResponseModule_UnitTest is Test {
     emit ProposeResponse(_requestId, proposer, _responseData);
 
     vm.prank(address(oracle));
-    bondedResponseModule.propose(_requestId, proposer, _responseData);
+    bondedResponseModule.propose(_requestId, proposer, _responseData, _sender);
   }
 
   /**
@@ -232,7 +242,7 @@ contract BondedResponseModule_UnitTest is Test {
     // Check: revert if sender is not oracle
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
     vm.prank(address(_sender));
-    bondedResponseModule.propose(_requestId, proposer, _responseData);
+    bondedResponseModule.propose(_requestId, proposer, _responseData, _sender);
   }
 
   /**

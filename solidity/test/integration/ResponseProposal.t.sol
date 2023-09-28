@@ -52,15 +52,18 @@ contract Integration_ResponseProposal is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
   }
 
   function test_proposeResponse_validResponse(bytes memory _response) public {
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, _response);
+    vm.stopPrank();
 
     IOracle.Response memory _responseData = oracle.getResponse(_responseId);
 
@@ -88,8 +91,10 @@ contract Integration_ResponseProposal is IntegrationBase {
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
     // First response
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     oracle.proposeResponse(_requestId, _response);
+    vm.stopPrank();
 
     // Check: does revert if already responded?
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_AlreadyResponded.selector);
@@ -113,17 +118,20 @@ contract Integration_ResponseProposal is IntegrationBase {
 
   function test_proposeResponse_insufficientFunds(bytes memory _response) public {
     // Check: does revert if proposer does not have enough funds bonded?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
 
-    vm.prank(proposer);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
     oracle.proposeResponse(_requestId, _response);
   }
 
   function test_deleteResponse(bytes memory _responseData) public {
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.stopPrank();
 
     IOracle.Response memory _response = oracle.getResponse(_responseId);
     assertEq(_response.proposer, proposer);
@@ -147,8 +155,10 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.stopPrank();
 
     vm.warp(_timestamp);
 
@@ -163,8 +173,10 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.stopPrank();
 
     vm.warp(_timestamp);
     oracle.finalize(_requestId, _responseId);

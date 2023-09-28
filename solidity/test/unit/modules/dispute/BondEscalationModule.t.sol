@@ -480,7 +480,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize)),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', disputer, _requestId, token, bondSize),
       abi.encode(true)
     );
 
@@ -506,7 +506,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize)),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', disputer, _requestId, token, bondSize),
       abi.encode(true)
     );
 
@@ -514,7 +514,8 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.prank(address(oracle));
     vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize))
+      address(accounting),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', disputer, _requestId, token, bondSize)
     );
 
     // Expect event
@@ -543,7 +544,7 @@ contract BondEscalationModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (disputer, _requestId, token, bondSize)),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', disputer, _requestId, token, bondSize),
       abi.encode(true)
     );
 

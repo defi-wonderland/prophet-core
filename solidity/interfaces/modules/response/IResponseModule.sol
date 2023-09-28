@@ -20,7 +20,8 @@ interface IResponseModule is IModule {
   function propose(
     bytes32 _requestId,
     address _proposer,
-    bytes calldata _responseData
+    bytes calldata _responseData,
+    address _sender
   ) external returns (IOracle.Response memory _response);
 
   /**

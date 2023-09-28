@@ -136,6 +136,13 @@ contract AccountingExtension_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
 
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)));
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)));
+
     // Set the initial bonded balance
     stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_payer).with_key(
       address(token)
@@ -171,6 +178,13 @@ contract AccountingExtension_UnitTest is Test {
     // mock the module calling validation
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)));
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)));
 
     // Set the initial bonded balance
     stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_payer).with_key(
@@ -216,9 +230,16 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, 0, _initialBalance);
 
+    vm.prank(_bonder);
+    module.approveModule(_sender);
+
     // mock the module calling validation
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
 
     // Set the initial balance
     stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_bonder).with_key(address(token))
@@ -250,9 +271,16 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
 
+    vm.prank(_bonder);
+    module.approveModule(_sender);
+
     // mock the module calling validation
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
 
     // Set the initial balance
     stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_bonder).with_key(address(token))
@@ -301,6 +329,10 @@ contract AccountingExtension_UnitTest is Test {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
 
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
+
     // Set the initial bonded balance
     stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_bonder).with_key(
       address(token)
@@ -335,6 +367,10 @@ contract AccountingExtension_UnitTest is Test {
     // mock the module calling validation
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    // mock the module checking for participant
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
 
     // Set the initial bonded balance
     stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_bonder).with_key(

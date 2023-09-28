@@ -194,13 +194,19 @@ contract Integration_Arbitration is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
+    vm.stopPrank();
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, abi.encode('response'));
+    vm.stopPrank();
 
-    vm.prank(disputer);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_bondedDisputeModule));
     _disputeId = oracle.disputeResponse(_requestId, _responseId);
+    vm.stopPrank();
   }
 }

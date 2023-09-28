@@ -25,7 +25,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   function propose(
     bytes32 _requestId,
     address _proposer,
-    bytes calldata _responseData
+    bytes calldata _responseData,
+    address _sender
   ) external onlyOracle returns (IOracle.Response memory _response) {
     RequestParameters memory _params = decodeRequestData(_requestId);
 
@@ -59,7 +60,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       _bonder: _response.proposer,
       _requestId: _requestId,
       _token: _params.bondToken,
-      _amount: _params.bondSize
+      _amount: _params.bondSize,
+      _sender: _sender
     });
 
     emit ProposeResponse(_requestId, _proposer, _responseData);

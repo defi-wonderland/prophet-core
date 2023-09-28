@@ -111,6 +111,7 @@ contract Integration_AccountingExtension is IntegrationBase {
     });
 
     vm.startPrank(user);
+    _accountingExtension.approveModule(address(_requestModule));
     oracle.createRequest(_request);
     // Check: does it revert if trying to withdraw an amount that is bonded to a request?
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);

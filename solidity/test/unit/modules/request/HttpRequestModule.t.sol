@@ -118,11 +118,12 @@ contract HttpRequestModule_UnitTest is Test {
 
     vm.mockCall(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, TOKEN, _amount)),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _requester, _requestId, TOKEN, _amount),
       abi.encode(true)
     );
     vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.bond, (_requester, _requestId, TOKEN, _amount))
+      address(accounting),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _requester, _requestId, TOKEN, _amount)
     );
 
     vm.prank(address(oracle));
