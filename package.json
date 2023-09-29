@@ -1,7 +1,6 @@
 {
-  "name": "prophet-core",
+  "name": "@defi-wonderland/prophet-core",
   "version": "1.0.0",
-  "private": true,
   "description": "Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
   "homepage": "https://github.com/defi-wonderland/prophet-core",
   "repository": {

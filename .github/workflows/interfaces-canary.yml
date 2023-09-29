@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        publish_type: ["web3-v1", "ethers-v6", "abi"]
+        typing_type: ["web3-v1", "ethers-v6", "abi", "contracts"]
 
     steps:
       - uses: actions/checkout@v3
@@ -33,15 +33,17 @@ jobs:
       - name: Update version
         run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
-      - name: Export Interfaces - ${{ matrix.publish_type }}
-        uses: defi-wonderland/interface-exporter-action@v1.0.0
+      - name: Export Interfaces - ${{ matrix.typing_type }}
+        uses: defi-wonderland/interface-exporter-action@v1.2.1
         with:
           out_dir: "out"
-          publish_type: "${{ matrix.publish_type }}"
-          package_name: "prophet-core-${{ matrix.publish_type }}"
-          destination_dir: "exported-interfaces/prophet-core-${{ matrix.publish_type }}"
+          interfaces_dir: "solidity/interfaces"
+          contracts_dir: "solidity/contracts"
+          typing_type: "${{ matrix.typing_type }}"
+          package_name: "@defi-wonderland/prophet-core-${{ matrix.typing_type }}"
+          destination_dir: "exported-interfaces/prophet-core-${{ matrix.typing_type }}"
 
       - name: Publish
-        run: cd exported-interfaces/prophet-core-${{ matrix.publish_type }} && npm publish --access public --tag canary
+        run: cd exported-interfaces/prophet-core-${{ matrix.typing_type }} && npm publish --access public --tag canary
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

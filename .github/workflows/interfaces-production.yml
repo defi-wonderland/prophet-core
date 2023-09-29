@@ -7,11 +7,12 @@ on:
 
 jobs:
   generate-and-publish-interfaces:
+    if: github.repository == 'defi-wonderland/prophet-core'
     name: Generate Interfaces
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        publish_type: ["web3-v1", "ethers-v6", "abi"]
+        typing_type: ["web3-v1", "ethers-v6", "abi", "contracts"]
 
     steps:
       - uses: actions/checkout@v3
@@ -33,15 +34,17 @@ jobs:
       - name: Build project and generate out directory
         run: yarn build
 
-      - name: Export Interfaces - ${{ matrix.publish_type }}
-        uses: defi-wonderland/interface-exporter-action@v1.0.0
+      - name: Export Interfaces - ${{ matrix.typing_type }}
+        uses: defi-wonderland/interface-exporter-action@v1.2.1
         with:
           out_dir: "out"
-          publish_type: "${{ matrix.publish_type }}"
-          package_name: "prophet-core-${{ matrix.publish_type }}"
-          destination_dir: "exported-interfaces/prophet-core-${{ matrix.publish_type }}"
+          interfaces_dir: "solidity/interfaces"
+          contracts_dir: "solidity/contracts"
+          typing_type: "${{ matrix.typing_type }}"
+          package_name: "@defi-wonderland/prophet-core-${{ matrix.typing_type }}"
+          destination_dir: "exported-interfaces/prophet-core-${{ matrix.typing_type }}"
 
       - name: Publish
-        run: cd exported-interfaces/prophet-core-${{ matrix.publish_type }} && npm publish --access public
+        run: cd exported-interfaces/prophet-core-${{ matrix.typing_type }} && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
