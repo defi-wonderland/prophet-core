@@ -34,7 +34,7 @@ jobs:
         run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
       - name: Export Interfaces - ${{ matrix.typing_type }}
-        uses: defi-wonderland/interface-exporter-action@v1.2.1
+        uses: defi-wonderland/interface-exporter-action@v1.2.2
         with:
           out_dir: "out"
           interfaces_dir: "solidity/interfaces"

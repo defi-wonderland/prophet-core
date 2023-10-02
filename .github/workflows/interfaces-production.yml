@@ -35,7 +35,7 @@ jobs:
         run: yarn build
 
       - name: Export Interfaces - ${{ matrix.typing_type }}
-        uses: defi-wonderland/interface-exporter-action@v1.2.1
+        uses: defi-wonderland/interface-exporter-action@v1.2.2
         with:
           out_dir: "out"
           interfaces_dir: "solidity/interfaces"
