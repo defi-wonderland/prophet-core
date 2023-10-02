@@ -11,8 +11,6 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
@@ -56,8 +54,6 @@ contract Integration_ResponseProposal is IntegrationBase {
   }
 
   function test_proposeResponse_validResponse(bytes memory _response) public {
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-
     vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, _response);
 
@@ -72,7 +68,6 @@ contract Integration_ResponseProposal is IntegrationBase {
 
   function test_proposeResponse_nonExistentRequest(bytes memory _response, bytes32 _nonExistentRequestId) public {
     vm.assume(_nonExistentRequestId != _requestId);
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
 
     // Check: does revert if request does not exist?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidRequestId.selector, _nonExistentRequestId));
@@ -80,14 +75,10 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.prank(proposer);
     oracle.proposeResponse(_nonExistentRequestId, _response);
   }
-  // Proposing without enough funds bonded (should revert insufficient funds)
 
   function test_deleteResponse(bytes memory _responseData) public {
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-
-    vm.startPrank(proposer);
+    vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
-    vm.stopPrank();
 
     IOracle.Response memory _response = oracle.getResponse(_responseId);
     assertEq(_response.proposer, proposer);
@@ -108,8 +99,6 @@ contract Integration_ResponseProposal is IntegrationBase {
 
   function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
     vm.assume(_timestamp > _expectedDeadline + _baseDisputeWindow);
-
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
 
     vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);

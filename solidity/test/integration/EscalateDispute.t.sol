@@ -63,8 +63,6 @@ contract Integration_EscalateDispute is IntegrationBase {
     IResolutionModule _resolutionModule,
     bytes memory _resolutionModuleData
   ) internal returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) {
-    _forBondDepositERC20(_accounting, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
@@ -97,18 +95,13 @@ contract Integration_EscalateDispute is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
 
-    _forBondDepositERC20(_accounting, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(proposer);
+    vm.prank(proposer);
     _responseId = oracle.proposeResponse(_requestId, _responseData);
-    vm.stopPrank();
 
-    _forBondDepositERC20(_accounting, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(disputer);
+    vm.prank(disputer);
     _disputeId = oracle.disputeResponse(_requestId, _responseId);
-    vm.stopPrank();
   }
 }

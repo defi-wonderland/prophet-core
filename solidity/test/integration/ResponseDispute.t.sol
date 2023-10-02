@@ -14,8 +14,6 @@ contract Integration_ResponseDispute is IntegrationBase {
     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
     _responseData = abi.encode('response');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
@@ -54,23 +52,17 @@ contract Integration_ResponseDispute is IntegrationBase {
       ipfsHash: _ipfsHash
     });
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
 
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(proposer);
+    vm.prank(proposer);
     _responseId = oracle.proposeResponse(_requestId, _responseData);
-    vm.stopPrank();
   }
 
   // check that the dispute id is stored in the response struct
   function test_disputeResponse_disputeIdStoredInResponse() public {
-    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
-
-    vm.startPrank(disputer);
+    vm.prank(disputer);
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
-    vm.stopPrank();
 
     IOracle.Response memory _disputedResponse = oracle.getResponse(_responseId);
     assertEq(_disputedResponse.disputeId, _disputeId);
@@ -86,7 +78,6 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_requestAndResponseMismatch() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
@@ -115,7 +106,6 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.prank(requester);
     bytes32 _secondRequest = oracle.createRequest(_request);
 
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.prank(proposer);
     bytes32 _secondResponseId = oracle.proposeResponse(_secondRequest, _responseData);
 
@@ -134,10 +124,8 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_alreadyDisputed() public {
-    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(disputer);
+    vm.prank(disputer);
     oracle.disputeResponse(_requestId, _responseId);
-    vm.stopPrank();
 
     vm.prank(disputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));

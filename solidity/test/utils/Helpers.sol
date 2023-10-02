@@ -22,16 +22,4 @@ contract Helpers is DSTestPlus {
       createdAt: block.timestamp
     });
   }
-
-  function _forBondDepositERC20(
-    IMockAccounting _accountingExtension,
-    address _depositor,
-    IERC20 _token,
-    uint256 _depositAmount,
-    uint256 _balanceIncrease
-  ) internal {
-    vm.assume(_balanceIncrease >= _depositAmount);
-    vm.prank(_depositor);
-    _accountingExtension.deposit(_token, _depositAmount);
-  }
 }

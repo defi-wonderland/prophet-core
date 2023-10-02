@@ -17,8 +17,6 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Test to check if another module can be set as callback module.
    */
   function test_targetIsAnotherModule() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule,
       abi.encode(
@@ -29,10 +27,8 @@ contract Integration_Finalization is IntegrationBase {
       )
     );
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
-
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
     vm.warp(block.timestamp + _baseDisputeWindow);
@@ -47,16 +43,12 @@ contract Integration_Finalization is IntegrationBase {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}))
     );
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
-
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
     // Check: all low-level calls are made?
@@ -78,15 +70,12 @@ contract Integration_Finalization is IntegrationBase {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
 
     vm.prank(_finalizer);
 
@@ -102,25 +91,18 @@ contract Integration_Finalization is IntegrationBase {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
 
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(proposer);
+    vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
-    vm.stopPrank();
 
-    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(disputer);
+    vm.prank(disputer);
     oracle.disputeResponse(_requestId, _responseId);
-    vm.stopPrank();
 
     vm.prank(_finalizer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
@@ -134,15 +116,12 @@ contract Integration_Finalization is IntegrationBase {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
     );
 
-    vm.startPrank(requester);
-    bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
+    vm.prank(requester);
+    oracle.createRequest(_request);
   }
   /**
    * @notice Test to check that finalizing a request without disputes triggers callback calls and executes without reverting.
@@ -152,17 +131,13 @@ contract Integration_Finalization is IntegrationBase {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
-
     IOracle.NewRequest memory _request = _customFinalizationRequest(
       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}))
     );
 
     vm.expectCall(_callbackTarget, _calldata);
-    vm.startPrank(requester);
+    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(_request);
-    vm.stopPrank();
-
     bytes32 _responseId = _setupFinalizationStage(_requestId);
 
     vm.warp(block.timestamp + _baseDisputeWindow);
@@ -174,10 +149,8 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Internal helper function to setup the finalization stage of a request.
    */
   function _setupFinalizationStage(bytes32 _requestId) internal returns (bytes32 _responseId) {
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
-    vm.startPrank(proposer);
+    vm.prank(proposer);
     _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
-    vm.stopPrank();
 
     vm.warp(_expectedDeadline + 1);
   }

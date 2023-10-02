@@ -12,8 +12,6 @@ contract Integration_RequestCreation is IntegrationBase {
   }
 
   function test_createRequestWithoutResolutionAndFinalityModules() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
     // Request without resolution and finality modules.
     IOracle.NewRequest memory _request = _standardRequest();
     _request.resolutionModule = IResolutionModule(address(0));
@@ -21,8 +19,7 @@ contract Integration_RequestCreation is IntegrationBase {
     _request.resolutionModuleData = bytes('');
     _request.finalityModuleData = bytes('');
 
-    vm.startPrank(requester);
-
+    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
@@ -57,12 +54,10 @@ contract Integration_RequestCreation is IntegrationBase {
   }
 
   function test_createRequestWithAllModules() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
     // Request with all modules.
     IOracle.NewRequest memory _request = _standardRequest();
 
-    vm.startPrank(requester);
+    vm.prank(requester);
     _requestId = oracle.createRequest(_request);
 
     // Check: request data was stored in request module?
@@ -96,14 +91,11 @@ contract Integration_RequestCreation is IntegrationBase {
   }
 
   function test_createRequestWithReward_UserHasBonded() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
     // Request with rewards.
     IOracle.NewRequest memory _request = _standardRequest();
 
     // Check: should not revert as user has bonded.
-    vm.startPrank(requester);
-
+    vm.prank(requester);
     oracle.createRequest(_request);
   }
 
@@ -120,21 +112,15 @@ contract Integration_RequestCreation is IntegrationBase {
       })
     );
 
-    vm.startPrank(requester);
-    // Approving the request module to bond the requester tokens
-
     // Check: should not revert as user has set no rewards.
+    vm.prank(requester);
     oracle.createRequest(_request);
   }
 
   function test_createRequestDuplicate() public {
-    // Double token amount as each request is a unique bond.
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward * 2, _expectedReward * 2);
-
     IOracle.NewRequest memory _request = _standardRequest();
 
     vm.startPrank(requester);
-
     bytes32 _firstRequestId = oracle.createRequest(_request);
     bytes32 _secondRequestId = oracle.createRequest(_request);
     vm.stopPrank();
@@ -143,8 +129,6 @@ contract Integration_RequestCreation is IntegrationBase {
   }
 
   function test_createRequestWithDisallowedModule() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
     // Check: Give a non-existent module. Reverts?
     IOracle.NewRequest memory _request = _standardRequest();
     _request.disputeModule = IDisputeModule(makeAddr('NON-EXISTENT DISPUTE MODULE'));

@@ -135,62 +135,64 @@ contract Oracle_UnitTest is Test {
     });
 
     // Compute the associated request id
-    bytes32 _theoricRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce));
+    bytes32 _theoreticalRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce));
 
     // If dispute and finality module != 0, mock and expect their calls
     if (_useResolutionAndFinality) {
       vm.mockCall(
         address(disputeModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.resolutionModuleData)),
         abi.encode()
       );
       vm.expectCall(
         address(resolutionModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData))
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.resolutionModuleData))
       );
 
       vm.mockCall(
         address(finalityModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.finalityModuleData)),
         abi.encode()
       );
       vm.expectCall(
-        address(finalityModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData))
+        address(finalityModule),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.finalityModuleData))
       );
     }
 
     // mock and expect disputeModule call
     vm.mockCall(
       address(disputeModule),
-      abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData)),
+      abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.disputeModuleData)),
       abi.encode()
     );
     vm.expectCall(
-      address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData))
+      address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.disputeModuleData))
     );
 
     // mock and expect requestModule and responseModule calls
     vm.mockCall(
       address(requestModule),
-      abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData)),
+      abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.requestModuleData)),
       abi.encode()
     );
     vm.expectCall(
-      address(requestModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData))
+      address(requestModule), abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.requestModuleData))
     );
 
     vm.mockCall(
       address(responseModule),
-      abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData)),
+      abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.responseModuleData)),
       abi.encode()
     );
     vm.expectCall(
-      address(responseModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData))
+      address(responseModule),
+      abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.responseModuleData))
     );
 
     // Check: emits RequestCreated event?
     vm.expectEmit(true, true, true, true);
-    emit RequestCreated(_theoricRequestId, sender);
+    emit RequestCreated(_theoreticalRequestId, sender);
 
     // Test: create the request
     vm.prank(sender);
@@ -199,7 +201,7 @@ contract Oracle_UnitTest is Test {
     uint256 _newNonce = oracle.totalRequestCount();
 
     // Check: correct request id returned?
-    assertEq(_requestId, _theoricRequestId);
+    assertEq(_requestId, _theoreticalRequestId);
 
     // Check: nonce incremented?
     assertEq(_newNonce, _initialNonce + 1);
@@ -260,64 +262,67 @@ contract Oracle_UnitTest is Test {
         finalityModule: finalityModule
       });
 
-      bytes32 _theoricRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce + _i));
+      bytes32 _theoreticalRequestId = keccak256(abi.encodePacked(sender, address(oracle), _initialNonce + _i));
       _requests[_i] = _request;
-      _precalculatedIds[_i] = _theoricRequestId;
+      _precalculatedIds[_i] = _theoreticalRequestId;
 
       if (_useResolutionAndFinality) {
         vm.mockCall(
           address(disputeModule),
-          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData)),
+          abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.resolutionModuleData)),
           abi.encode()
         );
         vm.expectCall(
           address(resolutionModule),
-          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.resolutionModuleData))
+          abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.resolutionModuleData))
         );
 
         vm.mockCall(
           address(finalityModule),
-          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData)),
+          abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.finalityModuleData)),
           abi.encode()
         );
         vm.expectCall(
           address(finalityModule),
-          abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.finalityModuleData))
+          abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.finalityModuleData))
         );
       }
 
       // mock and expect disputeModule call
       vm.mockCall(
         address(disputeModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.disputeModuleData)),
         abi.encode()
       );
       vm.expectCall(
-        address(disputeModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.disputeModuleData))
+        address(disputeModule),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.disputeModuleData))
       );
 
       // mock and expect requestModule and responseModule calls
       vm.mockCall(
         address(requestModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.requestModuleData)),
         abi.encode()
       );
       vm.expectCall(
-        address(requestModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.requestModuleData))
+        address(requestModule),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.requestModuleData))
       );
 
       vm.mockCall(
         address(responseModule),
-        abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData)),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.responseModuleData)),
         abi.encode()
       );
       vm.expectCall(
-        address(responseModule), abi.encodeCall(IModule.setupRequest, (_theoricRequestId, _request.responseModuleData))
+        address(responseModule),
+        abi.encodeCall(IModule.setupRequest, (_theoreticalRequestId, _request.responseModuleData))
       );
 
       // Check: emits RequestCreated event?
       vm.expectEmit(true, true, true, true);
-      emit RequestCreated(_theoricRequestId, sender);
+      emit RequestCreated(_theoreticalRequestId, sender);
     }
 
     vm.prank(sender);
