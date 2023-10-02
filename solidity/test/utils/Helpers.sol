@@ -5,7 +5,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 
 import {IOracle} from '../../contracts/Oracle.sol';
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {IMockAccounting} from '../mocks/interfaces/IMockAccounting.sol';
 
 contract Helpers is DSTestPlus {
   function _getMockDispute(
@@ -24,17 +24,14 @@ contract Helpers is DSTestPlus {
   }
 
   function _forBondDepositERC20(
-    IAccountingExtension _accountingExtension,
+    IMockAccounting _accountingExtension,
     address _depositor,
     IERC20 _token,
     uint256 _depositAmount,
     uint256 _balanceIncrease
   ) internal {
     vm.assume(_balanceIncrease >= _depositAmount);
-    deal(address(_token), _depositor, _balanceIncrease);
-    vm.startPrank(_depositor);
-    _token.approve(address(_accountingExtension), _depositAmount);
+    vm.prank(_depositor);
     _accountingExtension.deposit(_token, _depositAmount);
-    vm.stopPrank();
   }
 }

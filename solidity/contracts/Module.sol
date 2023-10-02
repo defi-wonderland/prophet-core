@@ -7,6 +7,7 @@ import {IOracle} from '../interfaces/IOracle.sol';
 abstract contract Module is IModule {
   IOracle public immutable ORACLE;
 
+  /// @inheritdoc IModule
   mapping(bytes32 _requestId => bytes _requestData) public requestData;
 
   constructor(IOracle _oracle) payable {

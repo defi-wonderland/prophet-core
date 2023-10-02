@@ -192,8 +192,8 @@ contract Oracle is IOracle {
 
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _participants[_requestId].add(_proposer);
-    _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData, msg.sender);
     _responseIds[_requestId].add(_responseId);
+    _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData, msg.sender);
 
     if (_responses[_responseId].proposer != _proposer) {
       revert Oracle_CannotTamperParticipant();

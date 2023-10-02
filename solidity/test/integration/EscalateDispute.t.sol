@@ -19,32 +19,25 @@ contract Integration_EscalateDispute is IntegrationBase {
     oracle.escalateDispute(_invalidDisputeId);
 
     /// Create a dispute with bond escalation module and arbitrator module
-    (bytes32 _requestId,, bytes32 _disputeId) = _createRequestAndDispute(
-      _bondEscalationAccounting,
-      _bondEscalationModule,
+    (,, bytes32 _disputeId) = _createRequestAndDispute(
+      _accountingExtension,
+      _disputeModule,
       abi.encode(
-        IBondEscalationModule.RequestParameters({
-          accountingExtension: _bondEscalationAccounting,
-          bondToken: IERC20(USDC_ADDRESS),
-          bondSize: _expectedBondSize,
-          maxNumberOfEscalations: 1,
-          bondEscalationDeadline: _expectedDeadline,
-          tyingBuffer: 0,
-          disputeWindow: 0
+        IMockDisputeModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount
         })
       ),
-      _arbitratorModule,
-      abi.encode(_mockArbitrator)
+      _resolutionModule,
+      abi.encode()
     );
 
     /// The oracle should call the dispute module
-    vm.expectCall(address(_bondEscalationModule), abi.encodeCall(IDisputeModule.disputeEscalated, _disputeId));
+    vm.expectCall(address(_disputeModule), abi.encodeCall(IDisputeModule.disputeEscalated, _disputeId));
 
     /// The oracle should call startResolution in the resolution module
-    vm.expectCall(address(_arbitratorModule), abi.encodeCall(IResolutionModule.startResolution, _disputeId));
-
-    /// The arbitrator module should call the arbitrator
-    vm.expectCall(address(_mockArbitrator), abi.encodeCall(MockArbitrator.resolve, _disputeId));
+    vm.expectCall(address(_resolutionModule), abi.encodeCall(IResolutionModule.startResolution, _disputeId));
 
     /// We escalate the dispute
     _mineBlocks(_blocksDeadline + 1);
@@ -54,12 +47,9 @@ contract Integration_EscalateDispute is IntegrationBase {
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     assertTrue(_dispute.status == IOracle.DisputeStatus.Escalated);
 
-    /// The BondEscalationModule should now have the escalation status escalated
-    IBondEscalationModule.BondEscalation memory _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
-    assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.Escalated);
-
-    /// The ArbitratorModule should have updated the status of the dispute
-    assertTrue(_arbitratorModule.getStatus(_disputeId) == IArbitratorModule.ArbitrationStatus.Active);
+    /// TODO: The MockDisputeModule should now have the escalation status escalated
+    // IMockDisputeModule.BondEscalation memory _bondEscalation = _disputeModule.getEscalation(_requestId);
+    // assertTrue(_bondEscalation.status == IMockDisputeModule.BondEscalationStatus.Escalated);
 
     /// Escalate dispute reverts if dispute is not active
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
@@ -67,30 +57,29 @@ contract Integration_EscalateDispute is IntegrationBase {
   }
 
   function _createRequestAndDispute(
-    IAccountingExtension _accounting,
+    IMockAccounting _accounting,
     IDisputeModule _disputeModule,
     bytes memory _disputeModuleData,
     IResolutionModule _resolutionModule,
     bytes memory _resolutionModuleData
   ) internal returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) {
-    _forBondDepositERC20(_accounting, requester, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accounting, requester, usdc, _expectedBondAmount, _expectedBondAmount);
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        IHttpRequestModule.RequestParameters({
+        IMockRequestModule.RequestParameters({
           url: _expectedUrl,
-          method: _expectedMethod,
           body: _expectedBody,
           accountingExtension: _accounting,
-          paymentToken: IERC20(USDC_ADDRESS),
+          paymentToken: usdc,
           paymentAmount: _expectedReward
         })
         ),
       responseModuleData: abi.encode(
-        IBondedResponseModule.RequestParameters({
+        IMockResponseModule.RequestParameters({
           accountingExtension: _accounting,
-          bondToken: IERC20(USDC_ADDRESS),
-          bondSize: _expectedBondSize,
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount,
           deadline: _expectedDeadline,
           disputeWindow: _baseDisputeWindow
         })
@@ -98,30 +87,27 @@ contract Integration_EscalateDispute is IntegrationBase {
       disputeModuleData: _disputeModuleData,
       resolutionModuleData: _resolutionModuleData,
       finalityModuleData: abi.encode(
-        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
-      finalityModule: IFinalityModule(_callbackModule),
+      finalityModule: _finalityModule,
       ipfsHash: _ipfsHash
     });
 
     vm.startPrank(requester);
-    _accounting.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
     vm.stopPrank();
 
-    _forBondDepositERC20(_accounting, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accounting, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.startPrank(proposer);
-    _accounting.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, _responseData);
     vm.stopPrank();
 
-    _forBondDepositERC20(_accounting, disputer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accounting, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.startPrank(disputer);
-    _accounting.approveModule(address(_disputeModule));
     _disputeId = oracle.disputeResponse(_requestId, _responseId);
     vm.stopPrank();
   }

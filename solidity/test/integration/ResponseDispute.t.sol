@@ -14,65 +14,61 @@ contract Integration_ResponseDispute is IntegrationBase {
     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
     _responseData = abi.encode('response');
 
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
 
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        IHttpRequestModule.RequestParameters({
+        IMockRequestModule.RequestParameters({
           url: _expectedUrl,
-          method: _expectedMethod,
           body: _expectedBody,
           accountingExtension: _accountingExtension,
-          paymentToken: IERC20(USDC_ADDRESS),
+          paymentToken: usdc,
           paymentAmount: _expectedReward
         })
         ),
       responseModuleData: abi.encode(
-        IBondedResponseModule.RequestParameters({
+        IMockResponseModule.RequestParameters({
           accountingExtension: _accountingExtension,
-          bondToken: IERC20(USDC_ADDRESS),
-          bondSize: _expectedBondSize,
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount,
           deadline: _expectedDeadline,
           disputeWindow: _baseDisputeWindow
         })
         ),
       disputeModuleData: abi.encode(
-        IBondedDisputeModule.RequestParameters({
+        IMockDisputeModule.RequestParameters({
           accountingExtension: _accountingExtension,
-          bondToken: IERC20(USDC_ADDRESS),
-          bondSize: _expectedBondSize
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount
         })
         ),
-      resolutionModuleData: abi.encode(_mockArbitrator),
+      resolutionModuleData: abi.encode(),
       finalityModuleData: abi.encode(
-        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _bondedDisputeModule,
-      resolutionModule: _arbitratorModule,
-      finalityModule: IFinalityModule(_callbackModule),
+      disputeModule: _disputeModule,
+      resolutionModule: _resolutionModule,
+      finalityModule: _finalityModule,
       ipfsHash: _ipfsHash
     });
 
     vm.startPrank(requester);
-    _accountingExtension.approveModule(address(_requestModule));
     _requestId = oracle.createRequest(_request);
     vm.stopPrank();
 
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.startPrank(proposer);
-    _accountingExtension.approveModule(address(_responseModule));
     _responseId = oracle.proposeResponse(_requestId, _responseData);
     vm.stopPrank();
   }
 
   // check that the dispute id is stored in the response struct
   function test_disputeResponse_disputeIdStoredInResponse() public {
-    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
 
     vm.startPrank(disputer);
-    _accountingExtension.approveModule(address(_bondedDisputeModule));
     bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
     vm.stopPrank();
 
@@ -90,52 +86,42 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_requestAndResponseMismatch() public {
-    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedBondAmount, _expectedBondAmount);
     IOracle.NewRequest memory _request = IOracle.NewRequest({
       requestModuleData: abi.encode(
-        IHttpRequestModule.RequestParameters({
+        IMockRequestModule.RequestParameters({
           url: _expectedUrl,
-          method: _expectedMethod,
           body: _expectedBody,
           accountingExtension: _accountingExtension,
-          paymentToken: IERC20(USDC_ADDRESS),
+          paymentToken: usdc,
           paymentAmount: _expectedReward
         })
         ),
       responseModuleData: abi.encode(
-        _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _baseDisputeWindow
+        _accountingExtension, USDC_ADDRESS, _expectedBondAmount, _expectedDeadline, _baseDisputeWindow
         ),
-      disputeModuleData: abi.encode(
-        _accountingExtension, USDC_ADDRESS, _expectedBondSize, _expectedDeadline, _mockArbitrator
-        ),
-      resolutionModuleData: abi.encode(_mockArbitrator),
+      disputeModuleData: abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondAmount, _expectedDeadline),
+      resolutionModuleData: abi.encode(),
       finalityModuleData: abi.encode(
-        ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
         ),
       requestModule: _requestModule,
       responseModule: _responseModule,
-      disputeModule: _bondedDisputeModule,
-      resolutionModule: _arbitratorModule,
-      finalityModule: IFinalityModule(_callbackModule),
+      disputeModule: _disputeModule,
+      resolutionModule: _resolutionModule,
+      finalityModule: _finalityModule,
       ipfsHash: _ipfsHash
     });
     vm.prank(requester);
     bytes32 _secondRequest = oracle.createRequest(_request);
 
-    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.prank(proposer);
     bytes32 _secondResponseId = oracle.proposeResponse(_secondRequest, _responseData);
 
     vm.prank(disputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidResponseId.selector, _secondResponseId));
     oracle.disputeResponse(_requestId, _secondResponseId);
-  }
-
-  function test_disputeResponse_noBondedFunds() public {
-    vm.startPrank(disputer);
-    _accountingExtension.approveModule(address(_bondedDisputeModule));
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-    oracle.disputeResponse(_requestId, _responseId);
   }
 
   function test_disputeResponse_alreadyFinalized() public {
@@ -148,9 +134,8 @@ contract Integration_ResponseDispute is IntegrationBase {
   }
 
   function test_disputeResponse_alreadyDisputed() public {
-    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondSize, _expectedBondSize);
+    _forBondDepositERC20(_accountingExtension, disputer, usdc, _expectedBondAmount, _expectedBondAmount);
     vm.startPrank(disputer);
-    _accountingExtension.approveModule(address(_bondedDisputeModule));
     oracle.disputeResponse(_requestId, _responseId);
     vm.stopPrank();
 
@@ -158,14 +143,4 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
     oracle.disputeResponse(_requestId, _responseId);
   }
-
-  // TODO: discuss and decide on the implementation of a dispute deadline
-  //   function test_disputeResponse_afterDeadline(uint256 _timestamp) public {
-  //     vm.assume(_timestamp > _expectedDeadline);
-  //     _bondDisputerFunds();
-  //     vm.warp(_timestamp);
-  //     vm.prank(disputer);
-  //     vm.expectRevert(abi.encodeWithSelector(IBondedDisputeModule.BondedDisputeModule_TooLateToDispute.selector, _responseId));
-  //     oracle.disputeResponse(_requestId, _responseId);
-  //   }
 }
