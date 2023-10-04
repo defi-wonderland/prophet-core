@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        typing_type: ["web3-v1", "ethers-v6", "abi", "contracts"]
+        typing_type: ["abi", "contracts"]
 
     steps:
       - uses: actions/checkout@v3
