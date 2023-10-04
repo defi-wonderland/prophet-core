@@ -102,12 +102,15 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list) {
-    if (_batchSize > totalRequestCount) {
+    uint256 _totalRequestsCount = totalRequestCount;
+
+    // If trying to collect non-existent ids only, return empty array
+    if (_startFrom > _totalRequestsCount) {
       return _list;
     }
 
-    if (_batchSize > totalRequestCount - _startFrom) {
-      _batchSize = totalRequestCount - _startFrom;
+    if (_batchSize > _totalRequestsCount - _startFrom) {
+      _batchSize = _totalRequestsCount - _startFrom;
     }
 
     _list = new bytes32[](_batchSize);
@@ -378,7 +381,7 @@ contract Oracle is IOracle {
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 
         if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
-          revert Oracle_InvalidFinalizedResponse(_requestId);
+          revert Oracle_InvalidFinalizedResponse(_responseId);
         }
 
         unchecked {

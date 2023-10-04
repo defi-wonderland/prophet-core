@@ -47,10 +47,6 @@ contract Integration_EscalateDispute is IntegrationBase {
     IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
     assertTrue(_dispute.status == IOracle.DisputeStatus.Escalated);
 
-    /// TODO: The MockDisputeModule should now have the escalation status escalated
-    // IMockDisputeModule.BondEscalation memory _bondEscalation = _disputeModule.getEscalation(_requestId);
-    // assertTrue(_bondEscalation.status == IMockDisputeModule.BondEscalationStatus.Escalated);
-
     /// Escalate dispute reverts if dispute is not active
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
     oracle.escalateDispute(_disputeId);
