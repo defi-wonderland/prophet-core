@@ -11,6 +11,7 @@ Prophet presents a versatile and fully adaptable optimistic oracle solution, tra
 
 ### Repositories
 - [Core Contracts](https://github.com/defi-wonderland/prophet-core)
+- [Modules](https://github.com/defi-wonderland/prophet-modules)
 - [Explorer](https://github.com/defi-wonderland/prophet-app)
 - [Automation](https://github.com/defi-wonderland/prophet-automation)
 - [SDK](https://github.com/defi-wonderland/prophet-sdk)
