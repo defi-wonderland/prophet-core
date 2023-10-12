@@ -164,6 +164,22 @@ interface IOracle {
   error Oracle_CannotTamperParticipant();
 
   /*///////////////////////////////////////////////////////////////
+                              ENUMS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice All available statuses a dispute can have
+   */
+  enum DisputeStatus {
+    None,
+    Active,
+    Escalated,
+    Won,
+    Lost,
+    NoResolution
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
@@ -291,22 +307,6 @@ interface IOracle {
     bytes32 responseId;
     bytes32 requestId;
     DisputeStatus status;
-  }
-
-  /*///////////////////////////////////////////////////////////////
-                              ENUMS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice All available statuses a dispute can have
-   */
-  enum DisputeStatus {
-    None,
-    Active,
-    Escalated,
-    Won,
-    Lost,
-    NoResolution
   }
 
   /*///////////////////////////////////////////////////////////////

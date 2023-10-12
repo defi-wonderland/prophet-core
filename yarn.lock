@@ -2779,10 +2779,10 @@ slice-ansi@^5.0.0:
     ansi-styles "^6.0.0"
     is-fullwidth-code-point "^4.0.0"
 
-solhint-plugin-defi-wonderland@1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/solhint-plugin-defi-wonderland/-/solhint-plugin-defi-wonderland-1.1.0.tgz#6b82ee4da9fea1a4aeed4409915c3980f0f6b6a2"
-  integrity sha512-dl5wyURqrs9KgkDjYDW5RN55Fij7rrtybluqG45csilqD9x2vd+iAkaMD2VU150TqmfrcYN5p1Rer3sKWRNIPQ==
+solhint-plugin-defi-wonderland@1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/solhint-plugin-defi-wonderland/-/solhint-plugin-defi-wonderland-1.1.2.tgz#9bb26e173dd14c23eb28d107dd5ee21953ce0d5e"
+  integrity sha512-LkszaY3JwTpnWPRWTjPVzemMl+2LSw64Xd0wOE3dmPvBsELfvPo659zfQexLfxEtuubfuA33rw5WQw0LBC2alA==
   dependencies:
     solhint "3.3.7"
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// solhint-disable no-unused-import
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
-/* solhint-disable no-unused-import */
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 import {Helpers} from '../utils/Helpers.sol';
@@ -26,7 +26,7 @@ import {MockResolutionModule, IMockResolutionModule} from '../mocks/contracts/Mo
 import {MockFinalityModule, IMockFinalityModule} from '../mocks/contracts/MockFinalityModule.sol';
 
 import {TestConstants} from '../utils/TestConstants.sol';
-/* solhint-enable no-unused-import */
+// solhint-enable no-unused-import
 
 contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   uint256 public constant FORK_BLOCK = 756_611;
