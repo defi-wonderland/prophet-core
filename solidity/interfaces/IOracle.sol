@@ -83,7 +83,7 @@ interface IOracle {
    * @notice Thrown when an unauthorized caller is trying to change a dispute's status
    * @param _caller The caller of the function
    */
-  error Oracle_NotResolutionModule(address _caller);
+  error Oracle_NotDisputeOrResolutionModule(address _caller);
 
   /**
    * @notice Thrown when an unauthorized caller is trying to propose a response

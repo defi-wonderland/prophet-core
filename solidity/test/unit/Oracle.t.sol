@@ -1041,7 +1041,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
     _mockRequest();
 
     // Check: revert?
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotResolutionModule.selector, proposer));
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeOrResolutionModule.selector, proposer));
 
     // Test: try to update the status from an EOA
     vm.prank(proposer);

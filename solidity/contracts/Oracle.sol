@@ -253,11 +253,11 @@ contract Oracle is IOracle {
       revert Oracle_CannotTamperParticipant();
     }
 
+    emit ResponseDisputed(msg.sender, _responseId, _disputeId);
+
     if (_dispute.status != DisputeStatus.Active) {
       _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
     }
-
-    emit ResponseDisputed(msg.sender, _responseId, _disputeId);
   }
 
   /// @inheritdoc IOracle
@@ -277,12 +277,12 @@ contract Oracle is IOracle {
     // Notify the dispute module about the escalation
     _request.disputeModule.disputeEscalated(_disputeId);
 
+    emit DisputeEscalated(msg.sender, _disputeId);
+
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
       _request.resolutionModule.startResolution(_disputeId);
     }
-
-    emit DisputeEscalated(msg.sender, _disputeId);
   }
 
   /// @inheritdoc IOracle
@@ -309,8 +309,8 @@ contract Oracle is IOracle {
   function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
     Request memory _request = _requests[_dispute.requestId];
-    if (msg.sender != address(_request.resolutionModule)) {
-      revert Oracle_NotResolutionModule(msg.sender);
+    if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
+      revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
     _dispute.status = _status;
     _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute);
