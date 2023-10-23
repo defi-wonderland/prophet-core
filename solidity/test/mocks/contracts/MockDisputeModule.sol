@@ -12,7 +12,8 @@ contract MockDisputeModule is Module, IMockDisputeModule {
     bytes32 _requestId,
     bytes32 _responseId,
     address _disputer,
-    address _proposer
+    address _proposer,
+    bytes calldata _moduleData
   ) external view returns (IOracle.Dispute memory _dispute) {
     _dispute = IOracle.Dispute({
       createdAt: block.timestamp,
@@ -28,7 +29,11 @@ contract MockDisputeModule is Module, IMockDisputeModule {
     _requestData = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
-  function disputeEscalated(bytes32 _disputeId) external {}
+  function disputeEscalated(bytes32 _disputeId, bytes calldata _moduleData) external {}
   function moduleName() external view returns (string memory _moduleName) {}
-  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external {}
+  function onDisputeStatusChange(
+    bytes32 _disputeId,
+    IOracle.Dispute memory _dispute,
+    bytes calldata _moduleData
+  ) external {}
 }

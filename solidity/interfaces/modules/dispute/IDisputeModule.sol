@@ -47,7 +47,8 @@ interface IDisputeModule is IModule {
     bytes32 _requestId,
     bytes32 _responseId,
     address _disputer,
-    address _proposer
+    address _proposer,
+    bytes calldata _moduleData
   ) external returns (IOracle.Dispute memory _dispute);
 
   /**
@@ -55,11 +56,15 @@ interface IDisputeModule is IModule {
    * @param _disputeId The id of the dispute
    * @param _dispute The dispute data
    */
-  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
+  function onDisputeStatusChange(
+    bytes32 _disputeId,
+    IOracle.Dispute memory _dispute,
+    bytes calldata _moduleData
+  ) external;
 
   /**
    * @notice Called by the oracle when a dispute has been escalated.
    * @param _disputeId The ID of the dispute being escalated
    */
-  function disputeEscalated(bytes32 _disputeId) external;
+  function disputeEscalated(bytes32 _disputeId, bytes calldata _moduleData) external;
 }

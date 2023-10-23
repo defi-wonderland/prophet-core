@@ -21,7 +21,9 @@ interface IOracle {
    * @param _requestId The id of the created request
    * @param _requester The address of the user who created the request
    */
-  event RequestCreated(bytes32 indexed _requestId, address indexed _requester);
+  event RequestCreated(
+    bytes32 indexed _requestId, bytes32 _requestHash, address indexed _requester, uint256 indexed _blockNumber
+  );
 
   /**
    * @notice Emitted when a response is proposed
@@ -309,6 +311,14 @@ interface IOracle {
     DisputeStatus status;
   }
 
+  struct HashedRequest {
+    bytes32 requestModuleDataHash;
+    bytes32 responseModuleDataHash;
+    bytes32 disputeModuleDataHash;
+    bytes32 resolutionModuleDataHash;
+    bytes32 finalityModuleDataHash;
+  }
+
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
   //////////////////////////////////////////////////////////////*/
@@ -411,7 +421,11 @@ interface IOracle {
    * @param _responseData The response data
    * @return _responseId The id of the created response
    */
-  function proposeResponse(bytes32 _requestId, bytes calldata _responseData) external returns (bytes32 _responseId);
+  function proposeResponse(
+    bytes32 _requestId,
+    bytes calldata _responseData,
+    bytes calldata _moduleData
+  ) external returns (bytes32 _responseId);
 
   /**
    * @notice Creates a new response for a given request
@@ -424,7 +438,8 @@ interface IOracle {
   function proposeResponse(
     address _proposer,
     bytes32 _requestId,
-    bytes calldata _responseData
+    bytes calldata _responseData,
+    bytes calldata _moduleData
   ) external returns (bytes32 _responseId);
 
   /**
@@ -441,26 +456,30 @@ interface IOracle {
    * @param _requestId The id of the request which was responded
    * @param _responseId The id of the response being disputed
    */
-  function disputeResponse(bytes32 _requestId, bytes32 _responseId) external returns (bytes32 _disputeId);
+  function disputeResponse(
+    bytes32 _requestId,
+    bytes32 _responseId,
+    bytes calldata _moduleData
+  ) external returns (bytes32 _disputeId);
 
   /**
    * @notice Escalates a dispute, sending it to the resolution module
    * @param _disputeId The id of the dispute to escalate
    */
-  function escalateDispute(bytes32 _disputeId) external;
+  function escalateDispute(bytes32 _disputeId, bytes calldata _moduleData) external;
 
   /**
    * @notice Resolves a dispute
    * @param _disputeId The id of the dispute to resolve
    */
-  function resolveDispute(bytes32 _disputeId) external;
+  function resolveDispute(bytes32 _disputeId, bytes calldata _moduleData) external;
 
   /**
    * @notice Updates the status of a dispute
    * @param _disputeId The id of the dispute to update
    * @param _status The new status of the dispute
    */
-  function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status) external;
+  function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status, bytes calldata _moduleData) external;
 
   /**
    * @notice Checks if the given address is a module used in the request

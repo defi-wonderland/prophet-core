@@ -21,6 +21,7 @@ interface IResponseModule is IModule {
     bytes32 _requestId,
     address _proposer,
     bytes calldata _responseData,
+    bytes calldata moduleData,
     address _sender
   ) external returns (IOracle.Response memory _response);
 

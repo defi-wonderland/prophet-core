@@ -12,6 +12,7 @@ contract MockResponseModule is Module, IMockResponseModule {
     bytes32 _requestId,
     address _proposer,
     bytes calldata _responseData,
+    bytes calldata _moduleData,
     address /* _sender */
   ) external view returns (IOracle.Response memory _response) {
     _response = IOracle.Response({
