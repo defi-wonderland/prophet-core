@@ -49,7 +49,7 @@ contract ForTest_Oracle is Oracle {
   }
 
   function forTest_addParticipant(bytes32 _requestId, address _participant) external {
-    _participants[_requestId].add(_participant);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _participant);
   }
 
   function forTest_setFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) external {
