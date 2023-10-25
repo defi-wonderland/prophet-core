@@ -24,9 +24,6 @@ via_ir = true
 out = 'out-via-ir'
 src = 'solidity/test'
 
-[profile.docs]
-src = 'solidity/interfaces/'
-
 [fuzz]
 runs = 1000
 
