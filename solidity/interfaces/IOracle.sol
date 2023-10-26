@@ -200,7 +200,7 @@ interface IOracle {
     bytes32 ipfsHash;
     uint128 createdAt;
     uint128 finalizedAt;
-    uint256 nonce;
+    uint96 nonce;
     address requester;
     IRequestModule requestModule;
     IResponseModule responseModule;

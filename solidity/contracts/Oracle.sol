@@ -447,7 +447,7 @@ contract Oracle is IOracle {
       resolutionModule: _request.resolutionModule,
       finalityModule: _request.finalityModule,
       requester: msg.sender,
-      nonce: _requestNonce,
+      nonce: uint96(_requestNonce),
       createdAt: uint128(block.timestamp),
       finalizedAt: 0
     });
