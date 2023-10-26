@@ -16,8 +16,6 @@
     "coverage": "forge coverage --match-contract Unit",
     "deploy": "dotenv -- bash -c 'forge script Deploy -vv --slow --broadcast --rpc-url $OPTIMISM_RPC'",
     "deploy:local": "dotenv -- bash -c 'forge script Deploy -vv --slow --broadcast --rpc-url $LOCAL_RPC'",
-    "docs:build": "./build-docs.sh",
-    "docs:run": "mdbook serve docs",
     "postinstall": "husky install",
     "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
