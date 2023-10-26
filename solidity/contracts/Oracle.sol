@@ -6,7 +6,6 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
-  using EnumerableSet for EnumerableSet.AddressSet;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -33,7 +32,7 @@ contract Oracle is IOracle {
   /**
    * @notice The list of the participants for each request
    */
-  mapping(bytes32 _requestId => EnumerableSet.AddressSet _participants) internal _participants;
+  mapping(bytes32 _requestId => bytes _participants) internal _participants;
 
   /**
    * @notice The finalized response for each request
@@ -194,7 +193,7 @@ contract Oracle is IOracle {
     }
 
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
-    _participants[_requestId].add(_proposer);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
     _responses[_responseId] = _request.responseModule.propose(_requestId, _proposer, _responseData, msg.sender);
     _responseIds[_requestId].add(_responseId);
 
@@ -241,7 +240,7 @@ contract Oracle is IOracle {
     }
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
-    _participants[_requestId].add(msg.sender);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
 
     Dispute memory _dispute =
       _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _response.proposer);
@@ -326,8 +325,27 @@ contract Oracle is IOracle {
       || address(_request.finalityModule) == _module;
   }
 
+  // @inheritdoc IOracle
   function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
-    _isParticipant = _participants[_requestId].contains(_user);
+    bytes memory _requestParticipants = _participants[_requestId];
+
+    assembly {
+      let length := mload(_requestParticipants)
+      let i := 0
+
+      // Iterate 20-bytes chunks of the participants data
+      for {} lt(i, length) { i := add(i, 20) } {
+        // Load the participant at index i
+        let _participant := mload(add(add(_requestParticipants, 0x20), i))
+
+        // Shift the participant to the right by 96 bits and compare with _user
+        if eq(shr(96, _participant), _user) {
+          // Set _isParticipant to true and return
+          mstore(0x00, 1)
+          return(0x00, 32)
+        }
+      }
+    }
   }
 
   /// @inheritdoc IOracle
@@ -436,7 +454,7 @@ contract Oracle is IOracle {
     });
 
     _requests[_requestId] = _storedRequest;
-    _participants[_requestId].add(msg.sender);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
 
     _request.requestModule.setupRequest(_requestId, _request.requestModuleData);
     _request.responseModule.setupRequest(_requestId, _request.responseModuleData);
