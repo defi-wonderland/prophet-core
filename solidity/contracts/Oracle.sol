@@ -206,8 +206,8 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function deleteResponse(bytes32 _responseId) external {
-    Response memory _response = _responses[_responseId];
-    Request memory _request = _requests[_response.requestId];
+    Response storage _response = _responses[_responseId];
+    Request storage _request = _requests[_response.requestId];
 
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_CannotDeleteWhileDisputing(_responseId);
@@ -217,11 +217,10 @@ contract Oracle is IOracle {
     }
 
     _request.responseModule.deleteResponse(_response.requestId, _responseId, msg.sender);
-
-    delete _responses[_responseId];
     _responseIds[_response.requestId].remove(_responseId);
 
     emit ResponseDeleted(_response.requestId, msg.sender, _responseId);
+    delete _responses[_responseId];
   }
 
   /// @inheritdoc IOracle
