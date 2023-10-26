@@ -98,7 +98,7 @@ contract Integration_ResponseProposal is IntegrationBase {
   }
 
   function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
-    vm.assume(_timestamp > _expectedDeadline + _baseDisputeWindow);
+    _timestamp = bound(_timestamp, _expectedDeadline + _baseDisputeWindow, type(uint128).max);
 
     vm.prank(proposer);
     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
