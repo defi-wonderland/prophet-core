@@ -689,7 +689,7 @@ contract Unit_ProposeResponse is BaseTest {
     assertEq(_responseIds[1], _secondResponseId);
   }
 
-  function test_proposeResponseRevertsIfAlreadyFinalized(bytes calldata _responseData, uint256 _finalizedAt) public {
+  function test_proposeResponseRevertsIfAlreadyFinalized(bytes calldata _responseData, uint128 _finalizedAt) public {
     vm.assume(_finalizedAt > 0);
 
     // Create mock request

@@ -378,7 +378,7 @@ contract Oracle is IOracle {
     }
 
     _finalizedResponses[_requestId] = _finalizedResponseId;
-    _request.finalizedAt = block.timestamp;
+    _request.finalizedAt = uint128(block.timestamp);
     _finalize(_requestId, _request);
   }
 
@@ -406,7 +406,7 @@ contract Oracle is IOracle {
         }
       }
     }
-    _request.finalizedAt = block.timestamp;
+    _request.finalizedAt = uint128(block.timestamp);
     _finalize(_requestId, _request);
   }
 
@@ -448,7 +448,7 @@ contract Oracle is IOracle {
       finalityModule: _request.finalityModule,
       requester: msg.sender,
       nonce: _requestNonce,
-      createdAt: block.timestamp,
+      createdAt: uint128(block.timestamp),
       finalizedAt: 0
     });
 

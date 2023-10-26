@@ -198,15 +198,15 @@ interface IOracle {
    */
   struct Request {
     bytes32 ipfsHash;
+    uint128 createdAt;
+    uint128 finalizedAt;
+    uint256 nonce;
+    address requester;
     IRequestModule requestModule;
     IResponseModule responseModule;
     IDisputeModule disputeModule;
     IResolutionModule resolutionModule;
     IFinalityModule finalityModule;
-    address requester;
-    uint256 nonce;
-    uint256 createdAt;
-    uint256 finalizedAt;
   }
 
   /**
