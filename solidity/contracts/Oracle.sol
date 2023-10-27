@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {SSTORE2} from '@0xsequence/sstore2/contracts/SSTORE2.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
+import {IResponseModule} from '../interfaces/IOracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
@@ -11,6 +12,7 @@ contract Oracle is IOracle {
   // mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
   mapping(bytes32 _requestId => address _pointer) internal _sstore2Pointers;
   mapping(bytes32 _requestId => address _pointer) internal _sstoreDataPointers;
+  mapping(bytes32 _requestId => uint256 _finalizedAt) internal finalizedAt;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -165,9 +167,13 @@ contract Oracle is IOracle {
     bytes calldata _responseData,
     bytes calldata _moduleData
   ) external returns (bytes32 _responseId) {
-    Request memory _request = _requests[_requestId];
-    if (_request.createdAt == 0) revert Oracle_InvalidRequestId(_requestId);
-    _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData, _moduleData);
+    (, address _responseModuleAddress, address _disputeModuleAddress,,,,, uint256 _createdAt) = abi.decode(
+      SSTORE2.read(_sstore2Pointers[_requestId]),
+      (address, address, address, address, address, address, uint256, uint256)
+    );
+
+    // if (_request.createdAt == 0) revert Oracle_InvalidRequestId(_requestId);
+    _responseId = _proposeResponse(msg.sender, _requestId, _responseModuleAddress, _responseData, _moduleData);
   }
 
   /// @inheritdoc IOracle
@@ -181,36 +187,43 @@ contract Oracle is IOracle {
     if (msg.sender != address(_request.disputeModule)) {
       revert Oracle_NotDisputeModule(msg.sender);
     }
-    _responseId = _proposeResponse(_proposer, _requestId, _request, _responseData, _moduleData);
+    // _responseId = _proposeResponse(_proposer, _requestId, _responseData, _moduleData);
   }
 
   /**
    * @notice Creates a new response for a given request
    * @param _proposer The address of the proposer
    * @param _requestId The id of the request
-   * @param _request The request data
    * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function _proposeResponse(
     address _proposer,
     bytes32 _requestId,
-    Request memory _request,
+    address _responseModuleAddress,
     bytes calldata _responseData,
     bytes calldata _moduleData
   ) internal returns (bytes32 _responseId) {
-    if (_request.finalizedAt != 0) {
+    if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
+    }
+
+    (, bytes32 _responseModuleDataHash,,,) =
+      abi.decode(SSTORE2.read(_sstoreDataPointers[_requestId]), (bytes32, bytes32, bytes32, bytes32, bytes32));
+    if (_responseModuleDataHash != keccak256(_moduleData)) {
+      // TODO: Add the error
+      // revert Oracle_InvalidModuleDataHash(_responseModuleDataHash, keccak256(_moduleData));
     }
 
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
-    _request.responseModule.propose(_requestId, _proposer, _responseData, _moduleData, msg.sender);
+    _responses[_responseId] =
+      IResponseModule(_responseModuleAddress).propose(_requestId, _proposer, _responseData, _moduleData, msg.sender);
     _responseIds[_requestId].add(_responseId);
 
-    if (_responses[_responseId].proposer != _proposer) {
-      revert Oracle_CannotTamperParticipant();
-    }
+    // if (_responses[_responseId].proposer != _proposer) {
+    //   revert Oracle_CannotTamperParticipant();
+    // }
 
     emit ResponseProposed(_requestId, _proposer, _responseId);
   }
@@ -476,7 +489,7 @@ contract Oracle is IOracle {
       )
     );
     _sstore2Pointers[_requestId] = SSTORE2.write(
-      abi.encodePacked(
+      abi.encode(
         _request.requestModule,
         _request.responseModule,
         _request.disputeModule,
