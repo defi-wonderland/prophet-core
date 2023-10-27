@@ -2,6 +2,19 @@
 # yarn lockfile v1
 
 
+"@0xsequence/create3@https://github.com/0xsequence/create3.git":
+  version "3.0.0"
+  resolved "https://github.com/0xsequence/create3.git#acc4703a21ec1d71dc2a99db088c4b1f467530fd"
+  dependencies:
+    csv-writer "^1.6.0"
+
+"@0xsequence/sstore2@https://github.com/0xsequence/sstore2":
+  version "1.1.0"
+  resolved "https://github.com/0xsequence/sstore2#0a28fe61b6e81de9a05b462a24b9f4ba8c70d5b7"
+  dependencies:
+    "@0xsequence/create3" "https://github.com/0xsequence/create3.git"
+    csv-writer "^1.6.0"
+
 "@babel/code-frame@^7.0.0":
   version "7.21.4"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.21.4.tgz#d0fa9e4413aca81f2b23b9442797bda1826edb39"
@@ -993,6 +1006,11 @@ cross-spawn@^7.0.3:
     path-key "^3.1.0"
     shebang-command "^2.0.0"
     which "^2.0.1"
+
+csv-writer@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/csv-writer/-/csv-writer-1.6.0.tgz#d0cea44b6b4d7d3baa2ecc6f3f7209233514bcf9"
+  integrity sha512-NOx7YDFWEsM/fTRAJjRpPp8t+MKRVvniAg9wQlUKx20MFrPs73WLJhFf5iteqrxNYnsy924K3Iroh3yNHeYd2g==
 
 dargs@^7.0.0:
   version "7.0.0"

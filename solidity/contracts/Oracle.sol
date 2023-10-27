@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {SSTORE2} from '@0xsequence/sstore2/contracts/SSTORE2.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
-  mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
-  mapping(bytes32 _requestId => HashedRequest _hashedRequest) internal _hashedRequests;
+  // mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
+  mapping(bytes32 _requestId => address _pointer) internal _sstore2Pointers;
+  mapping(bytes32 _requestId => address _pointer) internal _sstoreDataPointers;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -450,37 +452,59 @@ contract Oracle is IOracle {
    */
   function _createRequest(NewRequest memory _request) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
-    bytes32 _requestHash = keccak256(
+    // bytes32 _requestHash = keccak256(
+    //   abi.encodePacked(
+    //     _requestNonce,
+    //     _request.requestModule,
+    //     _request.responseModule,
+    //     _request.disputeModule,
+    //     _request.resolutionModule,
+    //     _request.finalityModule
+    //   )
+    // );
+
+    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _requestIds[_requestNonce] = _requestId;
+    // _requestHashes[_requestId] = _requestHash;
+    _sstoreDataPointers[_requestId] = SSTORE2.write(
       abi.encodePacked(
-        _requestNonce,
+        keccak256(_request.requestModuleData),
+        keccak256(_request.responseModuleData),
+        keccak256(_request.disputeModuleData),
+        keccak256(_request.resolutionModuleData),
+        keccak256(_request.finalityModuleData)
+      )
+    );
+    _sstore2Pointers[_requestId] = SSTORE2.write(
+      abi.encodePacked(
         _request.requestModule,
         _request.responseModule,
         _request.disputeModule,
         _request.resolutionModule,
-        _request.finalityModule
+        _request.finalityModule,
+        msg.sender,
+        _requestNonce,
+        block.timestamp
       )
     );
-    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
-    _requestIds[_requestNonce] = _requestId;
-    _requestHashes[_requestId] = _requestHash;
 
-    Request memory _storedRequest = Request({
-      ipfsHash: _request.ipfsHash,
-      requestModule: _request.requestModule,
-      responseModule: _request.responseModule,
-      disputeModule: _request.disputeModule,
-      resolutionModule: _request.resolutionModule,
-      finalityModule: _request.finalityModule,
-      requester: msg.sender,
-      nonce: _requestNonce,
-      createdAt: block.timestamp,
-      finalizedAt: 0
-    });
+    // Request memory _storedRequest = Request({
+    //   ipfsHash: _request.ipfsHash,
+    //   requestModule: _request.requestModule,
+    //   responseModule: _request.responseModule,
+    //   disputeModule: _request.disputeModule,
+    //   resolutionModule: _request.resolutionModule,
+    //   finalityModule: _request.finalityModule,
+    //   requester: msg.sender,
+    //   nonce: _requestNonce,
+    //   createdAt: block.timestamp,
+    //   finalizedAt: 0
+    // });
 
-    _requests[_requestId] = _storedRequest;
+    // _requests[_requestId] = _storedRequest;
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
 
-    emit RequestCreated(_requestId, _requestHash, msg.sender, block.timestamp);
+    emit RequestCreated(_requestId, _sstore2Pointers[_requestId], msg.sender, block.timestamp);
   }
 
   /**
