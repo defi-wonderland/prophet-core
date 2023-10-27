@@ -630,14 +630,14 @@
 //     // Mock and expect the responseModule propose call:
 //     _mockAndExpect(
 //       address(responseModule),
-//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, _responseData, _responseData, proposer)),
+//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, _responseData, proposer)),
 //       abi.encode(mockResponse)
 //     );
 
 //     // Test: propose the response
 //     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotTamperParticipant.selector));
 //     vm.prank(proposer);
-//     oracle.proposeResponse(_requestId, _responseData, _responseData);
+//     oracle.proposeResponse(_requestId, _responseData);
 
 //     // Change the proposer address
 //     mockResponse.proposer = proposer;
@@ -645,7 +645,7 @@
 //     // Mock and expect the responseModule propose call:
 //     _mockAndExpect(
 //       address(responseModule),
-//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, _responseData, _responseData, proposer)),
+//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, _responseData, proposer)),
 //       abi.encode(mockResponse)
 //     );
 
@@ -655,7 +655,7 @@
 
 //     // Test: propose the response
 //     vm.prank(proposer);
-//     bytes32 _actualResponseId = oracle.proposeResponse(_requestId, _responseData, _responseData);
+//     bytes32 _actualResponseId = oracle.proposeResponse(_requestId, _responseData);
 
 //     // Check: emits ResponseProposed event?
 //     vm.expectEmit(true, true, true, true);
@@ -664,7 +664,7 @@
 //     );
 
 //     vm.prank(proposer);
-//     bytes32 _secondResponseId = oracle.proposeResponse(_requestId, _responseData, _responseData);
+//     bytes32 _secondResponseId = oracle.proposeResponse(_requestId, _responseData);
 
 //     // Check: correct response id returned?
 //     assertEq(_actualResponseId, _responseId);
@@ -689,7 +689,7 @@
 //     assertEq(_responseIds[1], _secondResponseId);
 //   }
 
-//   function test_proposeResponseRevertsIfAlreadyFinalized(bytes calldata _responseData, uint256 _finalizedAt) public {
+//   function test_proposeResponseRevertsIfAlreadyFinalized(bytes calldata _responseData, uint128 _finalizedAt) public {
 //     vm.assume(_finalizedAt > 0);
 
 //     // Create mock request
@@ -702,7 +702,7 @@
 
 //     // Should revert with already finalized
 //     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, (_requestId)));
-//     oracle.proposeResponse(_requestId, _responseData, _responseData);
+//     oracle.proposeResponse(_requestId, _responseData);
 //   }
 // }
 
@@ -730,12 +730,12 @@
 //     // Test: revert if called by a random dude (not dispute module)
 //     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeModule.selector, _proposer));
 //     vm.prank(_proposer);
-//     oracle.proposeResponse(_proposer, _requestId, _responseData, _responseData);
+//     oracle.proposeResponse(_proposer, _requestId, _responseData);
 
 //     // Mock and expect the responseModule propose call:
 //     _mockAndExpect(
 //       address(responseModule),
-//       abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData, _responseData, address(disputeModule))),
+//       abi.encodeCall(IResponseModule.propose, (_requestId, _proposer, _responseData, address(disputeModule))),
 //       abi.encode(mockResponse)
 //     );
 
@@ -745,7 +745,7 @@
 
 //     // Test: propose the response
 //     vm.prank(address(disputeModule));
-//     bytes32 _actualResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData, _responseData);
+//     bytes32 _actualResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
 
 //     // Check: emits ResponseProposed event?
 //     vm.expectEmit(true, true, true, true);
@@ -754,7 +754,7 @@
 //     );
 
 //     vm.prank(address(disputeModule));
-//     bytes32 _secondResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData, _responseData);
+//     bytes32 _secondResponseId = oracle.proposeResponse(_proposer, _requestId, _responseData);
 
 //     // Check: correct response id returned?
 //     assertEq(_actualResponseId, _responseId);
@@ -793,12 +793,12 @@
 
 //     _mockAndExpect(
 //       address(responseModule),
-//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, bytes('response'), bytes('response'), proposer)),
+//       abi.encodeCall(IResponseModule.propose, (_requestId, proposer, bytes('response'), proposer)),
 //       abi.encode(mockResponse)
 //     );
 
 //     vm.prank(proposer);
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response'), bytes('response'));
+//     bytes32 _responseId = oracle.proposeResponse(_requestId, bytes('response'));
 
 //     _mockAndExpect(
 //       address(responseModule),
