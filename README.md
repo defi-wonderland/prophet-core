@@ -23,18 +23,16 @@ yarn build
 
 Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end tests.
 
-| Yarn Command              | Description                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------- |
-| `yarn build`              | Compile all contracts.                                                                            |
-| `yarn coverage`           | See `forge coverage` report.                                                                      |
-| `yarn deploy`             | Deploy the contracts to Optimism mainnet.                                                         |
-| `yarn deploy:local`       | Deploy the contracts to a local fork.                                                             |
-| `yarn docs:build`         | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).  |
-| `yarn docs:run`           | Start the documentation server.                                                                   |
-| `yarn test`               | Run all unit and integration tests.                                                               |
-| `yarn test:unit`          | Run unit tests.                                                                                   |
-| `yarn test:integration`   | Run integration tests.                                                                            |
-| `yarn test:gas`           | Run all unit and integration tests, and make a gas report.                                        |
+| Yarn Command            | Description                                                |
+| ----------------------- | ---------------------------------------------------------- |
+| `yarn build`            | Compile all contracts.                                     |
+| `yarn coverage`         | See `forge coverage` report.                               |
+| `yarn deploy`           | Deploy the contracts to Optimism mainnet.                  |
+| `yarn deploy:local`     | Deploy the contracts to a local fork.                      |
+| `yarn test`             | Run all unit and integration tests.                        |
+| `yarn test:unit`        | Run unit tests.                                            |
+| `yarn test:integration` | Run integration tests.                                     |
+| `yarn test:gas`         | Run all unit and integration tests, and make a gas report. |
 
 ## Licensing
 
