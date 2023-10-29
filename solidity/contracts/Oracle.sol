@@ -30,7 +30,7 @@ contract Oracle is IOracle {
   /**
    * @notice The list of the response ids for each request
    */
-  mapping(bytes32 _requestId => EnumerableSet.Bytes32Set _responseId) internal _responseIds;
+  mapping(bytes32 _requestId => bytes _responseIds) internal _responseIds;
 
   /**
    * @notice The list of the participants for each request
@@ -202,10 +202,8 @@ contract Oracle is IOracle {
     _responseId = _hashResponse(_response);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
     _request.responseModule.propose(_requestId, _request, _response, msg.sender);
+    _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
 
-    // _responseIds[_requestId].add(_responseId);
-
-    // _responses[_responseId] = _response;
     emit ResponseProposed(_requestId, _response, _responseId);
   }
 
@@ -222,7 +220,7 @@ contract Oracle is IOracle {
     }
 
     _request.responseModule.deleteResponse(_response.requestId, _responseId, msg.sender);
-    _responseIds[_response.requestId].remove(_responseId);
+    // _responseIds[_response.requestId].remove(_responseId);
 
     emit ResponseDeleted(_response.requestId, msg.sender, _responseId);
     delete _responses[_responseId];
@@ -380,7 +378,8 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
-    _ids = _responseIds[_requestId]._inner._values;
+    // TODO: Split _responseIds into bytes32 chunks
+    // _ids = _responseIds[_requestId]._inner._values;
   }
 
   /// @inheritdoc IOracle
@@ -410,11 +409,11 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    uint256 _responsesAmount = _responseIds[_requestId].length();
+    uint256 _responsesAmount = _responseIds[_requestId].length;
 
     if (_responsesAmount != 0) {
       for (uint256 _i = 0; _i < _responsesAmount;) {
-        bytes32 _responseId = _responseIds[_requestId].at(_i);
+        bytes32 _responseId = _responseIds[_requestId][_i];
         bytes32 _disputeId = disputeOf[_responseId];
         DisputeStatus _disputeStatus = _disputes[_disputeId].status;
 
