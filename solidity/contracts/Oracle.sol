@@ -7,6 +7,7 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
+  mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
   mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
 
   /// @inheritdoc IOracle
@@ -196,7 +197,7 @@ contract Oracle is IOracle {
     bytes calldata _responseData,
     bytes calldata _moduleData
   ) internal returns (bytes32 _responseId) {
-    if (_request.finalizedAt != 0) {
+    if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
@@ -238,7 +239,7 @@ contract Oracle is IOracle {
     bytes calldata _moduleData
   ) external returns (bytes32 _disputeId) {
     Request storage _request = _requests[_requestId];
-    if (_request.finalizedAt != 0) {
+    if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
     if (disputeOf[_responseId] != bytes32(0)) {
@@ -392,7 +393,7 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
     Request storage _request = _requests[_requestId];
-    if (_request.finalizedAt != 0) {
+    if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
     Response storage _response = _responses[_finalizedResponseId];
@@ -405,14 +406,14 @@ contract Oracle is IOracle {
     }
 
     _finalizedResponses[_requestId] = _finalizedResponseId;
-    _request.finalizedAt = uint128(block.timestamp);
+    finalizedAt[_requestId] = uint128(block.timestamp);
     _finalize(_requestId, _request);
   }
 
   /// @inheritdoc IOracle
   function finalize(bytes32 _requestId) external {
     Request storage _request = _requests[_requestId];
-    if (_request.finalizedAt != 0) {
+    if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
@@ -433,7 +434,7 @@ contract Oracle is IOracle {
         }
       }
     }
-    _request.finalizedAt = uint128(block.timestamp);
+    finalizedAt[_requestId] = uint128(block.timestamp);
     _finalize(_requestId, _request);
   }
 
@@ -476,8 +477,7 @@ contract Oracle is IOracle {
         resolutionModule: _request.resolutionModule,
         finalityModule: _request.finalityModule,
         requester: msg.sender,
-        nonce: uint96(_requestNonce),
-        finalizedAt: 0
+        nonce: uint96(_requestNonce)
       })
     );
 
@@ -538,7 +538,6 @@ contract Oracle is IOracle {
       finalityModule: _storedRequest.finalityModule,
       requester: _storedRequest.requester,
       nonce: _storedRequest.nonce,
-      finalizedAt: _storedRequest.finalizedAt,
       requestId: _requestId
     });
   }

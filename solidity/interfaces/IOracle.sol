@@ -195,11 +195,9 @@ interface IOracle {
    * @param finalityModule The address of the finality module
    * @param requester The address of the user who created the request
    * @param nonce The nonce of the request
-   * @param finalizedAt The timestamp of the request finalization
    */
   struct Request {
     bytes32 ipfsHash;
-    uint128 finalizedAt;
     uint96 nonce;
     address requester;
     IRequestModule requestModule;
@@ -252,7 +250,6 @@ interface IOracle {
    * @param finalityModule The address of the finality module
    * @param requester The address of the user who created the request
    * @param nonce The nonce of the request
-   * @param finalizedAt The timestamp of the request finalization
    * @param requestId The id of the request
    */
   struct FullRequest {
@@ -269,7 +266,6 @@ interface IOracle {
     IFinalityModule finalityModule;
     address requester;
     uint256 nonce;
-    uint256 finalizedAt;
     bytes32 requestId;
   }
 
