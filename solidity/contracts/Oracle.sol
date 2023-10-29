@@ -474,7 +474,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     _request.requestModule.createRequest(_requestId, _request.requestModuleData, msg.sender);
 
-    emit RequestCreated(_requestId, msg.sender, block.timestamp);
+    emit RequestCreated(_requestId, _request, block.timestamp);
   }
 
   function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
