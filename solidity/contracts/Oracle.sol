@@ -160,50 +160,45 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function proposeResponse(
-    bytes32 _requestId,
-    bytes calldata _responseData,
-    bytes calldata _moduleData
+    Request calldata _request,
+    bytes calldata _responseData
   ) external returns (bytes32 _responseId) {
-    Request memory _request = _requests[_requestId];
-    _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData, _moduleData);
+    _responseId = _proposeResponse(msg.sender, _request, _responseData);
   }
 
   /// @inheritdoc IOracle
   function proposeResponse(
     address _proposer,
-    bytes32 _requestId,
-    bytes calldata _responseData,
-    bytes calldata _moduleData
+    Request calldata _request,
+    bytes calldata _responseData
   ) external returns (bytes32 _responseId) {
-    Request memory _request = _requests[_requestId];
     if (msg.sender != address(_request.disputeModule)) {
       revert Oracle_NotDisputeModule(msg.sender);
     }
-    _responseId = _proposeResponse(_proposer, _requestId, _request, _responseData, _moduleData);
+    _responseId = _proposeResponse(_proposer, _request, _responseData);
   }
 
   /**
    * @notice Creates a new response for a given request
    * @param _proposer The address of the proposer
-   * @param _requestId The id of the request
    * @param _request The request data
    * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function _proposeResponse(
     address _proposer,
-    bytes32 _requestId,
     Request memory _request,
-    bytes calldata _responseData,
-    bytes calldata _moduleData
+    bytes calldata _responseData
   ) internal returns (bytes32 _responseId) {
+    bytes32 _requestId = _hashRequest(_request);
+
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
     _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
-    _request.responseModule.propose(_requestId, _proposer, _responseData, _moduleData, msg.sender);
+    _responses[_responseId] = _request.responseModule.propose(_request, _proposer, _responseData, msg.sender);
     _responseIds[_requestId].add(_responseId);
 
     if (_responses[_responseId].proposer != _proposer) {
@@ -233,12 +228,9 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function disputeResponse(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    bytes calldata _moduleData
-  ) external returns (bytes32 _disputeId) {
-    Request storage _request = _requests[_requestId];
+  function disputeResponse(Request calldata _request, bytes32 _responseId) external returns (bytes32 _disputeId) {
+    bytes32 _requestId = _hashRequest(_request);
+
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
@@ -255,7 +247,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
 
     Dispute memory _dispute =
-      _request.disputeModule.disputeResponse(_requestId, _responseId, msg.sender, _response.proposer, _moduleData);
+      _request.disputeModule.disputeResponse(_request, _responseId, msg.sender, _response.proposer);
     _disputes[_disputeId] = _dispute;
     disputeOf[_responseId] = _disputeId;
     _response.disputeId = _disputeId;
@@ -267,7 +259,7 @@ contract Oracle is IOracle {
     emit ResponseDisputed(msg.sender, _responseId, _disputeId);
 
     if (_dispute.status != DisputeStatus.Active) {
-      _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _moduleData);
+      _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _request);
     }
   }
 
@@ -317,14 +309,14 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status, bytes calldata _moduleData) external {
+  function updateDisputeStatus(bytes32 _disputeId, Request calldata _request, DisputeStatus _status) external {
     Dispute storage _dispute = _disputes[_disputeId];
-    Request storage _request = _requests[_dispute.requestId];
+    // Request storage _request = _requests[_dispute.requestId];
     if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
       revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
     _dispute.status = _status;
-    _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _moduleData);
+    _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _request);
 
     emit DisputeStatusUpdated(_disputeId, _status);
   }

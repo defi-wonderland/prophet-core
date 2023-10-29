@@ -27,9 +27,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
   /// @inheritdoc ICircuitResolverModule
   function onDisputeStatusChange(
-    bytes32, /* _disputeId */
-    IOracle.Dispute memory _dispute,
-    bytes calldata _moduleData
+    bytes32 _disputeId,
+    IOracle.Dispute calldata _dispute,
+    IOracle.Request calldata _request
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
@@ -47,9 +47,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
         _token: _params.bondToken,
         _amount: _params.bondSize
       });
-      bytes32 _correctResponseId = ORACLE.proposeResponse(
-        _dispute.disputer, _dispute.requestId, abi.encode(_correctResponses[_dispute.requestId]), _moduleData
-      );
+
+      bytes32 _correctResponseId =
+        ORACLE.proposeResponse(_dispute.disputer, _request, abi.encode(_correctResponses[_dispute.requestId]));
       ORACLE.finalize(_dispute.requestId, _correctResponseId);
     } else {
       ORACLE.finalize(_dispute.requestId, _dispute.responseId);
@@ -68,12 +68,12 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
   /// @inheritdoc ICircuitResolverModule
   function disputeResponse(
-    bytes32 _requestId,
+    IOracle.Request calldata _request,
     bytes32 _responseId,
     address _disputer,
-    address _proposer,
-    bytes calldata _moduleData
+    address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
+    bytes32 _requestId = _hashRequest(_request);
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
     RequestParameters memory _params = decodeRequestData(_requestId);
 

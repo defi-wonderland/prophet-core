@@ -43,4 +43,25 @@ abstract contract Module is IModule {
    * @param _data The data of the request
    */
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}
+
+  function _hashRequest(IOracle.Request memory _request) internal pure returns (bytes32 _requestHash) {
+    {
+      _requestHash = keccak256(
+        abi.encode(
+          _request.requestModule,
+          _request.responseModule,
+          _request.disputeModule,
+          _request.resolutionModule,
+          _request.finalityModule,
+          _request.requestModuleData,
+          _request.responseModuleData,
+          _request.disputeModuleData,
+          _request.resolutionModuleData,
+          _request.finalityModuleData,
+          _request.requester,
+          _request.nonce
+        )
+      );
+    }
+  }
 }

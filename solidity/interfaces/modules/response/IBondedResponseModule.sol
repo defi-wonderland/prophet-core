@@ -86,17 +86,15 @@ interface IBondedResponseModule is IResponseModule {
   /**
    * @notice Proposes a response for a request, bonding the proposer's tokens
    * @dev The user must have previously deposited tokens into the accounting extension
-   * @param _requestId The ID of the request to propose a response for
    * @param _proposer The user proposing the response
    * @param _responseData The data for the response
    * @param _sender The address calling propose on the Oracle
    * @return _response The struct of proposed response
    */
   function propose(
-    bytes32 _requestId,
+    IOracle.Request calldata _request,
     address _proposer,
     bytes calldata _responseData,
-    bytes calldata _moduleData,
     address _sender
   ) external returns (IOracle.Response memory _response);
 

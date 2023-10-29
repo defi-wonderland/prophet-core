@@ -378,29 +378,25 @@ interface IOracle {
 
   /**
    * @notice Creates a new response for a given request
-   * @param _requestId The id of the request
    * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
-    bytes32 _requestId,
-    bytes calldata _responseData,
-    bytes calldata _moduleData
+    Request calldata _request,
+    bytes calldata _responseData
   ) external returns (bytes32 _responseId);
 
   /**
    * @notice Creates a new response for a given request
    * @dev Only callable by the dispute module of the request
    * @param _proposer The address of the user proposing the response
-   * @param _requestId The id of the request
    * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
     address _proposer,
-    bytes32 _requestId,
-    bytes calldata _responseData,
-    bytes calldata _moduleData
+    Request calldata _request,
+    bytes calldata _responseData
   ) external returns (bytes32 _responseId);
 
   /**
@@ -414,13 +410,11 @@ interface IOracle {
    * @dev If pre-dispute modules are being used, the returned dispute
    * from `disputeModule.disputeResponse` may have a status other than `Active`,
    * in which case the dispute is considered resolved and the dispute status updated.
-   * @param _requestId The id of the request which was responded
    * @param _responseId The id of the response being disputed
    */
   function disputeResponse(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    bytes calldata _moduleData
+    IOracle.Request calldata _request,
+    bytes32 _responseId
   ) external returns (bytes32 _disputeId);
 
   /**
@@ -440,7 +434,7 @@ interface IOracle {
    * @param _disputeId The id of the dispute to update
    * @param _status The new status of the dispute
    */
-  function updateDisputeStatus(bytes32 _disputeId, DisputeStatus _status, bytes calldata _moduleData) external;
+  function updateDisputeStatus(bytes32 _disputeId, IOracle.Request calldata _request, DisputeStatus _status) external;
 
   /**
    * @notice Checks if the given address is a module used in the request

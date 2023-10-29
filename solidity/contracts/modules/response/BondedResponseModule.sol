@@ -21,12 +21,12 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
   /// @inheritdoc IBondedResponseModule
   function propose(
-    bytes32 _requestId,
+    IOracle.Request calldata _request,
     address _proposer,
     bytes calldata _responseData,
-    bytes calldata _moduleData,
     address _sender
   ) external onlyOracle returns (IOracle.Response memory _response) {
+    bytes32 _requestId = _hashRequest(_request);
     RequestParameters memory _params = decodeRequestData(_requestId);
 
     // Cannot propose after the deadline

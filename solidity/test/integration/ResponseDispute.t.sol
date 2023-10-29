@@ -95,13 +95,52 @@ contract Integration_ResponseDispute is IntegrationBase {
     _requestId = oracle.createRequest(_request);
 
     vm.prank(proposer);
-    _responseId = oracle.proposeResponse(_requestId, _responseData, _responseModuleData);
+    _responseId = oracle.proposeResponse(_request, _responseData);
   }
 
   // check that the dispute id is stored in the response struct
   function test_disputeResponse_disputeIdStoredInResponse() public {
+    IOracle.Request memory _request = IOracle.Request({
+      requestModuleData: abi.encode(
+        IMockRequestModule.RequestParameters({
+          url: _expectedUrl,
+          body: _expectedBody,
+          accountingExtension: _accountingExtension,
+          paymentToken: usdc,
+          paymentAmount: _expectedReward
+        })
+        ),
+      responseModuleData: abi.encode(
+        IMockResponseModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount,
+          deadline: _expectedDeadline,
+          disputeWindow: _baseDisputeWindow
+        })
+        ),
+      disputeModuleData: abi.encode(
+        IMockDisputeModule.RequestParameters({
+          accountingExtension: _accountingExtension,
+          bondToken: usdc,
+          bondAmount: _expectedBondAmount
+        })
+        ),
+      resolutionModuleData: abi.encode(),
+      finalityModuleData: abi.encode(
+        IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+        ),
+      requestModule: _requestModule,
+      responseModule: _responseModule,
+      disputeModule: _disputeModule,
+      resolutionModule: _resolutionModule,
+      finalityModule: _finalityModule,
+      requester: requester,
+      nonce: 1
+    });
+
     vm.prank(disputer);
-    bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId, _disputeModuleData);
+    bytes32 _disputeId = oracle.disputeResponse(_request, _responseId);
 
     IOracle.Response memory _disputedResponse = oracle.getResponse(_responseId);
     assertEq(_disputedResponse.disputeId, _disputeId);
