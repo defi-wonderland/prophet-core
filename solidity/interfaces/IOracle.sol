@@ -21,9 +21,7 @@ interface IOracle {
    * @param _requestId The id of the created request
    * @param _requester The address of the user who created the request
    */
-  event RequestCreated(
-    bytes32 indexed _requestId, bytes32 _requestHash, address indexed _requester, uint256 indexed _blockNumber
-  );
+  event RequestCreated(bytes32 indexed _requestId, address indexed _requester, uint256 indexed _blockNumber);
 
   /**
    * @notice Emitted when a response is proposed

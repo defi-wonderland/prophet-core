@@ -8,7 +8,6 @@ contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
-  mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -468,12 +467,8 @@ contract Oracle is IOracle {
     require(_requestNonce == _request.nonce, 'invalid nonce'); // TODO: Custom error
     require(msg.sender == _request.requester, 'invalid requester'); // TODO: Custom error
 
-    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _requestId = _hashRequest(_request);
     _requestIds[_requestNonce] = _requestId;
-
-    bytes32 _requestHash = _hashRequest(_request);
-
-    _requestHashes[_requestId] = _requestHash;
 
     _allowedModules[_requestId] = abi.encodePacked(
       _request.requestModule,
@@ -486,7 +481,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     _request.requestModule.createRequest(_requestId, _request.requestModuleData, msg.sender);
 
-    emit RequestCreated(_requestId, _requestHashes[_requestId], msg.sender, block.timestamp);
+    emit RequestCreated(_requestId, msg.sender, block.timestamp);
   }
 
   function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
