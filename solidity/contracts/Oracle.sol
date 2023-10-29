@@ -164,7 +164,6 @@ contract Oracle is IOracle {
     bytes calldata _moduleData
   ) external returns (bytes32 _responseId) {
     Request memory _request = _requests[_requestId];
-    if (_request.createdAt == 0) revert Oracle_InvalidRequestId(_requestId);
     _responseId = _proposeResponse(msg.sender, _requestId, _request, _responseData, _moduleData);
   }
 
@@ -478,7 +477,6 @@ contract Oracle is IOracle {
         finalityModule: _request.finalityModule,
         requester: msg.sender,
         nonce: uint96(_requestNonce),
-        createdAt: uint128(block.timestamp),
         finalizedAt: 0
       })
     );
@@ -509,8 +507,7 @@ contract Oracle is IOracle {
         _request.resolutionModule,
         _request.finalityModule,
         _request.requester,
-        _request.nonce,
-        _request.createdAt
+        _request.nonce
       )
     );
   }
@@ -541,7 +538,6 @@ contract Oracle is IOracle {
       finalityModule: _storedRequest.finalityModule,
       requester: _storedRequest.requester,
       nonce: _storedRequest.nonce,
-      createdAt: _storedRequest.createdAt,
       finalizedAt: _storedRequest.finalizedAt,
       requestId: _requestId
     });
