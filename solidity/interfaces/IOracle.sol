@@ -22,7 +22,7 @@ interface IOracle {
    * @param _requester The address of the user who created the request
    */
   event RequestCreated(
-    bytes32 indexed _requestId, address _pointer, address indexed _requester, uint256 indexed _blockNumber
+    bytes32 indexed _requestId, bytes32 _requestHash, address indexed _requester, uint256 indexed _blockNumber
   );
 
   /**
