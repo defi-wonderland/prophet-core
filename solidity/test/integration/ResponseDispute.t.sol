@@ -88,7 +88,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       resolutionModule: _resolutionModule,
       finalityModule: _finalityModule,
       requester: requester,
-      nonce: 0
+      nonce: 1
     });
 
     vm.prank(requester);

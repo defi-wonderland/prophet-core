@@ -175,7 +175,7 @@ contract Integration_RequestCreation is IntegrationBase {
       resolutionModule: _resolutionModule,
       finalityModule: _finalityModule,
       requester: requester,
-      nonce: 0
+      nonce: 1
     });
   }
 }

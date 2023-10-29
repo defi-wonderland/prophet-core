@@ -7,6 +7,7 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
+  // TODO: natspec
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
   /// @inheritdoc IOracle
@@ -462,7 +463,7 @@ contract Oracle is IOracle {
    * @return _requestId The id of the created request
    */
   function _createRequest(Request calldata _request) internal returns (bytes32 _requestId) {
-    uint256 _requestNonce = totalRequestCount++;
+    uint256 _requestNonce = ++totalRequestCount;
 
     require(_requestNonce == _request.nonce, 'invalid nonce'); // TODO: Custom error
     require(msg.sender == _request.requester, 'invalid requester'); // TODO: Custom error

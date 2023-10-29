@@ -116,7 +116,7 @@ contract Deploy is Script {
       resolutionModule: IResolutionModule(address(0)),
       finalityModule: IFinalityModule(address(0)),
       requester: deployer,
-      nonce: 0
+      nonce: uint96(oracle.totalRequestCount()) + 1
     });
 
     IERC20(0x184b7dBC320d64467163F2F8F3f02E6f36766D9E).approve(address(accountingExtension), 100 wei);
@@ -126,12 +126,13 @@ contract Deploy is Script {
     accountingExtension.approveModule(address(bondedResponseModule));
     accountingExtension.approveModule(address(circuitResolverModule));
 
-    bytes32 _requestId = oracle.createRequest(_request);
-    console.logBytes32(_requestId);
+    oracle.createRequest(_request);
+    // oracle.createRequest(_request);
+    // console.logBytes32(_requestId);
 
     // bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(bytes('testResponse')));
     // bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
-    oracle.getFinalizedResponse(_requestId);
+    // oracle.getFinalizedResponse(_requestId);
   }
 }
