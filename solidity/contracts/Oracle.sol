@@ -324,7 +324,8 @@ contract Oracle is IOracle {
   function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
     bytes memory _requestAllowedModules = _allowedModules[_requestId];
 
-    assembly {
+    assembly ("memory-safe") {
+      // TODO: Review and test
       let length := mload(_requestAllowedModules)
       let i := 0
 
@@ -347,7 +348,8 @@ contract Oracle is IOracle {
   function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
     bytes memory _requestParticipants = _participants[_requestId];
 
-    assembly {
+    assembly ("memory-safe") {
+      // TODO: Review and test
       let length := mload(_requestParticipants)
       let i := 0
 
