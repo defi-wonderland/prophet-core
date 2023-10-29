@@ -187,7 +187,6 @@ interface IOracle {
 
   /**
    * @notice Request as stored in the oracle
-   * @param ipfsHash The hash of the CID from IPFS
    * @param requestModule The address of the request module
    * @param responseModule The address of the response module
    * @param disputeModule The address of the dispute module
@@ -197,7 +196,6 @@ interface IOracle {
    * @param nonce The nonce of the request
    */
   struct Request {
-    bytes32 ipfsHash;
     uint96 nonce;
     address requester;
     IRequestModule requestModule;
@@ -214,7 +212,6 @@ interface IOracle {
    * @param disputeModuleData The parameters for the dispute module
    * @param resolutionModuleData The parameters for the resolution module
    * @param finalityModuleData The parameters for the finality module
-   * @param ipfsHash The hash of the CID from IPFS
    * @param requestModule The address of the request module
    * @param responseModule The address of the response module
    * @param disputeModule The address of the dispute module
@@ -227,7 +224,6 @@ interface IOracle {
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-    bytes32 ipfsHash;
     IRequestModule requestModule;
     IResponseModule responseModule;
     IDisputeModule disputeModule;
@@ -242,7 +238,6 @@ interface IOracle {
    * @param disputeModuleData The parameters for the dispute module
    * @param resolutionModuleData The parameters for the resolution module
    * @param finalityModuleData The parameters for the finality module
-   * @param ipfsHash The hash of the CID from IPFS
    * @param requestModule The address of the request module
    * @param responseModule The address of the response module
    * @param disputeModule The address of the dispute module
@@ -258,7 +253,6 @@ interface IOracle {
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-    bytes32 ipfsHash;
     IRequestModule requestModule;
     IResponseModule responseModule;
     IDisputeModule disputeModule;

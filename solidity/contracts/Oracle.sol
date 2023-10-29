@@ -470,7 +470,6 @@ contract Oracle is IOracle {
 
     bytes32 _requestHash = _hashRequest(
       Request({
-        ipfsHash: _request.ipfsHash,
         requestModule: _request.requestModule,
         responseModule: _request.responseModule,
         disputeModule: _request.disputeModule,
@@ -500,7 +499,6 @@ contract Oracle is IOracle {
   function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
     _requestHash = keccak256(
       abi.encode(
-        _request.ipfsHash,
         _request.requestModule,
         _request.responseModule,
         _request.disputeModule,
@@ -530,7 +528,6 @@ contract Oracle is IOracle {
       finalityModuleData: address(_storedRequest.finalityModule) == address(0)
         ? bytes('')
         : _storedRequest.finalityModule.requestData(_requestId),
-      ipfsHash: _storedRequest.ipfsHash,
       requestModule: _storedRequest.requestModule,
       responseModule: _storedRequest.responseModule,
       disputeModule: _storedRequest.disputeModule,

@@ -86,8 +86,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       responseModule: _responseModule,
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
-      finalityModule: _finalityModule,
-      ipfsHash: _ipfsHash
+      finalityModule: _finalityModule
     });
 
     vm.prank(requester);

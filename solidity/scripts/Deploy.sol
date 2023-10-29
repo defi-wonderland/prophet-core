@@ -114,8 +114,7 @@ contract Deploy is Script {
       responseModule: bondedResponseModule,
       disputeModule: circuitResolverModule,
       resolutionModule: IResolutionModule(address(0)),
-      finalityModule: IFinalityModule(address(0)),
-      ipfsHash: bytes32('QmR4uiJH654k3Ta2uLLQ8r')
+      finalityModule: IFinalityModule(address(0))
     });
 
     IERC20(0x184b7dBC320d64467163F2F8F3f02E6f36766D9E).approve(address(accountingExtension), 100 wei);
