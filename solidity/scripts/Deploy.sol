@@ -79,7 +79,7 @@ contract Deploy is Script {
 
     Verifier verifier = new Verifier();
 
-    IOracle.NewRequest memory _request = IOracle.NewRequest({
+    IOracle.Request memory _request = IOracle.Request({
       requestModuleData: abi.encode(
         IContractCallRequestModule.RequestParameters({
           target: address(verifier),
@@ -114,7 +114,9 @@ contract Deploy is Script {
       responseModule: bondedResponseModule,
       disputeModule: circuitResolverModule,
       resolutionModule: IResolutionModule(address(0)),
-      finalityModule: IFinalityModule(address(0))
+      finalityModule: IFinalityModule(address(0)),
+      requester: deployer,
+      nonce: 0
     });
 
     IERC20(0x184b7dBC320d64467163F2F8F3f02E6f36766D9E).approve(address(accountingExtension), 100 wei);

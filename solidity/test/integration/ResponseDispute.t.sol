@@ -52,7 +52,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
     );
 
-    IOracle.NewRequest memory _request = IOracle.NewRequest({
+    IOracle.Request memory _request = IOracle.Request({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
           url: _expectedUrl,
@@ -86,7 +86,9 @@ contract Integration_ResponseDispute is IntegrationBase {
       responseModule: _responseModule,
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
-      finalityModule: _finalityModule
+      finalityModule: _finalityModule,
+      requester: requester,
+      nonce: 0
     });
 
     vm.prank(requester);
@@ -115,7 +117,7 @@ contract Integration_ResponseDispute is IntegrationBase {
   // }
 
   // function test_disputeResponse_requestAndResponseMismatch() public {
-  //   IOracle.NewRequest memory _request = IOracle.NewRequest({
+  //   IOracle.Request memory _request = IOracle.Request({
   //     requestModuleData: abi.encode(
   //       IMockRequestModule.RequestParameters({
   //         url: _expectedUrl,

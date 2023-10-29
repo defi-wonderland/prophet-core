@@ -57,12 +57,12 @@ contract Oracle is IOracle {
   uint256 public totalRequestCount;
 
   /// @inheritdoc IOracle
-  function createRequest(NewRequest calldata _request) external returns (bytes32 _requestId) {
+  function createRequest(Request calldata _request) external returns (bytes32 _requestId) {
     _requestId = _createRequest(_request);
   }
 
   /// @inheritdoc IOracle
-  function createRequests(NewRequest[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
+  function createRequests(Request[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
@@ -462,23 +462,16 @@ contract Oracle is IOracle {
    * @param _request The request to be created
    * @return _requestId The id of the created request
    */
-  function _createRequest(NewRequest calldata _request) internal returns (bytes32 _requestId) {
+  function _createRequest(Request calldata _request) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
+
+    require(_requestNonce == _request.nonce, 'invalid nonce'); // TODO: Custom error
+    require(msg.sender == _request.requester, 'invalid requester'); // TODO: Custom error
 
     _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
     _requestIds[_requestNonce] = _requestId;
 
-    bytes32 _requestHash = _hashRequest(
-      Request({
-        requestModule: _request.requestModule,
-        responseModule: _request.responseModule,
-        disputeModule: _request.disputeModule,
-        resolutionModule: _request.resolutionModule,
-        finalityModule: _request.finalityModule,
-        requester: msg.sender,
-        nonce: uint96(_requestNonce)
-      })
-    );
+    bytes32 _requestHash = _hashRequest(_request);
 
     _requestHashes[_requestId] = _requestHash;
 
@@ -497,17 +490,24 @@ contract Oracle is IOracle {
   }
 
   function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
-    _requestHash = keccak256(
-      abi.encode(
-        _request.requestModule,
-        _request.responseModule,
-        _request.disputeModule,
-        _request.resolutionModule,
-        _request.finalityModule,
-        _request.requester,
-        _request.nonce
-      )
-    );
+    {
+      _requestHash = keccak256(
+        abi.encode(
+          _request.requestModule,
+          _request.responseModule,
+          _request.disputeModule,
+          _request.resolutionModule,
+          _request.finalityModule,
+          _request.requestModuleData,
+          _request.responseModuleData,
+          _request.disputeModuleData,
+          _request.resolutionModuleData,
+          _request.finalityModuleData,
+          _request.requester,
+          _request.nonce
+        )
+      );
+    }
   }
 
   /**

@@ -13,7 +13,7 @@ contract Integration_RequestCreation is IntegrationBase {
 
   function test_createRequestWithoutResolutionAndFinalityModules() public {
     // Request without resolution and finality modules.
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
     _request.resolutionModule = IResolutionModule(address(0));
     _request.finalityModule = IFinalityModule(address(0));
     _request.resolutionModuleData = bytes('');
@@ -55,7 +55,7 @@ contract Integration_RequestCreation is IntegrationBase {
 
   function test_createRequestWithAllModules() public {
     // Request with all modules.
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
 
     vm.prank(requester);
     _requestId = oracle.createRequest(_request);
@@ -92,7 +92,7 @@ contract Integration_RequestCreation is IntegrationBase {
 
   function test_createRequestWithReward_UserHasBonded() public {
     // Request with rewards.
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
 
     // Check: should not revert as user has bonded.
     vm.prank(requester);
@@ -101,7 +101,7 @@ contract Integration_RequestCreation is IntegrationBase {
 
   function test_createRequestWithoutReward_UserHasNotBonded() public {
     // Request without rewards
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
     _request.requestModuleData = abi.encode(
       IMockRequestModule.RequestParameters({
         url: _expectedUrl,
@@ -118,7 +118,7 @@ contract Integration_RequestCreation is IntegrationBase {
   }
 
   function test_createRequestDuplicate() public {
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
 
     vm.startPrank(requester);
     bytes32 _firstRequestId = oracle.createRequest(_request);
@@ -130,7 +130,7 @@ contract Integration_RequestCreation is IntegrationBase {
 
   function test_createRequestWithDisallowedModule() public {
     // Check: Give a non-existent module. Reverts?
-    IOracle.NewRequest memory _request = _standardRequest();
+    IOracle.Request memory _request = _standardRequest();
     _request.disputeModule = IDisputeModule(makeAddr('NON-EXISTENT DISPUTE MODULE'));
 
     vm.expectRevert();
@@ -138,8 +138,8 @@ contract Integration_RequestCreation is IntegrationBase {
     oracle.createRequest(_request);
   }
 
-  function _standardRequest() internal view returns (IOracle.NewRequest memory _request) {
-    _request = IOracle.NewRequest({
+  function _standardRequest() internal view returns (IOracle.Request memory _request) {
+    _request = IOracle.Request({
       requestModuleData: abi.encode(
         IMockRequestModule.RequestParameters({
           url: _expectedUrl,
@@ -173,7 +173,9 @@ contract Integration_RequestCreation is IntegrationBase {
       responseModule: _responseModule,
       disputeModule: _disputeModule,
       resolutionModule: _resolutionModule,
-      finalityModule: _finalityModule
+      finalityModule: _finalityModule,
+      requester: requester,
+      nonce: 0
     });
   }
 }

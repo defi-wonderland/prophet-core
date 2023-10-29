@@ -203,32 +203,11 @@ interface IOracle {
     IDisputeModule disputeModule;
     IResolutionModule resolutionModule;
     IFinalityModule finalityModule;
-  }
-
-  /**
-   * @notice Request as sent by requester
-   * @param requestModuleData The parameters for the request module
-   * @param responseModuleData The parameters for the response module
-   * @param disputeModuleData The parameters for the dispute module
-   * @param resolutionModuleData The parameters for the resolution module
-   * @param finalityModuleData The parameters for the finality module
-   * @param requestModule The address of the request module
-   * @param responseModule The address of the response module
-   * @param disputeModule The address of the dispute module
-   * @param resolutionModule The address of the resolution module
-   * @param finalityModule The address of the finality module
-   */
-  struct NewRequest {
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-    IRequestModule requestModule;
-    IResponseModule responseModule;
-    IDisputeModule disputeModule;
-    IResolutionModule resolutionModule;
-    IFinalityModule finalityModule;
   }
 
   /**
@@ -332,16 +311,14 @@ interface IOracle {
    * @param _request The request data
    * @return _requestId The id of the request, can be used to propose a response or query results
    */
-  function createRequest(IOracle.NewRequest memory _request) external returns (bytes32 _requestId);
+  function createRequest(Request memory _request) external returns (bytes32 _requestId);
 
   /**
    * @notice Creates multiple requests, the same way as createRequest
    * @param _requestsData The array of calldata for each request
    * @return _batchRequestsIds The array of request IDs
    */
-  function createRequests(IOracle.NewRequest[] calldata _requestsData)
-    external
-    returns (bytes32[] memory _batchRequestsIds);
+  function createRequests(Request[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds);
 
   /**
    * @notice Returns the list of requests

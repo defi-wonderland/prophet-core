@@ -25,19 +25,19 @@ contract MockOracle is Oracle, Test {
   }
 
   /// Mocked External Functions
-  function mock_call_createRequest(IOracle.NewRequest memory _request, bytes32 _requestId) public {
+  function mock_call_createRequest(IOracle.Request memory _request, bytes32 _requestId) public {
     vm.mockCall(
-      address(this), abi.encodeWithSignature('createRequest(IOracle.NewRequest)', _request), abi.encode(_requestId)
+      address(this), abi.encodeWithSignature('createRequest(IOracle.Request)', _request), abi.encode(_requestId)
     );
   }
 
   function mock_call_createRequests(
-    IOracle.NewRequest[] calldata _requestsData,
+    IOracle.Request[] calldata _requestsData,
     bytes32[] memory _batchRequestsIds
   ) public {
     vm.mockCall(
       address(this),
-      abi.encodeWithSignature('createRequests(IOracle.NewRequest[])', _requestsData),
+      abi.encodeWithSignature('createRequests(IOracle.Request[])', _requestsData),
       abi.encode(_batchRequestsIds)
     );
   }
