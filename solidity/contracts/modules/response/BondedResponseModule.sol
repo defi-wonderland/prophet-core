@@ -15,19 +15,21 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
-    _params = abi.decode(requestData[_requestId], (RequestParameters));
+  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {}
+
+  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _params) {
+    _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IBondedResponseModule
   function propose(
+    bytes32 _requestId,
     IOracle.Request calldata _request,
-    address _proposer,
-    bytes calldata _responseData,
+    IOracle.Response calldata _response,
     address _sender
-  ) external onlyOracle returns (IOracle.Response memory _response) {
-    bytes32 _requestId = _hashRequest(_request);
-    RequestParameters memory _params = decodeRequestData(_requestId);
+  ) external onlyOracle {
+    // bytes32 _requestId = _hashRequest(_request);
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     // Cannot propose after the deadline
     if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
@@ -47,14 +49,6 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       if (_dispute.status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
     }
 
-    _response = IOracle.Response({
-      requestId: _requestId,
-      disputeId: bytes32(0),
-      proposer: _proposer,
-      response: _responseData,
-      createdAt: block.timestamp
-    });
-
     _params.accountingExtension.bond({
       _bonder: _response.proposer,
       _requestId: _requestId,
@@ -63,21 +57,21 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       _sender: _sender
     });
 
-    emit ProposeResponse(_requestId, _proposer, _responseData);
+    emit ProposeResponse(_requestId, _response.proposer, _response.response);
   }
 
   /// @inheritdoc IBondedResponseModule
   function deleteResponse(bytes32 _requestId, bytes32, address _proposer) external onlyOracle {
-    RequestParameters memory _params = decodeRequestData(_requestId);
+    // RequestParameters memory _params = decodeRequestData(_requestId);
 
-    if (block.timestamp > _params.deadline) revert BondedResponseModule_TooLateToDelete();
+    // if (block.timestamp > _params.deadline) revert BondedResponseModule_TooLateToDelete();
 
-    _params.accountingExtension.release({
-      _bonder: _proposer,
-      _requestId: _requestId,
-      _token: _params.bondToken,
-      _amount: _params.bondSize
-    });
+    // _params.accountingExtension.release({
+    //   _bonder: _proposer,
+    //   _requestId: _requestId,
+    //   _token: _params.bondToken,
+    //   _amount: _params.bondSize
+    // });
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -85,28 +79,28 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     bytes32 _requestId,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
-    RequestParameters memory _params = decodeRequestData(_requestId);
+    // RequestParameters memory _params = decodeRequestData(_requestId);
 
-    bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
+    // bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
 
-    if (!_isModule && block.timestamp < _params.deadline) {
-      revert BondedResponseModule_TooEarlyToFinalize();
-    }
+    // if (!_isModule && block.timestamp < _params.deadline) {
+    //   revert BondedResponseModule_TooEarlyToFinalize();
+    // }
 
-    IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
-    if (_response.createdAt != 0) {
-      if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
-        revert BondedResponseModule_TooEarlyToFinalize();
-      }
+    // IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
+    // if (_response.createdAt != 0) {
+    //   if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
+    //     revert BondedResponseModule_TooEarlyToFinalize();
+    //   }
 
-      _params.accountingExtension.release({
-        _bonder: _response.proposer,
-        _requestId: _requestId,
-        _token: _params.bondToken,
-        _amount: _params.bondSize
-      });
-    }
-    emit RequestFinalized(_requestId, _finalizer);
+    //   _params.accountingExtension.release({
+    //     _bonder: _response.proposer,
+    //     _requestId: _requestId,
+    //     _token: _params.bondToken,
+    //     _amount: _params.bondSize
+    //   });
+    // }
+    // emit RequestFinalized(_requestId, _finalizer);
   }
 
   /// @inheritdoc Module

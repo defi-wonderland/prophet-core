@@ -94,8 +94,16 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.prank(requester);
     _requestId = oracle.createRequest(_request);
 
+    IOracle.Response memory _response = IOracle.Response({
+      requestId: _requestId,
+      response: abi.encode('testResponse'),
+      proposer: proposer,
+      disputeId: bytes32(0),
+      createdAt: block.timestamp
+    });
+
     vm.prank(proposer);
-    _responseId = oracle.proposeResponse(_request, _responseData);
+    _responseId = oracle.proposeResponse(_request, _response);
   }
 
   // check that the dispute id is stored in the response struct

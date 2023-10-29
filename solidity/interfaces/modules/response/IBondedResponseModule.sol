@@ -82,21 +82,19 @@ interface IBondedResponseModule is IResponseModule {
    * @return _params The struct containing the parameters for the request
    */
   function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Proposes a response for a request, bonding the proposer's tokens
    * @dev The user must have previously deposited tokens into the accounting extension
-   * @param _proposer The user proposing the response
-   * @param _responseData The data for the response
    * @param _sender The address calling propose on the Oracle
-   * @return _response The struct of proposed response
    */
   function propose(
+    bytes32 _requestId,
     IOracle.Request calldata _request,
-    address _proposer,
-    bytes calldata _responseData,
+    IOracle.Response calldata _response,
     address _sender
-  ) external returns (IOracle.Response memory _response);
+  ) external;
 
   /**
    * @notice Allows a user to delete an undisputed response they proposed before the deadline, releasing the bond

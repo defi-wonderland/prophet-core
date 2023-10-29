@@ -11,17 +11,13 @@ import {IOracle} from '../../IOracle.sol';
 interface IResponseModule is IModule {
   /**
    * @notice Creates a new response for a given request
-   *
-   * @param _proposer The address of the proposer
-   * @param _responseData The data to be stored as the response
-   * @return _response The response object
    */
   function propose(
+    bytes32 _requestId,
     IOracle.Request calldata _request,
-    address _proposer,
-    bytes calldata _responseData,
+    IOracle.Response calldata _response,
     address _sender
-  ) external returns (IOracle.Response memory _response);
+  ) external;
 
   /**
    * @notice Deletes a response

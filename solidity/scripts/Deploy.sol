@@ -95,7 +95,7 @@ contract Deploy is Script {
           accountingExtension: accountingExtension,
           bondToken: IERC20(0x184b7dBC320d64467163F2F8F3f02E6f36766D9E),
           bondSize: 1 wei,
-          deadline: 1_697_625_395 + 1 days,
+          deadline: block.timestamp + 1 days,
           disputeWindow: 3 days
         })
         ),
@@ -126,11 +126,19 @@ contract Deploy is Script {
     accountingExtension.approveModule(address(bondedResponseModule));
     accountingExtension.approveModule(address(circuitResolverModule));
 
-    oracle.createRequest(_request);
+    bytes32 _requestId = oracle.createRequest(_request);
     // oracle.createRequest(_request);
-    // console.logBytes32(_requestId);
+    console.logBytes32(_requestId);
 
-    // bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(bytes('testResponse')));
+    IOracle.Response memory _response = IOracle.Response({
+      requestId: _requestId,
+      response: abi.encode('testResponse'),
+      proposer: deployer,
+      disputeId: bytes32(0),
+      createdAt: block.timestamp
+    });
+
+    bytes32 _responseId = oracle.proposeResponse(_request, _response);
     // bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
     // oracle.getFinalizedResponse(_requestId);

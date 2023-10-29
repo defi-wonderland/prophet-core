@@ -161,51 +161,52 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function proposeResponse(
     Request calldata _request,
-    bytes calldata _responseData
+    Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = _proposeResponse(msg.sender, _request, _responseData);
+    _responseId = _proposeResponse(msg.sender, _request, _response);
   }
 
   /// @inheritdoc IOracle
   function proposeResponse(
-    address _proposer,
+    address _proposer, // TODO: No need for this parameter anymore, the address is in the response struct
     Request calldata _request,
-    bytes calldata _responseData
+    Response calldata _response
   ) external returns (bytes32 _responseId) {
     if (msg.sender != address(_request.disputeModule)) {
       revert Oracle_NotDisputeModule(msg.sender);
     }
-    _responseId = _proposeResponse(_proposer, _request, _responseData);
+    _responseId = _proposeResponse(_proposer, _request, _response);
   }
 
   /**
    * @notice Creates a new response for a given request
    * @param _proposer The address of the proposer
    * @param _request The request data
-   * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function _proposeResponse(
     address _proposer,
-    Request memory _request,
-    bytes calldata _responseData
+    Request calldata _request,
+    Response calldata _response
   ) internal returns (bytes32 _responseId) {
     bytes32 _requestId = _hashRequest(_request);
+
+    require(_response.requestId == _requestId);
+    require(_response.disputeId == bytes32(0));
+    require(_response.proposer == _proposer);
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    _responseId = keccak256(abi.encodePacked(_proposer, address(this), _requestId, _responseNonce++));
+    _responseId = _hashResponse(_response);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
-    _responses[_responseId] = _request.responseModule.propose(_request, _proposer, _responseData, msg.sender);
-    _responseIds[_requestId].add(_responseId);
+    _request.responseModule.propose(_requestId, _request, _response, msg.sender);
 
-    if (_responses[_responseId].proposer != _proposer) {
-      revert Oracle_CannotTamperParticipant();
-    }
+    // _responseIds[_requestId].add(_responseId);
 
-    emit ResponseProposed(_requestId, _proposer, _responseId);
+    // _responses[_responseId] = _response;
+    emit ResponseProposed(_requestId, _response, _responseId);
   }
 
   /// @inheritdoc IOracle
@@ -477,7 +478,7 @@ contract Oracle is IOracle {
     emit RequestCreated(_requestId, _request, block.timestamp);
   }
 
-  function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
+  function _hashRequest(Request calldata _request) internal pure returns (bytes32 _requestHash) {
     {
       _requestHash = keccak256(
         abi.encode(
@@ -485,14 +486,24 @@ contract Oracle is IOracle {
           _request.responseModule,
           _request.disputeModule,
           _request.resolutionModule,
-          _request.finalityModule,
-          _request.requestModuleData,
-          _request.responseModuleData,
-          _request.disputeModuleData,
-          _request.resolutionModuleData,
-          _request.finalityModuleData,
-          _request.requester,
-          _request.nonce
+          _request.finalityModule
+        )
+      );
+      // _request.requestModuleData,
+      // _request.responseModuleData,
+      // _request.disputeModuleData,
+      // _request.resolutionModuleData,
+      // _request.finalityModuleData
+      // _request.requester,
+      // _request.nonce
+    }
+  }
+
+  function _hashResponse(Response memory _response) internal pure returns (bytes32 _responseHash) {
+    {
+      _responseHash = keccak256(
+        abi.encode(
+          _response.requestId, _response.disputeId, _response.proposer, _response.response, _response.createdAt
         )
       );
     }

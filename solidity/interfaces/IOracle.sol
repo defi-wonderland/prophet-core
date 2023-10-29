@@ -25,10 +25,9 @@ interface IOracle {
   /**
    * @notice Emitted when a response is proposed
    * @param _requestId The id of the request
-   * @param _proposer The address of the user who proposed the response
    * @param _responseId The id of the proposed response
    */
-  event ResponseProposed(bytes32 indexed _requestId, address indexed _proposer, bytes32 indexed _responseId);
+  event ResponseProposed(bytes32 indexed _requestId, Response _response, bytes32 indexed _responseId);
 
   /**
    * @notice Emitted when a response is disputed
@@ -377,25 +376,23 @@ interface IOracle {
 
   /**
    * @notice Creates a new response for a given request
-   * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
     Request calldata _request,
-    bytes calldata _responseData
+    Response calldata _response
   ) external returns (bytes32 _responseId);
 
   /**
    * @notice Creates a new response for a given request
    * @dev Only callable by the dispute module of the request
    * @param _proposer The address of the user proposing the response
-   * @param _responseData The response data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
     address _proposer,
     Request calldata _request,
-    bytes calldata _responseData
+    Response calldata _response
   ) external returns (bytes32 _responseId);
 
   /**

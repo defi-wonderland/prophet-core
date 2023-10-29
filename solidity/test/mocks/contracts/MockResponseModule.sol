@@ -9,19 +9,11 @@ contract MockResponseModule is Module, IMockResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function propose(
+    bytes32 _requestId,
     IOracle.Request calldata _request,
-    address _proposer,
-    bytes calldata _responseData,
-    address /* _sender */
-  ) external view returns (IOracle.Response memory _response) {
-    _response = IOracle.Response({
-      createdAt: block.timestamp,
-      proposer: _proposer,
-      requestId: _hashRequest(_request),
-      disputeId: bytes32(0),
-      response: _responseData
-    });
-  }
+    IOracle.Response calldata _response,
+    address _sender
+  ) external view onlyOracle {}
 
   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _requestData) {
     _requestData = abi.decode(requestData[_requestId], (RequestParameters));

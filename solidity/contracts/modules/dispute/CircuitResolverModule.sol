@@ -48,8 +48,17 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
         _amount: _params.bondSize
       });
 
-      bytes32 _correctResponseId =
-        ORACLE.proposeResponse(_dispute.disputer, _request, abi.encode(_correctResponses[_dispute.requestId]));
+      bytes32 _correctResponseId = ORACLE.proposeResponse(
+        _dispute.disputer,
+        _request,
+        IOracle.Response({
+          requestId: _dispute.requestId,
+          response: abi.encode('testResponse'),
+          proposer: _dispute.disputer,
+          disputeId: bytes32(0),
+          createdAt: block.timestamp
+        })
+      );
       ORACLE.finalize(_dispute.requestId, _correctResponseId);
     } else {
       ORACLE.finalize(_dispute.requestId, _dispute.responseId);
