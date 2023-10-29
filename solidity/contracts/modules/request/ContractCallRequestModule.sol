@@ -20,15 +20,10 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
     _params = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
-  /**
-   * @notice Bonds the requester's funds through the accounting extension
-   * @param _requestId The id of the request being set up
-   */
-  function _afterSetupRequest(bytes32 _requestId, bytes calldata) internal override {
-    RequestParameters memory _params = decodeRequestData(_requestId);
-    IOracle.Request memory _request = ORACLE.getRequest(_requestId);
+  function createRequest(bytes32 _requestId, bytes calldata _data, address _requester) external onlyOracle {
+    RequestParameters memory _params = abi.decode(_data, (RequestParameters));
     _params.accountingExtension.bond({
-      _bonder: _request.requester,
+      _bonder: _requester,
       _requestId: _requestId,
       _token: _params.paymentToken,
       _amount: _params.paymentAmount

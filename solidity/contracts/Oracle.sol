@@ -8,7 +8,6 @@ contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   mapping(bytes32 _requestId => bytes32 _requestHash) internal _requestHashes;
-  mapping(bytes32 _requestId => HashedRequest _hashedRequest) internal _hashedRequests;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -36,6 +35,7 @@ contract Oracle is IOracle {
    * @notice The list of the participants for each request
    */
   mapping(bytes32 _requestId => bytes _participants) internal _participants;
+  mapping(bytes32 _requestId => bytes _allowedModules) internal _allowedModules;
 
   /**
    * @notice The finalized response for each request
@@ -330,11 +330,26 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule) {
-    Request storage _request = _requests[_requestId];
-    _allowedModule = address(_request.requestModule) == _module || address(_request.responseModule) == _module
-      || address(_request.disputeModule) == _module || address(_request.resolutionModule) == _module
-      || address(_request.finalityModule) == _module;
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
+    bytes memory _requestAllowedModules = _allowedModules[_requestId];
+
+    assembly {
+      let length := mload(_requestAllowedModules)
+      let i := 0
+
+      // Iterate 20-bytes chunks of the modules list
+      for {} lt(i, length) { i := add(i, 20) } {
+        // Load the module at index i
+        let _allowedModule := mload(add(add(_requestAllowedModules, 0x20), i))
+
+        // Shift the modules to the right by 96 bits and compare with _module
+        if eq(shr(96, _allowedModule), _module) {
+          // Set isAllowed to true and return
+          mstore(0x00, 1)
+          return(0x00, 32)
+        }
+      }
+    }
   }
 
   // @inheritdoc IOracle
@@ -449,37 +464,55 @@ contract Oracle is IOracle {
    */
   function _createRequest(NewRequest calldata _request) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
-    bytes32 _requestHash = keccak256(
-      abi.encodePacked(
-        _requestNonce,
+
+    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
+    _requestIds[_requestNonce] = _requestId;
+
+    bytes32 _requestHash = _hashRequest(
+      Request({
+        ipfsHash: _request.ipfsHash,
+        requestModule: _request.requestModule,
+        responseModule: _request.responseModule,
+        disputeModule: _request.disputeModule,
+        resolutionModule: _request.resolutionModule,
+        finalityModule: _request.finalityModule,
+        requester: msg.sender,
+        nonce: uint96(_requestNonce),
+        createdAt: uint128(block.timestamp),
+        finalizedAt: 0
+      })
+    );
+
+    _requestHashes[_requestId] = _requestHash;
+
+    _allowedModules[_requestId] = abi.encodePacked(
+      _request.requestModule,
+      _request.responseModule,
+      _request.disputeModule,
+      _request.resolutionModule,
+      _request.finalityModule
+    );
+
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    _request.requestModule.createRequest(_requestId, _request.requestModuleData, msg.sender);
+
+    emit RequestCreated(_requestId, _requestHashes[_requestId], msg.sender, block.timestamp);
+  }
+
+  function _hashRequest(Request memory _request) internal pure returns (bytes32 _requestHash) {
+    _requestHash = keccak256(
+      abi.encode(
+        _request.ipfsHash,
         _request.requestModule,
         _request.responseModule,
         _request.disputeModule,
         _request.resolutionModule,
-        _request.finalityModule
+        _request.finalityModule,
+        _request.requester,
+        _request.nonce,
+        _request.createdAt
       )
     );
-    _requestId = keccak256(abi.encodePacked(msg.sender, address(this), _requestNonce));
-    _requestIds[_requestNonce] = _requestId;
-    _requestHashes[_requestId] = _requestHash;
-
-    Request memory _storedRequest = Request({
-      ipfsHash: _request.ipfsHash,
-      requestModule: _request.requestModule,
-      responseModule: _request.responseModule,
-      disputeModule: _request.disputeModule,
-      resolutionModule: _request.resolutionModule,
-      finalityModule: _request.finalityModule,
-      requester: msg.sender,
-      nonce: uint96(_requestNonce),
-      createdAt: uint128(block.timestamp),
-      finalizedAt: 0
-    });
-
-    _requests[_requestId] = _storedRequest;
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-
-    emit RequestCreated(_requestId, _requestHash, msg.sender, block.timestamp);
   }
 
   /**

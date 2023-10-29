@@ -12,5 +12,6 @@ contract MockRequestModule is Module, IMockRequestModule {
     _requestData = abi.decode(requestData[_requestId], (RequestParameters));
   }
 
+  function createRequest(bytes32 _requestId, bytes calldata _data, address _requester) external onlyOracle {}
   function moduleName() external view returns (string memory _moduleName) {}
 }
