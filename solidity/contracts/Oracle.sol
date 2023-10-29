@@ -487,16 +487,16 @@ contract Oracle is IOracle {
           _request.responseModule,
           _request.disputeModule,
           _request.resolutionModule,
-          _request.finalityModule
+          _request.finalityModule,
+          _request.requestModuleData,
+          _request.responseModuleData,
+          _request.disputeModuleData,
+          _request.resolutionModuleData,
+          _request.finalityModuleData,
+          _request.requester,
+          _request.nonce
         )
       );
-      // _request.requestModuleData,
-      // _request.responseModuleData,
-      // _request.disputeModuleData,
-      // _request.resolutionModuleData,
-      // _request.finalityModuleData
-      // _request.requester,
-      // _request.nonce
     }
   }
 
