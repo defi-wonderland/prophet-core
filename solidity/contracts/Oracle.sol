@@ -190,7 +190,7 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) internal returns (bytes32 _responseId) {
-    bytes32 _requestId = _hashRequest(_request);
+    bytes32 _requestId = _getId(_request);
 
     // TODO: Custom errors
     require(_response.requestId == _requestId);
@@ -200,7 +200,7 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    _responseId = _hashResponse(_response);
+    _responseId = _getId(_response);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
     _request.responseModule.propose(_requestId, _request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
@@ -233,8 +233,8 @@ contract Oracle is IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) external returns (bytes32 _disputeId) {
-    bytes32 _requestId = _hashRequest(_request);
-    bytes32 _responseId = _hashResponse(_response);
+    bytes32 _requestId = _getId(_request);
+    bytes32 _responseId = _getId(_response);
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
@@ -267,7 +267,7 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Dispute calldata _dispute) external {
     // Dispute storage _dispute = _disputes[_disputeId];
-    bytes32 _disputeId = _hashDispute(_dispute);
+    bytes32 _disputeId = _getId(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     if (_dispute.status != DisputeStatus.Active) {
@@ -294,7 +294,7 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function resolveDispute(Dispute calldata _dispute) external {
     // Dispute storage _dispute = _disputes[_disputeId];
-    bytes32 _disputeId = _hashDispute(_dispute);
+    bytes32 _disputeId = _getId(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     // Revert if the dispute is not active nor escalated
@@ -316,7 +316,7 @@ contract Oracle is IOracle {
   function updateDisputeStatus(Request calldata _request, Dispute calldata _dispute, DisputeStatus _status) external {
     // Dispute storage _dispute = _disputes[_disputeId];
     // Request storage _request = _requests[_dispute.requestId];
-    bytes32 _disputeId = _hashDispute(_dispute);
+    bytes32 _disputeId = _getId(_dispute);
     if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
       revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
@@ -469,7 +469,7 @@ contract Oracle is IOracle {
     require(_requestNonce == _request.nonce, 'invalid nonce'); // TODO: Custom error
     require(msg.sender == _request.requester, 'invalid requester'); // TODO: Custom error
 
-    _requestId = _hashRequest(_request);
+    _requestId = _getId(_request);
     _requestIds[_requestNonce] = _requestId;
 
     _allowedModules[_requestId] = abi.encodePacked(
@@ -486,9 +486,9 @@ contract Oracle is IOracle {
     emit RequestCreated(_requestId, _request, block.number);
   }
 
-  function _hashRequest(Request calldata _request) internal pure returns (bytes32 _requestHash) {
+  function _getId(Request calldata _request) internal pure returns (bytes32 _id) {
     {
-      _requestHash = keccak256(
+      _id = keccak256(
         abi.encode(
           _request.requestModule,
           _request.responseModule,
@@ -507,16 +507,15 @@ contract Oracle is IOracle {
     }
   }
 
-  function _hashResponse(Response memory _response) internal pure returns (bytes32 _responseHash) {
+  function _getId(Response memory _response) internal pure returns (bytes32 _id) {
     {
-      _responseHash =
-        keccak256(abi.encode(_response.requestId, _response.proposer, _response.response, _response.createdAt));
+      _id = keccak256(abi.encode(_response.requestId, _response.proposer, _response.response, _response.createdAt));
     }
   }
 
-  function _hashDispute(Dispute calldata _dispute) internal pure returns (bytes32 _responseHash) {
+  function _getId(Dispute calldata _dispute) internal pure returns (bytes32 _id) {
     {
-      _responseHash = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
+      _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
     }
   }
 
