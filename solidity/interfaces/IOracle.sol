@@ -274,14 +274,6 @@ interface IOracle {
     DisputeStatus status;
   }
 
-  struct HashedRequest {
-    bytes32 requestModuleDataHash;
-    bytes32 responseModuleDataHash;
-    bytes32 disputeModuleDataHash;
-    bytes32 resolutionModuleDataHash;
-    bytes32 finalityModuleDataHash;
-  }
-
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
   //////////////////////////////////////////////////////////////*/
@@ -319,14 +311,6 @@ interface IOracle {
   function createRequests(Request[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds);
 
   /**
-   * @notice Returns the list of requests
-   * @param _startFrom The index to start from
-   * @param _batchSize The number of requests to return
-   * @return _list The list of requests
-   */
-  function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list);
-
-  /**
    * @notice Returns the list of request IDs
    * @param _startFrom The index to start from
    * @param _batchSize The number of requests to return
@@ -335,39 +319,11 @@ interface IOracle {
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
 
   /**
-   * @notice Fetches a response
-   * @param _responseId The id of the response
-   * @return _response The response data
-   */
-  function getResponse(bytes32 _responseId) external view returns (Response memory _response);
-
-  /**
    * @notice Returns a request id
    * @param _nonce The nonce of the request
    * @return _requestId The id of the request
    */
   function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
-
-  /**
-   * @notice Returns a request
-   * @param _nonce The nonce of the request
-   * @return _request The request data
-   */
-  function getRequestByNonce(uint256 _nonce) external view returns (Request memory _request);
-
-  /**
-   * @notice Returns a request
-   * @param _requestId The id of the request
-   * @return _request The request data
-   */
-  function getRequest(bytes32 _requestId) external view returns (Request memory _request);
-
-  /**
-   * @notice Returns a full request
-   * @param _requestId The id of the request
-   * @return _request The request data
-   */
-  function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request);
 
   /**
    * @notice Returns a dispute
@@ -452,13 +408,6 @@ interface IOracle {
    * @return _finalizedResponseId The ID of the finalized response
    */
   function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
-
-  /**
-   * @notice Returns the finalized response for a given request
-   * @param _requestId The id of the request
-   * @return _response The finalized response
-   */
-  function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response);
 
   /**
    * @notice Returns the ids of the responses for a given request

@@ -49,11 +49,6 @@ contract Oracle is IOracle {
    */
   mapping(uint256 _requestNumber => bytes32 _id) internal _requestIds;
 
-  /**
-   * @notice The nonce of the last response
-   */
-  uint256 internal _responseNonce;
-
   /// @inheritdoc IOracle
   uint256 public totalRequestCount;
 
@@ -73,35 +68,6 @@ contract Oracle is IOracle {
         ++_i;
       }
     }
-  }
-
-  /// @inheritdoc IOracle
-  function listRequests(uint256 _startFrom, uint256 _batchSize) external view returns (FullRequest[] memory _list) {
-    uint256 _totalRequestsCount = totalRequestCount;
-
-    // If trying to collect non-existent requests only, return empty array
-    if (_startFrom > _totalRequestsCount) {
-      return _list;
-    }
-
-    if (_batchSize > _totalRequestsCount - _startFrom) {
-      _batchSize = _totalRequestsCount - _startFrom;
-    }
-
-    _list = new FullRequest[](_batchSize);
-
-    uint256 _index;
-    while (_index < _batchSize) {
-      bytes32 _requestId = _requestIds[_startFrom + _index];
-
-      _list[_index] = _getRequest(_requestId);
-
-      unchecked {
-        ++_index;
-      }
-    }
-
-    return _list;
   }
 
   /// @inheritdoc IOracle
@@ -130,34 +96,9 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function getResponse(bytes32 _responseId) external view returns (Response memory _response) {
-    _response = _responses[_responseId];
-  }
-
-  /// @inheritdoc IOracle
   function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId) {
     _requestId = _requestIds[_nonce];
   }
-
-  /// @inheritdoc IOracle
-  function getRequestByNonce(uint256 _nonce) external view returns (Request memory _request) {
-    _request = _requests[_requestIds[_nonce]];
-  }
-
-  /// @inheritdoc IOracle
-  function getRequest(bytes32 _requestId) external view returns (Request memory _request) {
-    _request = _requests[_requestId];
-  }
-
-  /// @inheritdoc IOracle
-  function getFullRequest(bytes32 _requestId) external view returns (FullRequest memory _request) {
-    _request = _getRequest(_requestId);
-  }
-
-  /// @inheritdoc IOracle
-  // function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
-  //   _dispute = _disputes[_disputeId];
-  // }
 
   /// @inheritdoc IOracle
   function proposeResponse(
@@ -266,7 +207,6 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Dispute calldata _dispute) external {
-    // Dispute storage _dispute = _disputes[_disputeId];
     bytes32 _disputeId = _getId(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
@@ -275,10 +215,7 @@ contract Oracle is IOracle {
     }
 
     // Change the dispute status
-    // _dispute.status = DisputeStatus.Escalated;
     disputeStatus[_disputeId] = DisputeStatus.Escalated;
-
-    // Request storage _request = _requests[_dispute.requestId];
 
     // Notify the dispute module about the escalation
     _request.disputeModule.disputeEscalated(_disputeId, _dispute);
@@ -378,11 +315,6 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId) {
     _finalizedResponseId = _finalizedResponses[_requestId];
-  }
-
-  /// @inheritdoc IOracle
-  function getFinalizedResponse(bytes32 _requestId) external view returns (Response memory _response) {
-    _response = _responses[_finalizedResponses[_requestId]];
   }
 
   /// @inheritdoc IOracle
@@ -517,34 +449,5 @@ contract Oracle is IOracle {
     {
       _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
     }
-  }
-
-  /**
-   * @notice Returns a FullRequest struct with all the data of a request
-   * @param _requestId The id of the request
-   * @return _fullRequest The full request
-   */
-  function _getRequest(bytes32 _requestId) internal view returns (FullRequest memory _fullRequest) {
-    Request memory _storedRequest = _requests[_requestId];
-
-    _fullRequest = FullRequest({
-      requestModuleData: _storedRequest.requestModule.requestData(_requestId),
-      responseModuleData: _storedRequest.responseModule.requestData(_requestId),
-      disputeModuleData: _storedRequest.disputeModule.requestData(_requestId),
-      resolutionModuleData: address(_storedRequest.resolutionModule) == address(0)
-        ? bytes('')
-        : _storedRequest.resolutionModule.requestData(_requestId),
-      finalityModuleData: address(_storedRequest.finalityModule) == address(0)
-        ? bytes('')
-        : _storedRequest.finalityModule.requestData(_requestId),
-      requestModule: _storedRequest.requestModule,
-      responseModule: _storedRequest.responseModule,
-      disputeModule: _storedRequest.disputeModule,
-      resolutionModule: _storedRequest.resolutionModule,
-      finalityModule: _storedRequest.finalityModule,
-      requester: _storedRequest.requester,
-      nonce: _storedRequest.nonce,
-      requestId: _requestId
-    });
   }
 }
