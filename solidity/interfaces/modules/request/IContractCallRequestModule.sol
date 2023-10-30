@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IRequestModule} from './IRequestModule.sol';
 
+import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
 
 /**
@@ -38,7 +39,10 @@ interface IContractCallRequestModule is IRequestModule {
 
   /**
    * @notice Finalizes a request by paying the response proposer
-   * @param _requestId The id of the request
    */
-  function finalizeRequest(bytes32 _requestId, address) external;
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external;
 }

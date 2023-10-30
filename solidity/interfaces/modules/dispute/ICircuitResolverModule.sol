@@ -56,14 +56,15 @@ interface ICircuitResolverModule is IDisputeModule {
     IOracle.Request calldata _request,
     bytes32 _responseId,
     address _disputer,
-    address _proposer
+    IOracle.Response calldata _response
   ) external returns (IOracle.Dispute memory _dispute);
 
   /// @inheritdoc IDisputeModule
   function onDisputeStatusChange(
     IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute
+    IOracle.Dispute calldata _dispute,
+    IOracle.Response calldata _response
   ) external;
 
   /// @inheritdoc IDisputeModule

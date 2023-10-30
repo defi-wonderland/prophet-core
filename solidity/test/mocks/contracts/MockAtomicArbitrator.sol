@@ -11,10 +11,13 @@ contract MockAtomicArbitrator {
     oracle = _oracle;
   }
 
-  function resolve(IOracle.Dispute calldata _dispute) external returns (bytes memory _result) {
+  function resolve(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) external returns (bytes memory _result) {
     _result = new bytes(0);
     answer = IOracle.DisputeStatus.Won;
-    oracle.resolveDispute(_dispute);
+    oracle.resolveDispute(_request, _dispute);
   }
 
   function getAnswer(bytes32 /* _dispute */ ) external view returns (IOracle.DisputeStatus _answer) {

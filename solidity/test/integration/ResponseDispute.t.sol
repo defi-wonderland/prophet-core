@@ -82,11 +82,11 @@ contract Integration_ResponseDispute is IntegrationBase {
       finalityModuleData: abi.encode(
         IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
         ),
-      requestModule: _requestModule,
-      responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
-      finalityModule: _finalityModule,
+      requestModule: address(_requestModule),
+      responseModule: address(_responseModule),
+      disputeModule: address(_disputeModule),
+      resolutionModule: address(_resolutionModule),
+      finalityModule: address(_finalityModule),
       requester: requester,
       nonce: 1
     });
@@ -137,11 +137,11 @@ contract Integration_ResponseDispute is IntegrationBase {
       finalityModuleData: abi.encode(
         IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
         ),
-      requestModule: _requestModule,
-      responseModule: _responseModule,
-      disputeModule: _disputeModule,
-      resolutionModule: _resolutionModule,
-      finalityModule: _finalityModule,
+      requestModule: address(_requestModule),
+      responseModule: address(_responseModule),
+      disputeModule: address(_disputeModule),
+      resolutionModule: address(_resolutionModule),
+      finalityModule: address(_finalityModule),
       requester: requester,
       nonce: 1
     });

@@ -9,13 +9,19 @@ import {IOracle} from '../interfaces/IOracle.sol';
 import {Oracle} from '../contracts/Oracle.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 
-import {
-  IResponseModule,
-  IDisputeModule,
-  IRequestModule,
-  IResolutionModule,
-  IFinalityModule
-} from '../interfaces/IOracle.sol';
+import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
+import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
+import {IDisputeModule} from '../interfaces/modules/dispute/IDisputeModule.sol';
+import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
+import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.sol';
+
+// import {
+//   IResponseModule,
+//   IDisputeModule,
+//   IRequestModule,
+//   IResolutionModule,
+//   IFinalityModule
+// } from '../interfaces/IOracle.sol';
 
 import {
   IContractCallRequestModule,
@@ -110,11 +116,11 @@ contract Deploy is Script {
         ),
       resolutionModuleData: abi.encode(),
       finalityModuleData: abi.encode(),
-      requestModule: contractCallRequestModule,
-      responseModule: bondedResponseModule,
-      disputeModule: circuitResolverModule,
-      resolutionModule: IResolutionModule(address(0)),
-      finalityModule: IFinalityModule(address(0)),
+      requestModule: address(contractCallRequestModule),
+      responseModule: address(bondedResponseModule),
+      disputeModule: address(circuitResolverModule),
+      resolutionModule: address(0),
+      finalityModule: address(0),
       requester: deployer,
       nonce: uint96(oracle.totalRequestCount()) + 1
     });

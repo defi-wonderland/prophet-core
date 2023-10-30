@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IRequestModule} from './modules/request/IRequestModule.sol';
-import {IResponseModule} from './modules/response/IResponseModule.sol';
-import {IDisputeModule} from './modules/dispute/IDisputeModule.sol';
-import {IResolutionModule} from './modules/resolution/IResolutionModule.sol';
-import {IFinalityModule} from './modules/finality/IFinalityModule.sol';
+// import {IRequestModule} from './modules/request/IRequestModule.sol';
+// import {IResponseModule} from './modules/response/IResponseModule.sol';
+// import {IDisputeModule} from './modules/dispute/IDisputeModule.sol';
+// import {IResolutionModule} from './modules/resolution/IResolutionModule.sol';
+// import {IFinalityModule} from './modules/finality/IFinalityModule.sol';
 
 /**
  * @title Oracle
@@ -198,48 +198,16 @@ interface IOracle {
   struct Request {
     uint96 nonce;
     address requester;
-    IRequestModule requestModule;
-    IResponseModule responseModule;
-    IDisputeModule disputeModule;
-    IResolutionModule resolutionModule;
-    IFinalityModule finalityModule;
+    address requestModule;
+    address responseModule;
+    address disputeModule;
+    address resolutionModule;
+    address finalityModule;
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-  }
-
-  /**
-   * @notice The full request struct including all available information about a request
-   * @param requestModuleData The parameters for the request module
-   * @param responseModuleData The parameters for the response module
-   * @param disputeModuleData The parameters for the dispute module
-   * @param resolutionModuleData The parameters for the resolution module
-   * @param finalityModuleData The parameters for the finality module
-   * @param requestModule The address of the request module
-   * @param responseModule The address of the response module
-   * @param disputeModule The address of the dispute module
-   * @param resolutionModule The address of the resolution module
-   * @param finalityModule The address of the finality module
-   * @param requester The address of the user who created the request
-   * @param nonce The nonce of the request
-   * @param requestId The id of the request
-   */
-  struct FullRequest {
-    bytes requestModuleData;
-    bytes responseModuleData;
-    bytes disputeModuleData;
-    bytes resolutionModuleData;
-    bytes finalityModuleData;
-    IRequestModule requestModule;
-    IResponseModule responseModule;
-    IDisputeModule disputeModule;
-    IResolutionModule resolutionModule;
-    IFinalityModule finalityModule;
-    address requester;
-    uint256 nonce;
-    bytes32 requestId;
   }
 
   /**
@@ -378,13 +346,18 @@ interface IOracle {
   /**
    * @notice Resolves a dispute
    */
-  function resolveDispute(Dispute calldata _dispute) external;
+  function resolveDispute(Request calldata _request, Dispute calldata _dispute) external;
 
   /**
    * @notice Updates the status of a dispute
    * @param _status The new status of the dispute
    */
-  function updateDisputeStatus(Request calldata _request, Dispute calldata _dispute, DisputeStatus _status) external;
+  function updateDisputeStatus(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute,
+    DisputeStatus _status
+  ) external;
 
   /**
    * @notice Checks if the given address is a module used in the request
@@ -418,14 +391,6 @@ interface IOracle {
 
   /**
    * @notice Finalizes a request
-   * @param _requestId The id of the request to finalize
-   * @param _finalizedResponseId The id of the response to finalize the request with
    */
-  function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external;
-
-  /**
-   * @notice Finalizes a request without a valid response
-   * @param _requestId The id of the request to finalize
-   */
-  function finalize(bytes32 _requestId) external;
+  function finalize(Request calldata _request, Response calldata _response) external;
 }

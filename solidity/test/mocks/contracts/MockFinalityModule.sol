@@ -8,8 +8,12 @@ import {IMockFinalityModule} from '../interfaces/IMockFinalityModule.sol';
 contract MockFinalityModule is Module, IMockFinalityModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  function finalizeRequest(bytes32 _requestId, address /* _finalizer */ ) external override(IModule, Module) onlyOracle {
-    RequestParameters memory _params = decodeRequestData(_requestId);
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external override(IModule, Module) onlyOracle {
+    RequestParameters memory _params = abi.decode(_request.finalityModuleData, (RequestParameters));
     _params.target.call(_params.data);
   }
 

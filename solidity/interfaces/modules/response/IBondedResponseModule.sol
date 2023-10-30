@@ -106,8 +106,11 @@ interface IBondedResponseModule is IResponseModule {
 
   /**
    * @notice Finalizes the request by releasing the bond of the proposer
-   * @param _requestId The ID of the request to finalize
    * @param _finalizer The user who triggered the finalization
    */
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external;
 }

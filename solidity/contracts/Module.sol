@@ -34,7 +34,11 @@ abstract contract Module is IModule {
   }
 
   /// @inheritdoc IModule
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external virtual onlyOracle {}
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external virtual onlyOracle {}
 
   /**
    * @notice The hook that is called after `setupRequest`
@@ -44,9 +48,9 @@ abstract contract Module is IModule {
    */
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}
 
-  function _hashRequest(IOracle.Request memory _request) internal pure returns (bytes32 _requestHash) {
+  function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
     {
-      _requestHash = keccak256(
+      _id = keccak256(
         abi.encode(
           _request.requestModule,
           _request.responseModule,
@@ -62,6 +66,18 @@ abstract contract Module is IModule {
           _request.nonce
         )
       );
+    }
+  }
+
+  function _getId(IOracle.Response calldata _response) internal pure returns (bytes32 _id) {
+    {
+      _id = keccak256(abi.encode(_response.requestId, _response.proposer, _response.response, _response.createdAt));
+    }
+  }
+
+  function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
+    {
+      _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
     }
   }
 }

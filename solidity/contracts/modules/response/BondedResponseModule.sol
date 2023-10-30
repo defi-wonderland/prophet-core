@@ -28,7 +28,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     IOracle.Response calldata _response,
     address _sender
   ) external onlyOracle {
-    // bytes32 _requestId = _hashRequest(_request);
+    // bytes32 _requestId = _getId(_request);
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     // Cannot propose after the deadline
@@ -78,7 +78,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
   /// @inheritdoc IBondedResponseModule
   function finalizeRequest(
-    bytes32 _requestId,
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
     // RequestParameters memory _params = decodeRequestData(_requestId);

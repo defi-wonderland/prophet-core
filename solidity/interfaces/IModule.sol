@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IOracle} from '../interfaces/IOracle.sol';
+
 /**
  * @title Module
  * @notice Abstract contract to be inherited by all modules
@@ -59,10 +61,13 @@ interface IModule {
   /**
    * @notice Finalizes a given request and executes any additional logic set by the chosen modules
    *
-   * @param _requestId The ID of the request being finalized
    * @param _finalizer The address that initiated the finalization
    */
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external;
 
   /**
    * @notice Returns the name of the module.

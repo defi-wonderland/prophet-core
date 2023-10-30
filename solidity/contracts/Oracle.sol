@@ -2,6 +2,13 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from '../interfaces/IOracle.sol';
+
+import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
+import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
+import {IDisputeModule} from '../interfaces/modules/dispute/IDisputeModule.sol';
+import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
+import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.sol';
+
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
@@ -143,7 +150,7 @@ contract Oracle is IOracle {
 
     _responseId = _getId(_response);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
-    _request.responseModule.propose(_requestId, _request, _response, msg.sender);
+    IResponseModule(_request.responseModule).propose(_requestId, _request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
 
     emit ResponseProposed(_requestId, _response, _responseId, block.number);
@@ -161,7 +168,7 @@ contract Oracle is IOracle {
       revert Oracle_CannotDeleteInvalidProposer(msg.sender, _responseId);
     }
 
-    _request.responseModule.deleteResponse(_response.requestId, _responseId, msg.sender);
+    IResponseModule(_request.responseModule).deleteResponse(_response.requestId, _responseId, msg.sender);
     // _responseIds[_response.requestId].remove(_responseId);
 
     emit ResponseDeleted(_response.requestId, msg.sender, _responseId);
@@ -191,7 +198,7 @@ contract Oracle is IOracle {
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-    _request.disputeModule.disputeResponse(_request, _responseId, msg.sender, _response.proposer);
+    IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
     disputeOf[_responseId] = _disputeId;
 
     if (_dispute.disputer != msg.sender) {
@@ -201,7 +208,7 @@ contract Oracle is IOracle {
     emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute);
 
     if (_dispute.status != DisputeStatus.Active) {
-      _request.disputeModule.onDisputeStatusChange(_request, _disputeId, _dispute);
+      IDisputeModule(_request.disputeModule).onDisputeStatusChange(_request, _disputeId, _dispute, _response);
     }
   }
 
@@ -218,48 +225,49 @@ contract Oracle is IOracle {
     disputeStatus[_disputeId] = DisputeStatus.Escalated;
 
     // Notify the dispute module about the escalation
-    _request.disputeModule.disputeEscalated(_disputeId, _dispute);
+    IDisputeModule(_request.disputeModule).disputeEscalated(_disputeId, _dispute);
 
     emit DisputeEscalated(msg.sender, _disputeId);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
-      _request.resolutionModule.startResolution(_disputeId, _dispute);
+      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _dispute);
     }
   }
 
   /// @inheritdoc IOracle
-  function resolveDispute(Dispute calldata _dispute) external {
-    // Dispute storage _dispute = _disputes[_disputeId];
+  function resolveDispute(Request calldata _request, Dispute calldata _dispute) external {
     bytes32 _disputeId = _getId(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     // Revert if the dispute is not active nor escalated
-    if (_dispute.status > DisputeStatus.Escalated) {
+    if (disputeStatus[_disputeId] > DisputeStatus.Escalated) {
       revert Oracle_CannotResolve(_disputeId);
     }
 
-    Request storage _request = _requests[_dispute.requestId];
+    // Request storage _request = _requests[_dispute.requestId];
     if (address(_request.resolutionModule) == address(0)) {
       revert Oracle_NoResolutionModule(_disputeId);
     }
 
-    _request.resolutionModule.resolveDispute(_disputeId, _dispute);
+    IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _dispute);
 
     emit DisputeResolved(msg.sender, _disputeId);
   }
 
   /// @inheritdoc IOracle
-  function updateDisputeStatus(Request calldata _request, Dispute calldata _dispute, DisputeStatus _status) external {
-    // Dispute storage _dispute = _disputes[_disputeId];
-    // Request storage _request = _requests[_dispute.requestId];
+  function updateDisputeStatus(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute,
+    DisputeStatus _status
+  ) external {
     bytes32 _disputeId = _getId(_dispute);
     if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
       revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
     disputeStatus[_disputeId] = _status;
-    // _dispute.status = _status;
-    _request.disputeModule.onDisputeStatusChange(_request, _disputeId, _dispute);
+    IDisputeModule(_request.disputeModule).onDisputeStatusChange(_request, _disputeId, _dispute, _response);
 
     emit DisputeStatusUpdated(_disputeId, _status);
   }
@@ -324,70 +332,65 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
-    Request storage _request = _requests[_requestId];
-    if (finalizedAt[_requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_requestId);
-    }
-    Response storage _response = _responses[_finalizedResponseId];
-    if (_response.requestId != _requestId) {
-      revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
-    }
-    DisputeStatus _status = disputeStatus[disputeOf[_finalizedResponseId]];
-    if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
-      revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
-    }
+  function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+    bytes32 _requestId = _getId(_request);
 
-    _finalizedResponses[_requestId] = _finalizedResponseId;
-    finalizedAt[_requestId] = uint128(block.timestamp);
-    _finalize(_requestId, _request);
-  }
-
-  /// @inheritdoc IOracle
-  function finalize(bytes32 _requestId) external {
-    Request storage _request = _requests[_requestId];
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    uint256 _responsesAmount = _responseIds[_requestId].length;
+    if (_response.createdAt == 0) {
+      // Finalizing without a response
+      uint256 _responsesAmount = _responseIds[_requestId].length;
 
-    if (_responsesAmount != 0) {
-      for (uint256 _i = 0; _i < _responsesAmount;) {
-        bytes32 _responseId = _responseIds[_requestId][_i];
-        bytes32 _disputeId = disputeOf[_responseId];
-        DisputeStatus _status = disputeStatus[_disputeId];
+      if (_responsesAmount != 0) {
+        for (uint256 _i = 0; _i < _responsesAmount;) {
+          bytes32 _responseId = _responseIds[_requestId][_i];
+          bytes32 _disputeId = disputeOf[_responseId];
+          DisputeStatus _status = disputeStatus[_disputeId];
 
-        if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
-          revert Oracle_InvalidFinalizedResponse(_responseId);
-        }
+          if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
+            revert Oracle_InvalidFinalizedResponse(_responseId);
+          }
 
-        unchecked {
-          ++_i;
+          unchecked {
+            ++_i;
+          }
         }
       }
+    } else {
+      // Finalizing with a response
+      bytes32 _responseId = _getId(_request);
+
+      if (_response.requestId != _requestId) {
+        revert Oracle_InvalidFinalizedResponse(_responseId);
+      }
+
+      DisputeStatus _status = disputeStatus[disputeOf[_responseId]];
+
+      if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
+        revert Oracle_InvalidFinalizedResponse(_responseId);
+      }
+
+      _finalizedResponses[_requestId] = _responseId;
     }
+
     finalizedAt[_requestId] = uint128(block.timestamp);
-    _finalize(_requestId, _request);
-  }
 
-  /**
-   * @notice Executes the finalizeRequest logic on each of the modules
-   * @param _requestId The id of the request being finalized
-   * @param _request The request being finalized
-   */
-  function _finalize(bytes32 _requestId, Request memory _request) internal {
     if (address(_request.finalityModule) != address(0)) {
-      _request.finalityModule.finalizeRequest(_requestId, msg.sender);
+      IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
     }
-    if (address(_request.resolutionModule) != address(0)) {
-      _request.resolutionModule.finalizeRequest(_requestId, msg.sender);
-    }
-    _request.disputeModule.finalizeRequest(_requestId, msg.sender);
-    _request.responseModule.finalizeRequest(_requestId, msg.sender);
-    _request.requestModule.finalizeRequest(_requestId, msg.sender);
 
-    emit OracleRequestFinalized(_requestId, msg.sender);
+    if (address(_request.resolutionModule) != address(0)) {
+      IResolutionModule(_request.resolutionModule).finalizeRequest(_request, _response, msg.sender);
+    }
+
+    IDisputeModule(_request.disputeModule).finalizeRequest(_request, _response, msg.sender);
+    IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
+    IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
+
+    // TODO: What should be emitted here?
+    // emit OracleRequestFinalized(_requestId, msg.sender);
   }
 
   /**
@@ -413,7 +416,7 @@ contract Oracle is IOracle {
     );
 
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-    _request.requestModule.createRequest(_requestId, _request.requestModuleData, msg.sender);
+    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
     emit RequestCreated(_requestId, _request, block.number);
   }

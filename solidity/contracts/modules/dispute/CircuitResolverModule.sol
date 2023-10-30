@@ -29,11 +29,10 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   function onDisputeStatusChange(
     IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute
+    IOracle.Dispute calldata _dispute,
+    IOracle.Response calldata _response
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
-
-    IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
 
     bytes memory _correctResponse = _correctResponses[_dispute.requestId];
     bool _won = _response.response.length != _correctResponse.length
@@ -48,19 +47,18 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
         _amount: _params.bondSize
       });
 
-      bytes32 _correctResponseId = ORACLE.proposeResponse(
-        _dispute.disputer,
-        _request,
-        IOracle.Response({
-          requestId: _dispute.requestId,
-          response: abi.encode('testResponse'),
-          proposer: _dispute.disputer,
-          createdAt: block.timestamp
-        })
-      );
-      ORACLE.finalize(_dispute.requestId, _correctResponseId);
+      IOracle.Response memory _newResponse = IOracle.Response({
+        requestId: _dispute.requestId,
+        response: abi.encode('testResponse'),
+        proposer: _dispute.disputer,
+        createdAt: block.timestamp
+      });
+
+      ORACLE.proposeResponse(_dispute.disputer, _request, _newResponse);
+
+      ORACLE.finalize(_request, _newResponse);
     } else {
-      ORACLE.finalize(_dispute.requestId, _dispute.responseId);
+      ORACLE.finalize(_request, _response);
     }
 
     delete _correctResponses[_dispute.requestId];
@@ -79,10 +77,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     IOracle.Request calldata _request,
     bytes32 _responseId,
     address _disputer,
-    address _proposer
+    IOracle.Response calldata _response
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
-    bytes32 _requestId = _hashRequest(_request);
-    IOracle.Response memory _response = ORACLE.getResponse(_responseId);
+    bytes32 _requestId = _getId(_request);
     RequestParameters memory _params = decodeRequestData(_requestId);
 
     (, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
@@ -94,12 +91,12 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     _dispute = IOracle.Dispute({
       disputer: _disputer,
       responseId: _responseId,
-      proposer: _proposer,
+      proposer: _response.proposer,
       requestId: _requestId,
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
 
-    emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
+    emit ResponseDisputed(_requestId, _responseId, _disputer, _response.proposer);
   }
 }

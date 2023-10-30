@@ -12,13 +12,13 @@ contract MockDisputeModule is Module, IMockDisputeModule {
     IOracle.Request calldata _request,
     bytes32 _responseId,
     address _disputer,
-    address _proposer
+    IOracle.Response calldata _response
   ) external view returns (IOracle.Dispute memory _dispute) {
-    bytes32 _requestId = _hashRequest(_request);
+    bytes32 _requestId = _getId(_request);
     _dispute = IOracle.Dispute({
       createdAt: block.timestamp,
       disputer: _disputer,
-      proposer: _proposer,
+      proposer: _response.proposer,
       responseId: _responseId,
       requestId: _requestId,
       status: IOracle.DisputeStatus.Active
@@ -34,6 +34,7 @@ contract MockDisputeModule is Module, IMockDisputeModule {
   function onDisputeStatusChange(
     IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute
+    IOracle.Dispute calldata _dispute,
+    IOracle.Response calldata _response
   ) external {}
 }
