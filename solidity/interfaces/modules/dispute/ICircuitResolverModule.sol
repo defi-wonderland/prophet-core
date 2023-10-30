@@ -61,11 +61,11 @@ interface ICircuitResolverModule is IDisputeModule {
 
   /// @inheritdoc IDisputeModule
   function onDisputeStatusChange(
+    IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute,
-    IOracle.Request calldata _request
+    IOracle.Dispute calldata _dispute
   ) external;
 
   /// @inheritdoc IDisputeModule
-  function disputeEscalated(bytes32 _disputeId, bytes calldata _moduleData) external;
+  function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external;
 }

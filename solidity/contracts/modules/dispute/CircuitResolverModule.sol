@@ -23,13 +23,13 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   }
 
   /// @inheritdoc ICircuitResolverModule
-  function disputeEscalated(bytes32 _disputeId, bytes calldata _moduleData) external onlyOracle {}
+  function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external onlyOracle {}
 
   /// @inheritdoc ICircuitResolverModule
   function onDisputeStatusChange(
+    IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute,
-    IOracle.Request calldata _request
+    IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
 
@@ -55,7 +55,6 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
           requestId: _dispute.requestId,
           response: abi.encode('testResponse'),
           proposer: _dispute.disputer,
-          disputeId: bytes32(0),
           createdAt: block.timestamp
         })
       );

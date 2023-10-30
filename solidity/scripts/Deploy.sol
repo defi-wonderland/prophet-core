@@ -134,11 +134,20 @@ contract Deploy is Script {
       requestId: _requestId,
       response: abi.encode('testResponse'),
       proposer: deployer,
-      disputeId: bytes32(0),
       createdAt: block.timestamp
     });
 
     bytes32 _responseId = oracle.proposeResponse(_request, _response);
+
+    // IOracle.Dispute memory _dispute = IOracle.Dispute({
+    //   createdAt: block.timestamp,
+    //   disputer: disputer,
+    //   proposer: proposer,
+    //   responseId: _responseId,
+    //   requestId: _requestId,
+    //   status: IOracle.DisputeStatus.Active
+    // });
+
     // bytes32 _disputeId = oracle.disputeResponse(_requestId, _responseId);
 
     // oracle.getFinalizedResponse(_requestId);

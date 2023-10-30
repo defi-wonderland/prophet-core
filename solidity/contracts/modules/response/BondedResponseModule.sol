@@ -39,14 +39,16 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     uint256 _responsesLength = _responseIds.length;
 
     if (_responsesLength != 0) {
-      bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responsesLength - 1]).disputeId;
+      // bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responsesLength - 1]).disputeId;
+      bytes32 _disputeId = ORACLE.disputeOf(_responseIds[_responsesLength - 1]);
 
       // Allowing one undisputed response at a time
       if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
-      IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+      // IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
+      IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
       // TODO: leaving a note here to re-check this check if a new status is added
       // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
-      if (_dispute.status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
+      if (_status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
     }
 
     _params.accountingExtension.bond({

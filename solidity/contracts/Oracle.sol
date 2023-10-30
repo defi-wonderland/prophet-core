@@ -22,10 +22,11 @@ contract Oracle is IOracle {
    */
   mapping(bytes32 _responseId => Response) internal _responses;
 
-  /**
-   * @notice The list of all disputes
-   */
-  mapping(bytes32 _disputeId => Dispute) internal _disputes;
+  // /**
+  //  * @notice The list of all disputes
+  //  */
+  // mapping(bytes32 _disputeId => Dispute) internal _disputes;
+  mapping(bytes32 _disputeId => DisputeStatus _status) public disputeStatus;
 
   /**
    * @notice The list of the response ids for each request
@@ -154,9 +155,9 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
-    _dispute = _disputes[_disputeId];
-  }
+  // function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute) {
+  //   _dispute = _disputes[_disputeId];
+  // }
 
   /// @inheritdoc IOracle
   function proposeResponse(
@@ -191,8 +192,8 @@ contract Oracle is IOracle {
   ) internal returns (bytes32 _responseId) {
     bytes32 _requestId = _hashRequest(_request);
 
+    // TODO: Custom errors
     require(_response.requestId == _requestId);
-    require(_response.disputeId == bytes32(0));
     require(_response.proposer == _proposer);
 
     if (finalizedAt[_requestId] != 0) {
@@ -204,7 +205,7 @@ contract Oracle is IOracle {
     _request.responseModule.propose(_requestId, _request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
 
-    emit ResponseProposed(_requestId, _response, _responseId);
+    emit ResponseProposed(_requestId, _response, _responseId, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -227,8 +228,13 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function disputeResponse(Request calldata _request, bytes32 _responseId) external returns (bytes32 _disputeId) {
+  function disputeResponse(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute
+  ) external returns (bytes32 _disputeId) {
     bytes32 _requestId = _hashRequest(_request);
+    bytes32 _responseId = _hashResponse(_response);
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
@@ -237,34 +243,31 @@ contract Oracle is IOracle {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
 
-    Response storage _response = _responses[_responseId];
+    // Response storage _response = _responses[_responseId];
     if (_response.requestId != _requestId) {
       revert Oracle_InvalidResponseId(_responseId);
     }
 
     _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-
-    Dispute memory _dispute =
-      _request.disputeModule.disputeResponse(_request, _responseId, msg.sender, _response.proposer);
-    _disputes[_disputeId] = _dispute;
+    _request.disputeModule.disputeResponse(_request, _responseId, msg.sender, _response.proposer);
     disputeOf[_responseId] = _disputeId;
-    _response.disputeId = _disputeId;
 
     if (_dispute.disputer != msg.sender) {
       revert Oracle_CannotTamperParticipant();
     }
 
-    emit ResponseDisputed(msg.sender, _responseId, _disputeId);
+    emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute);
 
     if (_dispute.status != DisputeStatus.Active) {
-      _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _request);
+      _request.disputeModule.onDisputeStatusChange(_request, _disputeId, _dispute);
     }
   }
 
   /// @inheritdoc IOracle
-  function escalateDispute(bytes32 _disputeId, bytes calldata _moduleData) external {
-    Dispute storage _dispute = _disputes[_disputeId];
+  function escalateDispute(Request calldata _request, Dispute calldata _dispute) external {
+    // Dispute storage _dispute = _disputes[_disputeId];
+    bytes32 _disputeId = _hashDispute(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     if (_dispute.status != DisputeStatus.Active) {
@@ -272,24 +275,26 @@ contract Oracle is IOracle {
     }
 
     // Change the dispute status
-    _dispute.status = DisputeStatus.Escalated;
+    // _dispute.status = DisputeStatus.Escalated;
+    disputeStatus[_disputeId] = DisputeStatus.Escalated;
 
-    Request storage _request = _requests[_dispute.requestId];
+    // Request storage _request = _requests[_dispute.requestId];
 
     // Notify the dispute module about the escalation
-    _request.disputeModule.disputeEscalated(_disputeId, _moduleData);
+    _request.disputeModule.disputeEscalated(_disputeId, _dispute);
 
     emit DisputeEscalated(msg.sender, _disputeId);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
-      _request.resolutionModule.startResolution(_disputeId, _moduleData);
+      _request.resolutionModule.startResolution(_disputeId, _dispute);
     }
   }
 
   /// @inheritdoc IOracle
-  function resolveDispute(bytes32 _disputeId, bytes calldata _moduleData) external {
-    Dispute storage _dispute = _disputes[_disputeId];
+  function resolveDispute(Dispute calldata _dispute) external {
+    // Dispute storage _dispute = _disputes[_disputeId];
+    bytes32 _disputeId = _hashDispute(_dispute);
 
     if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
     // Revert if the dispute is not active nor escalated
@@ -302,20 +307,22 @@ contract Oracle is IOracle {
       revert Oracle_NoResolutionModule(_disputeId);
     }
 
-    _request.resolutionModule.resolveDispute(_disputeId, _moduleData);
+    _request.resolutionModule.resolveDispute(_disputeId, _dispute);
 
     emit DisputeResolved(msg.sender, _disputeId);
   }
 
   /// @inheritdoc IOracle
-  function updateDisputeStatus(bytes32 _disputeId, Request calldata _request, DisputeStatus _status) external {
-    Dispute storage _dispute = _disputes[_disputeId];
+  function updateDisputeStatus(Request calldata _request, Dispute calldata _dispute, DisputeStatus _status) external {
+    // Dispute storage _dispute = _disputes[_disputeId];
     // Request storage _request = _requests[_dispute.requestId];
+    bytes32 _disputeId = _hashDispute(_dispute);
     if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
       revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
-    _dispute.status = _status;
-    _request.disputeModule.onDisputeStatusChange(_disputeId, _dispute, _request);
+    disputeStatus[_disputeId] = _status;
+    // _dispute.status = _status;
+    _request.disputeModule.onDisputeStatusChange(_request, _disputeId, _dispute);
 
     emit DisputeStatusUpdated(_disputeId, _status);
   }
@@ -394,8 +401,8 @@ contract Oracle is IOracle {
     if (_response.requestId != _requestId) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
-    DisputeStatus _disputeStatus = _disputes[disputeOf[_finalizedResponseId]].status;
-    if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
+    DisputeStatus _status = disputeStatus[disputeOf[_finalizedResponseId]];
+    if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
       revert Oracle_InvalidFinalizedResponse(_finalizedResponseId);
     }
 
@@ -417,9 +424,9 @@ contract Oracle is IOracle {
       for (uint256 _i = 0; _i < _responsesAmount;) {
         bytes32 _responseId = _responseIds[_requestId][_i];
         bytes32 _disputeId = disputeOf[_responseId];
-        DisputeStatus _disputeStatus = _disputes[_disputeId].status;
+        DisputeStatus _status = disputeStatus[_disputeId];
 
-        if (_disputeStatus != DisputeStatus.None && _disputeStatus != DisputeStatus.Lost) {
+        if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
           revert Oracle_InvalidFinalizedResponse(_responseId);
         }
 
@@ -476,7 +483,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     _request.requestModule.createRequest(_requestId, _request.requestModuleData, msg.sender);
 
-    emit RequestCreated(_requestId, _request, block.timestamp);
+    emit RequestCreated(_requestId, _request, block.number);
   }
 
   function _hashRequest(Request calldata _request) internal pure returns (bytes32 _requestHash) {
@@ -502,11 +509,14 @@ contract Oracle is IOracle {
 
   function _hashResponse(Response memory _response) internal pure returns (bytes32 _responseHash) {
     {
-      _responseHash = keccak256(
-        abi.encode(
-          _response.requestId, _response.disputeId, _response.proposer, _response.response, _response.createdAt
-        )
-      );
+      _responseHash =
+        keccak256(abi.encode(_response.requestId, _response.proposer, _response.response, _response.createdAt));
+    }
+  }
+
+  function _hashDispute(Dispute calldata _dispute) internal pure returns (bytes32 _responseHash) {
+    {
+      _responseHash = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
     }
   }
 

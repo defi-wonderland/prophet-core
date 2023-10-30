@@ -98,7 +98,6 @@ contract Integration_ResponseDispute is IntegrationBase {
       requestId: _requestId,
       response: abi.encode('testResponse'),
       proposer: proposer,
-      disputeId: bytes32(0),
       createdAt: block.timestamp
     });
 
@@ -147,11 +146,26 @@ contract Integration_ResponseDispute is IntegrationBase {
       nonce: 1
     });
 
-    vm.prank(disputer);
-    bytes32 _disputeId = oracle.disputeResponse(_request, _responseId);
+    IOracle.Response memory _response = IOracle.Response({
+      requestId: _requestId,
+      response: abi.encode('testResponse'),
+      proposer: proposer,
+      createdAt: block.timestamp
+    });
 
-    IOracle.Response memory _disputedResponse = oracle.getResponse(_responseId);
-    assertEq(_disputedResponse.disputeId, _disputeId);
+    IOracle.Dispute memory _dispute = IOracle.Dispute({
+      createdAt: block.timestamp,
+      disputer: disputer,
+      proposer: proposer,
+      responseId: _responseId,
+      requestId: _requestId,
+      status: IOracle.DisputeStatus.Active
+    });
+
+    vm.prank(disputer);
+    bytes32 _disputeId = oracle.disputeResponse(_request, _response, _dispute);
+
+    assertEq(oracle.disputeOf(_responseId), _disputeId);
   }
 
   // // dispute a non-existent response

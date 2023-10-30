@@ -55,14 +55,14 @@ interface IDisputeModule is IModule {
    * @param _dispute The dispute data
    */
   function onDisputeStatusChange(
+    IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute,
-    IOracle.Request calldata _request
+    IOracle.Dispute calldata _dispute
   ) external;
 
   /**
    * @notice Called by the oracle when a dispute has been escalated.
    * @param _disputeId The ID of the dispute being escalated
    */
-  function disputeEscalated(bytes32 _disputeId, bytes calldata _moduleData) external;
+  function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external;
 }

@@ -20,14 +20,16 @@ interface IOracle {
    * @notice Emitted when a request is created
    * @param _requestId The id of the created request
    */
-  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, uint256 indexed _blockNumber);
+  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a response is proposed
    * @param _requestId The id of the request
    * @param _responseId The id of the proposed response
    */
-  event ResponseProposed(bytes32 indexed _requestId, Response _response, bytes32 indexed _responseId);
+  event ResponseProposed(
+    bytes32 indexed _requestId, Response _response, bytes32 indexed _responseId, uint256 _blockNumber
+  );
 
   /**
    * @notice Emitted when a response is disputed
@@ -35,7 +37,9 @@ interface IOracle {
    * @param _responseId The id of the response being disputed
    * @param _disputeId The id of the dispute
    */
-  event ResponseDisputed(address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId);
+  event ResponseDisputed(
+    address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId, Dispute _dispute
+  );
 
   /**
    * @notice Emitted when a request is finalized
@@ -243,14 +247,12 @@ interface IOracle {
    * @param createdAt The timestamp of the response creation
    * @param proposer The address of the user who proposed the response
    * @param requestId The id of the request this response is proposed for
-   * @param disputeId The id of the dispute if the response is disputed
    * @param response The encoded data of the response
    */
   struct Response {
     uint256 createdAt;
     address proposer;
     bytes32 requestId;
-    bytes32 disputeId;
     bytes response;
   }
 
@@ -370,9 +372,8 @@ interface IOracle {
   /**
    * @notice Returns a dispute
    * @param _disputeId The id of the dispute
-   * @return _dispute The dispute data
    */
-  function getDispute(bytes32 _disputeId) external view returns (Dispute memory _dispute);
+  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
   /**
    * @notice Creates a new response for a given request
@@ -406,31 +407,28 @@ interface IOracle {
    * @dev If pre-dispute modules are being used, the returned dispute
    * from `disputeModule.disputeResponse` may have a status other than `Active`,
    * in which case the dispute is considered resolved and the dispute status updated.
-   * @param _responseId The id of the response being disputed
    */
   function disputeResponse(
-    IOracle.Request calldata _request,
-    bytes32 _responseId
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute
   ) external returns (bytes32 _disputeId);
 
   /**
    * @notice Escalates a dispute, sending it to the resolution module
-   * @param _disputeId The id of the dispute to escalate
    */
-  function escalateDispute(bytes32 _disputeId, bytes calldata _moduleData) external;
+  function escalateDispute(Request calldata _request, Dispute calldata _dispute) external;
 
   /**
    * @notice Resolves a dispute
-   * @param _disputeId The id of the dispute to resolve
    */
-  function resolveDispute(bytes32 _disputeId, bytes calldata _moduleData) external;
+  function resolveDispute(Dispute calldata _dispute) external;
 
   /**
    * @notice Updates the status of a dispute
-   * @param _disputeId The id of the dispute to update
    * @param _status The new status of the dispute
    */
-  function updateDisputeStatus(bytes32 _disputeId, IOracle.Request calldata _request, DisputeStatus _status) external;
+  function updateDisputeStatus(Request calldata _request, Dispute calldata _dispute, DisputeStatus _status) external;
 
   /**
    * @notice Checks if the given address is a module used in the request
