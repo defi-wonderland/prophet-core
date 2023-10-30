@@ -14,10 +14,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     _moduleName = 'BondedResponseModule';
   }
 
-  /// @inheritdoc IBondedResponseModule
-  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {}
-
-  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -28,7 +25,6 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     IOracle.Response calldata _response,
     address _sender
   ) external onlyOracle {
-    // bytes32 _requestId = _getId(_request);
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     // Cannot propose after the deadline
@@ -39,12 +35,10 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     uint256 _responsesLength = _responseIds.length;
 
     if (_responsesLength != 0) {
-      // bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responsesLength - 1]).disputeId;
       bytes32 _disputeId = ORACLE.disputeOf(_responseIds[_responsesLength - 1]);
 
       // Allowing one undisputed response at a time
       if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
-      // IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
       IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
       // TODO: leaving a note here to re-check this check if a new status is added
       // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
@@ -82,28 +76,30 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     IOracle.Response calldata _response,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
-    // RequestParameters memory _params = decodeRequestData(_requestId);
+    bytes32 _requestId = _getId(_request);
 
-    // bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
-    // if (!_isModule && block.timestamp < _params.deadline) {
-    //   revert BondedResponseModule_TooEarlyToFinalize();
-    // }
+    bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
 
-    // IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
-    // if (_response.createdAt != 0) {
-    //   if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
-    //     revert BondedResponseModule_TooEarlyToFinalize();
-    //   }
+    if (!_isModule && block.timestamp < _params.deadline) {
+      revert BondedResponseModule_TooEarlyToFinalize();
+    }
 
-    //   _params.accountingExtension.release({
-    //     _bonder: _response.proposer,
-    //     _requestId: _requestId,
-    //     _token: _params.bondToken,
-    //     _amount: _params.bondSize
-    //   });
-    // }
-    // emit RequestFinalized(_requestId, _finalizer);
+    if (_response.createdAt != 0) {
+      if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
+        revert BondedResponseModule_TooEarlyToFinalize();
+      }
+
+      _params.accountingExtension.release({
+        _bonder: _response.proposer,
+        _requestId: _requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+    }
+
+    emit RequestFinalized(_requestId, _finalizer);
   }
 
   /// @inheritdoc Module
