@@ -507,7 +507,7 @@ contract Oracle is IOracle {
     }
   }
 
-  function _getId(Response memory _response) internal pure returns (bytes32 _id) {
+  function _getId(Response calldata _response) internal pure returns (bytes32 _id) {
     {
       _id = keccak256(abi.encode(_response.requestId, _response.proposer, _response.response, _response.createdAt));
     }
