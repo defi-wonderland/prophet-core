@@ -49,20 +49,14 @@ abstract contract Module is IModule {
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}
 
   function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
-    {
-      _id = keccak256(abi.encode(_request));
-    }
+    _id = keccak256(abi.encode(_request));
   }
 
   function _getId(IOracle.Response calldata _response) internal pure returns (bytes32 _id) {
-    {
-      _id = keccak256(abi.encode(_response));
-    }
+    _id = keccak256(abi.encode(_response));
   }
 
   function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
-    {
-      _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
-    }
+    _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
   }
 }
