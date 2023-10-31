@@ -14,7 +14,6 @@ test = 'solidity/test'
 out = 'out'
 libs = ['node_modules']
 optimizer_runs = 10_000
-via_ir = true
 
 [profile.optimized]
 via_ir = true
