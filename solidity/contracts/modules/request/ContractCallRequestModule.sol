@@ -36,11 +36,17 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
     IOracle.Response calldata _response,
     address _finalizer
   ) external override(IContractCallRequestModule, Module) onlyOracle {
+    // @audit-check is this being calculated earlier in the oracle?
     bytes32 _requestId = _getId(_request);
+    // @audit-issue we're not checking that the request is for this module, therefore if decoderequestdata returns something
+    // else than zeros. we're not checking if the response if for this request either
+    // we're supposed to check that on the oracle anyways
+
     // IOracle.Request memory _request = ORACLE.getRequest(_requestId);
     // IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
     RequestParameters memory _params = decodeRequestData(_requestId);
 
+    // @audit-issue big issue here. see oracle audit tag
     if (_response.createdAt != 0) {
       _params.accountingExtension.pay({
         _requestId: _requestId,

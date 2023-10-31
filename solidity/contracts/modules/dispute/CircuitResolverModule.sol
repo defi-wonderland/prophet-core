@@ -79,6 +79,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     address _disputer,
     IOracle.Response calldata _response
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
+    // @audit-check is this being calculated in the oracle?
     bytes32 _requestId = _getId(_request);
     RequestParameters memory _params = decodeRequestData(_requestId);
 
@@ -96,6 +97,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
       createdAt: block.timestamp
     });
+    // oracle.updatedisputestatus(won / lost)
 
     emit ResponseDisputed(_requestId, _responseId, _disputer, _response.proposer);
   }

@@ -76,6 +76,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     IOracle.Response calldata _response,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
+    // @audit is this being calculated earlier in the oracle?
     bytes32 _requestId = _getId(_request);
 
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);

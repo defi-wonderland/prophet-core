@@ -23,12 +23,14 @@ abstract contract Module is IModule {
   }
 
   /// @inheritdoc IModule
+  // @audit-check why this?
   function oracle() external view returns (address _oracle) {
     _oracle = address(ORACLE);
   }
 
   /// @inheritdoc IModule
   function setupRequest(bytes32 _requestId, bytes calldata _data) public virtual onlyOracle {
+    // @audit-check this is not happening anymore?
     requestData[_requestId] = _data;
     _afterSetupRequest(_requestId, _data);
   }
@@ -57,6 +59,7 @@ abstract contract Module is IModule {
   }
 
   function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
+    // @audit-check why the different method?
     _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
   }
 }

@@ -25,6 +25,7 @@ contract AccountingExtension is IAccountingExtension {
   /**
    * @notice Storing which modules have the users approved to bond their tokens.
    */
+  // @audit we can replace this with a bytes string as in oracle
   mapping(address _bonder => EnumerableSet.AddressSet _modules) internal _approvals;
 
   constructor(IOracle _oracle) {
