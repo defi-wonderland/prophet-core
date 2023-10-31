@@ -196,7 +196,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidResponseId(_responseId);
     }
 
-    _disputeId = keccak256(abi.encodePacked(msg.sender, _requestId, _responseId));
+    _disputeId = _getId(_dispute);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
     disputeOf[_responseId] = _disputeId;
