@@ -36,9 +36,14 @@ interface IOracle {
    * @param _disputer The address of the user who started the dispute
    * @param _responseId The id of the response being disputed
    * @param _disputeId The id of the dispute
+   * @param _blockNumber The block number of the dispute
    */
   event ResponseDisputed(
-    address indexed _disputer, bytes32 indexed _responseId, bytes32 indexed _disputeId, Dispute _dispute
+    address indexed _disputer,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    Dispute _dispute,
+    uint256 _blockNumber
   );
 
   /**
@@ -52,30 +57,25 @@ interface IOracle {
    * @notice Emitted when a dispute is escalated
    * @param _caller The address of the user who escalated the dispute
    * @param _disputeId The id of the dispute being escalated
+   * @param _blockNumber The block number of the escalation
    */
-  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a dispute's status changes
    * @param _disputeId The id of the dispute
    * @param _status The new dispute status
+   * @param _blockNumber The block number of the status update
    */
-  event DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _status);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _status, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a dispute is resolved
    * @param _caller The address of the user who resolved the dispute
    * @param _disputeId The id of the dispute being resolved
+   * @param _blockNumber The block number of the dispute resolution
    */
-  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId);
-
-  /**
-   * @notice Emitted when a response is deleted
-   * @param _requestId The id of the request
-   * @param _caller The address of the user who deleted the response
-   * @param _responseId The id of the deleted response
-   */
-  event ResponseDeleted(bytes32 indexed _requestId, address indexed _caller, bytes32 indexed _responseId);
+  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS
@@ -165,6 +165,15 @@ interface IOracle {
    */
   error Oracle_CannotTamperParticipant();
 
+  /**
+   * @notice Thrown when trying to propose a response with invalid parameters
+   */
+  error Oracle_InvalidResponseBody();
+
+  /**
+   * @notice Thrown when trying to create a request with invalid parameters
+   */
+  error Oracle_InvalidRequestBody();
   /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
@@ -218,7 +227,6 @@ interface IOracle {
    * @param response The encoded data of the response
    */
   struct Response {
-    uint256 createdAt;
     address proposer;
     bytes32 requestId;
     bytes response;
@@ -231,15 +239,12 @@ interface IOracle {
    * @param proposer The address of the user who proposed the response
    * @param responseId The id of the response being disputed
    * @param requestId The id of the request this dispute is related to
-   * @param status The status of the dispute
    */
   struct Dispute {
-    uint256 createdAt;
     address disputer;
     address proposer;
     bytes32 responseId;
     bytes32 requestId;
-    DisputeStatus status;
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -319,12 +324,6 @@ interface IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId);
-
-  /**
-   * @notice Deletes a response
-   * @param _responseId The id of the response being deleted
-   */
-  function deleteResponse(bytes32 _responseId) external;
 
   /**
    * @notice Starts the process of disputing a response

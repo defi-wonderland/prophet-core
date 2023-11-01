@@ -16,12 +16,10 @@ contract MockDisputeModule is Module, IMockDisputeModule {
   ) external view returns (IOracle.Dispute memory _dispute) {
     bytes32 _requestId = _getId(_request);
     _dispute = IOracle.Dispute({
-      createdAt: block.timestamp,
       disputer: _disputer,
       proposer: _response.proposer,
       responseId: _responseId,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.Active
+      requestId: _requestId
     });
   }
 

@@ -14,9 +14,7 @@ contract Helpers is DSTestPlus {
       disputer: _disputer,
       responseId: bytes32('response'),
       proposer: _proposer,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.None,
-      createdAt: block.timestamp
+      requestId: _requestId
     });
   }
 }

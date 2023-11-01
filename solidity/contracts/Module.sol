@@ -60,6 +60,6 @@ abstract contract Module is IModule {
 
   function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
     // @audit-check why the different method?
-    _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
+    _id = keccak256(abi.encode(_dispute));
   }
 }

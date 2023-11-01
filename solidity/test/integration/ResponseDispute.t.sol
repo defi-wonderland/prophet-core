@@ -94,12 +94,8 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.prank(requester);
     _requestId = oracle.createRequest(_request);
 
-    IOracle.Response memory _response = IOracle.Response({
-      requestId: _requestId,
-      response: abi.encode('testResponse'),
-      proposer: proposer,
-      createdAt: block.timestamp
-    });
+    IOracle.Response memory _response =
+      IOracle.Response({requestId: _requestId, response: abi.encode('testResponse'), proposer: proposer});
 
     vm.prank(proposer);
     _responseId = oracle.proposeResponse(_request, _response);
@@ -146,21 +142,11 @@ contract Integration_ResponseDispute is IntegrationBase {
       nonce: 1
     });
 
-    IOracle.Response memory _response = IOracle.Response({
-      requestId: _requestId,
-      response: abi.encode('testResponse'),
-      proposer: proposer,
-      createdAt: block.timestamp
-    });
+    IOracle.Response memory _response =
+      IOracle.Response({requestId: _requestId, response: abi.encode('testResponse'), proposer: proposer});
 
-    IOracle.Dispute memory _dispute = IOracle.Dispute({
-      createdAt: block.timestamp,
-      disputer: disputer,
-      proposer: proposer,
-      responseId: _responseId,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.Active
-    });
+    IOracle.Dispute memory _dispute =
+      IOracle.Dispute({disputer: disputer, proposer: proposer, responseId: _responseId, requestId: _requestId});
 
     vm.prank(disputer);
     bytes32 _disputeId = oracle.disputeResponse(_request, _response, _dispute);

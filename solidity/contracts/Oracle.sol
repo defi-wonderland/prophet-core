@@ -15,27 +15,14 @@ contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
   // TODO: natspec
-  // @audit do we need to exact timestamp or could it be a boolean? (finalized or not)
-  // @audit could we replace it with a solution that indicates both if finalized and if it exists?
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
 
-  // @audit do we need to store the full objects? wasn't that the purpose of hashing it?
   /**
-   * @notice The list of all requests
+   * @notice The status all disputes
    */
-  mapping(bytes32 _requestId => Request) internal _requests;
-  /**
-   * @notice The list of all responses
-   */
-  mapping(bytes32 _responseId => Response) internal _responses;
-
-  // /**
-  //  * @notice The list of all disputes
-  //  */
-  // mapping(bytes32 _disputeId => Dispute) internal _disputes;
   mapping(bytes32 _disputeId => DisputeStatus _status) public disputeStatus;
 
   /**
@@ -137,19 +124,16 @@ contract Oracle is IOracle {
    * @param _request The request data
    * @return _responseId The id of the created response
    */
-  // @audit maybe add a modifier like `validRequestBody(_request, _response)` to check if the request and response match
   function _proposeResponse(
     address _proposer,
     Request calldata _request,
     Response calldata _response
   ) internal returns (bytes32 _responseId) {
     bytes32 _requestId = _getId(_request);
-    // @audit-issue we should check that the createdAt value is 0
 
-    // TODO: Custom errors
-    // @audit these are the checks that would be made by the modifier / internal func
-    require(_response.requestId == _requestId);
-    require(_response.proposer == _proposer);
+    if (_response.requestId != _requestId || _response.proposer != _proposer) {
+      revert Oracle_InvalidResponseBody();
+    }
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
@@ -164,28 +148,6 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  // @audit i'm fine by removing this but what will happen to bonded funds?
-  function deleteResponse(bytes32 _responseId) external {
-    // @audit-check are we storing those?
-    // @audit-check how are we verifying these?
-    Response storage _response = _responses[_responseId];
-    Request storage _request = _requests[_response.requestId];
-
-    if (disputeOf[_responseId] != bytes32(0)) {
-      revert Oracle_CannotDeleteWhileDisputing(_responseId);
-    }
-    if (msg.sender != _response.proposer) {
-      revert Oracle_CannotDeleteInvalidProposer(msg.sender, _responseId);
-    }
-
-    IResponseModule(_request.responseModule).deleteResponse(_response.requestId, _responseId, msg.sender);
-    // _responseIds[_response.requestId].remove(_responseId);
-
-    emit ResponseDeleted(_response.requestId, msg.sender, _responseId);
-    delete _responses[_responseId];
-  }
-
-  /// @inheritdoc IOracle
   function disputeResponse(
     Request calldata _request,
     Response calldata _response,
@@ -193,7 +155,13 @@ contract Oracle is IOracle {
   ) external returns (bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
     bytes32 _responseId = _getId(_response);
-    // @audit-issue we're not checking that the request does indeed exist
+
+    if (
+      _requestId != _response.requestId || _dispute.responseId != _responseId || _participants[_requestId].length == 0
+        || _dispute.disputer != msg.sender
+    ) {
+      revert();
+    }
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
@@ -202,36 +170,33 @@ contract Oracle is IOracle {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
 
-    // Response storage _response = _responses[_responseId];
     if (_response.requestId != _requestId) {
       revert Oracle_InvalidResponseId(_responseId);
     }
 
     _disputeId = _getId(_dispute);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-    // disputestatus[disputid] = active
-    IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
+    disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
 
-    if (_dispute.disputer != msg.sender) {
-      revert Oracle_CannotTamperParticipant();
-    }
+    IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
 
-    emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute);
+    emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute, block.number);
 
-    // if disputestatus[dispute] = won / lost
-    if (_dispute.status != DisputeStatus.Active) {
+    if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       IDisputeModule(_request.disputeModule).onDisputeStatusChange(_request, _disputeId, _dispute, _response);
     }
   }
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Dispute calldata _dispute) external {
-    // @audit-issue we're not checking that the request does indeed exist
+    bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _getId(_dispute);
 
-    if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
-    if (_dispute.status != DisputeStatus.Active) {
+    if (_dispute.requestId != _requestId || disputeOf[_dispute.responseId] != _disputeId) {
+      revert Oracle_InvalidDisputeId(_disputeId);
+    }
+    if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       revert Oracle_CannotEscalate(_disputeId);
     }
 
@@ -241,7 +206,7 @@ contract Oracle is IOracle {
     // Notify the dispute module about the escalation
     IDisputeModule(_request.disputeModule).disputeEscalated(_disputeId, _dispute);
 
-    emit DisputeEscalated(msg.sender, _disputeId);
+    emit DisputeEscalated(msg.sender, _disputeId, block.number);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
@@ -251,23 +216,25 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function resolveDispute(Request calldata _request, Dispute calldata _dispute) external {
-    // @audit-issue we're not checking that the request does indeed exist
+    bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _getId(_dispute);
 
-    if (_dispute.createdAt == 0) revert Oracle_InvalidDisputeId(_disputeId);
+    if (_dispute.requestId != _requestId || disputeOf[_dispute.responseId] != _disputeId) {
+      revert Oracle_InvalidDisputeId(_disputeId);
+    }
+
     // Revert if the dispute is not active nor escalated
     if (disputeStatus[_disputeId] > DisputeStatus.Escalated) {
       revert Oracle_CannotResolve(_disputeId);
     }
 
-    // Request storage _request = _requests[_dispute.requestId];
     if (address(_request.resolutionModule) == address(0)) {
       revert Oracle_NoResolutionModule(_disputeId);
     }
 
     IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _dispute);
 
-    emit DisputeResolved(msg.sender, _disputeId);
+    emit DisputeResolved(msg.sender, _disputeId, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -277,26 +244,28 @@ contract Oracle is IOracle {
     Dispute calldata _dispute,
     DisputeStatus _status
   ) external {
-    // @audit-issue we're not checking if request or response exist
     bytes32 _disputeId = _getId(_dispute);
+
+    if (disputeOf[_getId(_response)] != _disputeId) {
+      revert Oracle_InvalidDisputeId(_disputeId);
+    }
+
     if (msg.sender != address(_request.disputeModule) && msg.sender != address(_request.resolutionModule)) {
       revert Oracle_NotDisputeOrResolutionModule(msg.sender);
     }
     disputeStatus[_disputeId] = _status;
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_request, _disputeId, _dispute, _response);
 
-    emit DisputeStatusUpdated(_disputeId, _status);
+    emit DisputeStatusUpdated(_disputeId, _status, block.number);
   }
 
   /// @inheritdoc IOracle
   function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
-    // @audit can we assing the result to the named return value? (cheaper)
     bytes memory _requestAllowedModules = _allowedModules[_requestId];
 
     assembly ("memory-safe") {
       // TODO: Review and test
       let length := mload(_requestAllowedModules)
-      // @audit-gas could it start in 1?
       let i := 0
 
       // Iterate 20-bytes chunks of the modules list
@@ -307,14 +276,13 @@ contract Oracle is IOracle {
         // Shift the modules to the right by 96 bits and compare with _module
         if eq(shr(96, _allowedModule), _module) {
           // Set isAllowed to true and return
-          mstore(0x00, 1)
-          return(0x00, 32)
+          _isAllowed := 1
+          break
         }
       }
     }
   }
 
-  // @audit-check same as ut supra
   // @inheritdoc IOracle
   function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
     bytes memory _requestParticipants = _participants[_requestId];
@@ -332,8 +300,8 @@ contract Oracle is IOracle {
         // Shift the participant to the right by 96 bits and compare with _user
         if eq(shr(96, _participant), _user) {
           // Set _isParticipant to true and return
-          mstore(0x00, 1)
-          return(0x00, 32)
+          _isParticipant := 1
+          break
         }
       }
     }
@@ -345,9 +313,18 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids) {
-    // TODO: Split _responseIds into bytes32 chunks
-    // _ids = _responseIds[_requestId]._inner._values;
+  function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
+    bytes memory _responses = _responseIds[_requestId];
+    uint256 _length = _responses.length / 32;
+
+    for (uint256 _i = 0; _i < _length;) {
+      assembly {
+        mstore(add(_ids, add(32, mul(_i, 32))), mload(add(_responses, add(32, mul(_i, 32)))))
+      }
+      unchecked {
+        ++_i;
+      }
+    }
   }
 
   /// @inheritdoc IOracle
@@ -358,16 +335,14 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    // @audit this is outdated. arbitrary value is being passed
-    // @audit we should check that the request and the response exist
-    // @audit this should be completely rewritten
-    if (_response.createdAt == 0) {
-      // Finalizing without a response
-      uint256 _responsesAmount = _responseIds[_requestId].length;
+    // Finalizing without a response (by passing a Response with `requestId` == 0x0)
+    if (_response.requestId == bytes32(0)) {
+      bytes32[] memory _responses = getResponseIds(_requestId);
+      uint256 _responsesAmount = _responses.length;
 
       if (_responsesAmount != 0) {
         for (uint256 _i = 0; _i < _responsesAmount;) {
-          bytes32 _responseId = _responseIds[_requestId][_i];
+          bytes32 _responseId = _responses[_i];
           bytes32 _disputeId = disputeOf[_responseId];
           DisputeStatus _status = disputeStatus[_disputeId];
 
@@ -382,7 +357,7 @@ contract Oracle is IOracle {
       }
     } else {
       // Finalizing with a response
-      bytes32 _responseId = _getId(_request);
+      bytes32 _responseId = _getId(_response);
 
       if (_response.requestId != _requestId) {
         revert Oracle_InvalidFinalizedResponse(_responseId);
@@ -424,8 +399,7 @@ contract Oracle is IOracle {
     uint256 _requestNonce = ++totalRequestCount;
 
     // @audit what about removing nonces? or how we avoid nonce clashing?
-    require(_requestNonce == _request.nonce, 'invalid nonce'); // TODO: Custom error
-    require(msg.sender == _request.requester, 'invalid requester'); // TODO: Custom error
+    if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = _getId(_request);
     _requestIds[_requestNonce] = _requestId;
@@ -444,7 +418,6 @@ contract Oracle is IOracle {
     emit RequestCreated(_requestId, _request, block.number);
   }
 
-  // @audit-check are we hashing them properly? is there a possibility of collision?
   function _getId(Request calldata _request) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_request));
   }
@@ -454,7 +427,6 @@ contract Oracle is IOracle {
   }
 
   function _getId(Dispute calldata _dispute) internal pure returns (bytes32 _id) {
-    // @audit why are we hashing it differently?
-    _id = keccak256(abi.encode(_dispute.requestId, _dispute.disputer, _dispute.status, _dispute.createdAt));
+    _id = keccak256(abi.encode(_dispute));
   }
 }
