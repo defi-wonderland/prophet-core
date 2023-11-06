@@ -15,9 +15,10 @@ interface IModule {
   /**
    * @notice Emitted when a request is finalized
    * @param _requestId The ID of the request that was finalized
+   * @param _response The final response
    * @param _finalizer The address that initiated the finalization
    */
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
