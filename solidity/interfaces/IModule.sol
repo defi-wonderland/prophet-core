@@ -36,7 +36,7 @@ interface IModule {
    *
    * @return _oracle The address of the oracle
    */
-  function oracle() external view returns (address _oracle);
+  function ORACLE() external view returns (IOracle _oracle);
 
   /**
    * @notice Returns the data of the request associated with the provided id
