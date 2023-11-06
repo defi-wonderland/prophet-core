@@ -14,7 +14,7 @@ interface IModule {
 
   /**
    * @notice Emitted when a request is finalized
-   * @param _requestId The ID of the request that was finalized
+   * @param _requestId The id of the request that was finalized
    * @param _response The final response
    * @param _finalizer The address that initiated the finalization
    */

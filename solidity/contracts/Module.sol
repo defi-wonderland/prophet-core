@@ -29,7 +29,7 @@ abstract contract Module is IModule {
   /**
    * @notice The hook that is called after `setupRequest`
    *
-   * @param _requestId The ID of the request
+   * @param _requestId The id of the request
    * @param _data The data of the request
    */
   function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}

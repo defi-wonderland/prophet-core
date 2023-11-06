@@ -374,7 +374,7 @@ interface IOracle {
   /**
    * @notice Returns the finalized response ID for a given request
    * @param _requestId The id of the request
-   * @return _finalizedResponseId The ID of the finalized response
+   * @return _finalizedResponseId The id of the finalized response
    */
   function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
 
