@@ -13,15 +13,7 @@ contract MockDisputeModule is Module, IMockDisputeModule {
     bytes32 _responseId,
     address _disputer,
     IOracle.Response calldata _response
-  ) external view returns (IOracle.Dispute memory _dispute) {
-    bytes32 _requestId = _getId(_request);
-    _dispute = IOracle.Dispute({
-      disputer: _disputer,
-      proposer: _response.proposer,
-      responseId: _responseId,
-      requestId: _requestId
-    });
-  }
+  ) external {}
 
   function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _requestData) {
     _requestData = abi.decode(_data, (RequestParameters));
