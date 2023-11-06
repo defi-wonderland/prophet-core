@@ -264,6 +264,15 @@ interface IOracle {
    */
   function totalRequestCount() external view returns (uint256 _count);
 
+  /**
+   * @notice Returns a dispute
+   * @param _disputeId The id of the dispute
+   */
+  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
+
+  // TODO: natspec
+  function createdAt(bytes32 _id) external view returns (uint128 _createdAt);
+
   /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
@@ -297,12 +306,6 @@ interface IOracle {
    * @return _requestId The id of the request
    */
   function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
-
-  /**
-   * @notice Returns a dispute
-   * @param _disputeId The id of the dispute
-   */
-  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
   /**
    * @notice Creates a new response for a given request

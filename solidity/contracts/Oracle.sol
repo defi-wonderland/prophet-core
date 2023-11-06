@@ -16,6 +16,7 @@ contract Oracle is IOracle {
 
   // TODO: natspec
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
+  mapping(bytes32 _id => uint128 _createdAt) public createdAt;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -143,6 +144,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
     IResponseModule(_request.responseModule).propose(_requestId, _request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
+    createdAt[_responseId] = uint128(block.timestamp);
 
     emit ResponseProposed(_requestId, _response, _responseId, block.number);
   }
@@ -178,6 +180,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
+    createdAt[_disputeId] = uint128(block.timestamp);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
 
@@ -402,6 +405,7 @@ contract Oracle is IOracle {
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = _getId(_request);
+    createdAt[_requestId] = uint128(block.timestamp);
     _requestIds[_requestNonce] = _requestId;
 
     _allowedModules[_requestId] = abi.encodePacked(
