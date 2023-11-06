@@ -20,13 +20,6 @@ abstract contract Module is IModule {
   }
 
   /// @inheritdoc IModule
-  function setupRequest(bytes32 _requestId, bytes calldata _data) public virtual onlyOracle {
-    // @audit-check this is not happening anymore?
-    requestData[_requestId] = _data;
-    _afterSetupRequest(_requestId, _data);
-  }
-
-  /// @inheritdoc IModule
   function finalizeRequest(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,

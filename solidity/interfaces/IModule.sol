@@ -44,14 +44,6 @@ interface IModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Stores the request data and runs module-specific hooks
-   *
-   * @param _requestId The ID of the request
-   * @param _data The data of the request
-   */
-  function setupRequest(bytes32 _requestId, bytes calldata _data) external;
-
-  /**
    * @notice Finalizes a given request and executes any additional logic set by the chosen modules
    *
    * @param _finalizer The address that initiated the finalization
