@@ -142,7 +142,7 @@ contract Oracle is IOracle {
 
     _responseId = _getId(_response);
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
-    IResponseModule(_request.responseModule).propose(_requestId, _request, _response, msg.sender);
+    IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     createdAt[_responseId] = uint128(block.timestamp);
 

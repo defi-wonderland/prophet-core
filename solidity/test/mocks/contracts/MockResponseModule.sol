@@ -9,7 +9,6 @@ contract MockResponseModule is Module, IMockResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function propose(
-    bytes32 _requestId,
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     address _sender
