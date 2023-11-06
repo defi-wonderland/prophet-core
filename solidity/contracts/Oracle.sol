@@ -192,13 +192,14 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function escalateDispute(Request calldata _request, Dispute calldata _dispute) external {
+  function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _getId(_dispute);
 
     if (_dispute.requestId != _requestId || disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
+
     if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       revert Oracle_CannotEscalate(_disputeId);
     }
@@ -207,7 +208,7 @@ contract Oracle is IOracle {
     disputeStatus[_disputeId] = DisputeStatus.Escalated;
 
     // Notify the dispute module about the escalation
-    IDisputeModule(_request.disputeModule).disputeEscalated(_disputeId, _dispute);
+    IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
     emit DisputeEscalated(msg.sender, _disputeId, block.number);
 

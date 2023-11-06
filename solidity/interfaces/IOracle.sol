@@ -337,7 +337,7 @@ interface IOracle {
   /**
    * @notice Escalates a dispute, sending it to the resolution module
    */
-  function escalateDispute(Request calldata _request, Dispute calldata _dispute) external;
+  function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
 
   /**
    * @notice Resolves a dispute
