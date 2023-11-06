@@ -30,9 +30,9 @@ contract MockDisputeModule is Module, IMockDisputeModule {
   function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {}
   function moduleName() external view returns (string memory _moduleName) {}
   function onDisputeStatusChange(
-    IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute,
-    IOracle.Response calldata _response
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
   ) external {}
 }

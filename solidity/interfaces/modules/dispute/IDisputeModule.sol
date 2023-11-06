@@ -54,10 +54,10 @@ interface IDisputeModule is IModule {
    * @param _dispute The dispute data
    */
   function onDisputeStatusChange(
-    IOracle.Request calldata _request,
     bytes32 _disputeId,
-    IOracle.Dispute calldata _dispute,
-    IOracle.Response calldata _response
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
   ) external;
 
   /**
