@@ -39,14 +39,6 @@ interface IModule {
    */
   function ORACLE() external view returns (IOracle _oracle);
 
-  /**
-   * @notice Returns the data of the request associated with the provided id
-   *
-   * @param _requestId The id of the request
-   * @return _requestData The data of the request
-   */
-  function requestData(bytes32 _requestId) external view returns (bytes memory _requestData);
-
   /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/

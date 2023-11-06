@@ -14,8 +14,8 @@ contract MockResponseModule is Module, IMockResponseModule {
     address _sender
   ) external view onlyOracle {}
 
-  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _requestData) {
-    _requestData = abi.decode(requestData[_requestId], (RequestParameters));
+  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _requestData) {
+    _requestData = abi.decode(_data, (RequestParameters));
   }
 
   function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external {}

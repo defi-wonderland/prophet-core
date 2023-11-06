@@ -17,8 +17,8 @@ contract MockFinalityModule is Module, IMockFinalityModule {
     _params.target.call(_params.data);
   }
 
-  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _requestData) {
-    _requestData = abi.decode(requestData[_requestId], (RequestParameters));
+  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _requestData) {
+    _requestData = abi.decode(_data, (RequestParameters));
   }
 
   function moduleName() external view returns (string memory _moduleName) {}
