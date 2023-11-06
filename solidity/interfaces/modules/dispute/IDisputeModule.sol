@@ -11,12 +11,14 @@ interface IDisputeModule is IModule {
 
   /**
    * @notice Emitted when a response is disputed
-   * @param _requestId The id of the request created
    * @param _responseId The id of the response disputed
-   * @param _disputer The address of the disputed
-   * @param _proposer The address of the proposer
+   * @param _disputeId The id of the dispute
+   * @param _dispute The dispute that is being created
+   * @param _blockNumber The current block number
    */
-  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(
+    bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute, uint256 _blockNumber
+  );
 
   /**
    * @notice Emitted when a dispute status is updated

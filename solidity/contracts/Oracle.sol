@@ -184,7 +184,7 @@ contract Oracle is IOracle {
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
-    emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute, block.number);
+    emit ResponseDisputed(_responseId, _disputeId, _dispute, block.number);
 
     if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);

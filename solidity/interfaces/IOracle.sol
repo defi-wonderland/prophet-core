@@ -27,17 +27,13 @@ interface IOracle {
 
   /**
    * @notice Emitted when a response is disputed
-   * @param _disputer The address of the user who started the dispute
    * @param _responseId The id of the response being disputed
    * @param _disputeId The id of the dispute
-   * @param _blockNumber The block number of the dispute
+   * @param _dispute The dispute that has been created
+   * @param _blockNumber The current block number
    */
   event ResponseDisputed(
-    address indexed _disputer,
-    bytes32 indexed _responseId,
-    bytes32 indexed _disputeId,
-    Dispute _dispute,
-    uint256 _blockNumber
+    bytes32 indexed _responseId, bytes32 indexed _disputeId, Dispute _dispute, uint256 _blockNumber
   );
 
   /**
