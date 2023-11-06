@@ -10,9 +10,8 @@ contract MockDisputeModule is Module, IMockDisputeModule {
 
   function disputeResponse(
     IOracle.Request calldata _request,
-    bytes32 _responseId,
-    address _disputer,
-    IOracle.Response calldata _response
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
   ) external {}
 
   function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _requestData) {

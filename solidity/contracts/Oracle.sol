@@ -182,7 +182,7 @@ contract Oracle is IOracle {
     disputeOf[_responseId] = _disputeId;
     createdAt[_disputeId] = uint128(block.timestamp);
 
-    IDisputeModule(_request.disputeModule).disputeResponse(_request, _responseId, msg.sender, _response);
+    IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
     emit ResponseDisputed(msg.sender, _responseId, _disputeId, _dispute, block.number);
 

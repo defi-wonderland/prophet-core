@@ -33,14 +33,14 @@ interface IDisputeModule is IModule {
   /**
    * @notice Called by the oracle when a dispute has been made on a response.
    * Bonds the tokens of the disputer.
-   * @param _responseId The ID of the response being disputed
-   * @param _disputer The address of the user who disputed the response
+   * @param _request The id of the response being disputed
+   * @param _response The id of the response being disputed
+   * @param _dispute The id of the response being disputed
    */
   function disputeResponse(
     IOracle.Request calldata _request,
-    bytes32 _responseId,
-    address _disputer,
-    IOracle.Response calldata _response
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
   ) external;
 
   /**
