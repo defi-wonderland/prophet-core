@@ -1,12 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// import {IRequestModule} from './modules/request/IRequestModule.sol';
-// import {IResponseModule} from './modules/response/IResponseModule.sol';
-// import {IDisputeModule} from './modules/dispute/IDisputeModule.sol';
-// import {IResolutionModule} from './modules/resolution/IResolutionModule.sol';
-// import {IFinalityModule} from './modules/finality/IFinalityModule.sol';
-
 /**
  * @title Oracle
  * @notice The main contract storing requests, responses and disputes, and routing the calls to the modules.
