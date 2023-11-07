@@ -214,7 +214,7 @@ contract Oracle is IOracle {
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
-      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _response, _request, _dispute);
+      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _request, _response, _dispute);
     }
   }
 

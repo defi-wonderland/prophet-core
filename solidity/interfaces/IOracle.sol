@@ -338,7 +338,7 @@ interface IOracle {
   /**
    * @notice Resolves a dispute
    */
-  function resolveDispute(Request calldata _request, Dispute calldata _dispute) external;
+  function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
 
   /**
    * @notice Updates the status of a dispute
