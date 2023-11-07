@@ -13,6 +13,14 @@ contract MockResolutionModule is Module, IMockResolutionModule {
   }
 
   function moduleName() external view returns (string memory _moduleName) {}
-  function resolveDispute(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {}
-  function startResolution(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {}
+  function resolveDispute(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) external {}
+  function startResolution(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) external {}
 }

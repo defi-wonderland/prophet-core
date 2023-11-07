@@ -214,7 +214,7 @@ contract Oracle is IOracle {
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
-      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _dispute);
+      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _request, _dispute);
     }
   }
 
@@ -236,7 +236,7 @@ contract Oracle is IOracle {
       revert Oracle_NoResolutionModule(_disputeId);
     }
 
-    IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _dispute);
+    IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _dispute);
 
     emit DisputeResolved(msg.sender, _disputeId, block.number);
   }

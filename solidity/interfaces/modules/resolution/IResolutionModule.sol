@@ -36,12 +36,20 @@ interface IResolutionModule is IModule {
    *
    * @param _disputeId The id of the dispute
    */
-  function startResolution(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external;
+  function startResolution(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) external;
 
   /**
    * @notice Resolves a dispute
    *
    * @param _disputeId The id of the dispute being resolved
    */
-  function resolveDispute(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external;
+  function resolveDispute(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) external;
 }
