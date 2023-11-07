@@ -39,6 +39,7 @@ interface IResolutionModule is IModule {
   function startResolution(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external;
 
@@ -50,6 +51,7 @@ interface IResolutionModule is IModule {
   function resolveDispute(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external;
 }

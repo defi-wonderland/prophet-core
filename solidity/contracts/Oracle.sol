@@ -214,12 +214,12 @@ contract Oracle is IOracle {
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
-      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _request, _dispute);
+      IResolutionModule(_request.resolutionModule).startResolution(_disputeId, _response, _request, _dispute);
     }
   }
 
   /// @inheritdoc IOracle
-  function resolveDispute(Request calldata _request, Dispute calldata _dispute) external {
+  function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -236,7 +236,7 @@ contract Oracle is IOracle {
       revert Oracle_NoResolutionModule(_disputeId);
     }
 
-    IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _dispute);
+    IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _response, _dispute);
 
     emit DisputeResolved(msg.sender, _disputeId, block.number);
   }
