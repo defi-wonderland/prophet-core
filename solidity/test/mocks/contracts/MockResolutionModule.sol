@@ -8,7 +8,7 @@ import {IMockResolutionModule} from '../interfaces/IMockResolutionModule.sol';
 contract MockResolutionModule is Module, IMockResolutionModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
-  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _requestData) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _requestData) {
     _requestData = abi.decode(_data, (RequestParameters));
   }
 

@@ -9,7 +9,7 @@ contract Helpers is DSTestPlus {
     bytes32 _requestId,
     address _disputer,
     address _proposer
-  ) internal view returns (IOracle.Dispute memory _dispute) {
+  ) internal pure returns (IOracle.Dispute memory _dispute) {
     _dispute = IOracle.Dispute({
       disputer: _disputer,
       responseId: bytes32('response'),
