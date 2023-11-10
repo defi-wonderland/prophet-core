@@ -18,7 +18,6 @@ contract MockDisputeModule is Module, IMockDisputeModule {
     _requestData = abi.decode(_data, (RequestParameters));
   }
 
-  function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external {}
   function moduleName() external view returns (string memory _moduleName) {}
   function onDisputeStatusChange(
     bytes32 _disputeId,
