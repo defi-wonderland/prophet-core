@@ -104,35 +104,15 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = _proposeResponse(msg.sender, _request, _response);
-  }
-
-  /// @inheritdoc IOracle
-  function proposeResponse(
-    address _proposer, // TODO: No need for this parameter anymore, the address is in the response struct
-    Request calldata _request,
-    Response calldata _response
-  ) external returns (bytes32 _responseId) {
-    if (msg.sender != address(_request.disputeModule)) {
-      revert Oracle_NotDisputeModule(msg.sender);
-    }
-    _responseId = _proposeResponse(_proposer, _request, _response);
-  }
-
-  /**
-   * @notice Creates a new response for a given request
-   * @param _proposer The address of the proposer
-   * @param _request The request data
-   * @return _responseId The id of the created response
-   */
-  function _proposeResponse(
-    address _proposer,
-    Request calldata _request,
-    Response calldata _response
-  ) internal returns (bytes32 _responseId) {
     bytes32 _requestId = _getId(_request);
 
-    if (_response.requestId != _requestId || _response.proposer != _proposer) {
+    // The caller must be the proposer, unless the response is coming from a dispute module
+    if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
+      revert Oracle_InvalidResponseBody();
+    }
+
+    // The request id must match the response's request id
+    if (_response.requestId != _requestId) {
       revert Oracle_InvalidResponseBody();
     }
 
@@ -141,7 +121,7 @@ contract Oracle is IOracle {
     }
 
     _responseId = _getId(_response);
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _proposer);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     createdAt[_responseId] = uint128(block.timestamp);

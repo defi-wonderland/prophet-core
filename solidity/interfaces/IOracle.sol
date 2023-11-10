@@ -307,18 +307,6 @@ interface IOracle {
   ) external returns (bytes32 _responseId);
 
   /**
-   * @notice Creates a new response for a given request
-   * @dev Only callable by the dispute module of the request
-   * @param _proposer The address of the user proposing the response
-   * @return _responseId The id of the created response
-   */
-  function proposeResponse(
-    address _proposer,
-    Request calldata _request,
-    Response calldata _response
-  ) external returns (bytes32 _responseId);
-
-  /**
    * @notice Starts the process of disputing a response
    * @dev If pre-dispute modules are being used, the returned dispute
    * from `disputeModule.disputeResponse` may have a status other than `Active`,
