@@ -17,7 +17,11 @@ interface IDisputeModule is IModule {
    * @param _blockNumber The current block number
    */
   event ResponseDisputed(
-    bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute, uint256 _blockNumber
+    bytes32 indexed _requestId,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    IOracle.Dispute _dispute,
+    uint256 _blockNumber
   );
 
   /**
