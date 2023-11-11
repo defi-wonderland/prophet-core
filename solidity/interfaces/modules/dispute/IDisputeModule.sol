@@ -30,7 +30,7 @@ interface IDisputeModule is IModule {
    * @param _dispute The dispute
    * @param _status The new status of the dispute
    */
-  event DisputeStatusChanged(bytes32 _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
+  event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
 
   /*///////////////////////////////////////////////////////////////
                              FUNCTIONS
