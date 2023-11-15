@@ -14,16 +14,16 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
 
-  // TODO: natspec
+  /// @inheritdoc IOracle
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
+
+  /// @inheritdoc IOracle
   mapping(bytes32 _id => uint128 _createdAt) public createdAt;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
 
-  /**
-   * @notice The status all disputes
-   */
+  /// @inheritdoc IOracle
   mapping(bytes32 _disputeId => DisputeStatus _status) public disputeStatus;
 
   /**
@@ -35,6 +35,10 @@ contract Oracle is IOracle {
    * @notice The list of the participants for each request
    */
   mapping(bytes32 _requestId => bytes _participants) internal _participants;
+
+  /**
+   * @notice The list of the allowed modules for each request
+   */
   mapping(bytes32 _requestId => bytes _allowedModules) internal _allowedModules;
 
   /**

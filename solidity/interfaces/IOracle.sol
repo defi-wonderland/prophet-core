@@ -164,6 +164,7 @@ interface IOracle {
    * @notice Thrown when trying to create a request with invalid parameters
    */
   error Oracle_InvalidRequestBody();
+
   /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
@@ -243,6 +244,7 @@ interface IOracle {
 
   /**
    * @notice Returns the dispute id for a given response
+   *
    * @param _responseId The response id to get the dispute for
    * @return _disputeId The id of the dispute associated with the given response
    */
@@ -250,18 +252,34 @@ interface IOracle {
 
   /**
    * @notice Returns the total number of requests stored in the oracle
+   *
    * @return _count The total number of requests
    */
   function totalRequestCount() external view returns (uint256 _count);
 
   /**
-   * @notice Returns a dispute
+   * @notice Returns the status of a dispute
+   *
    * @param _disputeId The id of the dispute
+   * @return _status The status of the dispute
    */
   function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
-  // TODO: natspec
+  /**
+   * @notice The creation timestamp of a request, response, or a dispute
+   *
+   * @param _id The request, response, or dispute id
+   * @return _createdAt The time of the creation
+   */
   function createdAt(bytes32 _id) external view returns (uint128 _createdAt);
+
+  /**
+   * @notice The finalization timestamp of a request
+   *
+   * @param _requestId The request id
+   * @return _finalizedAt The time of the finalization
+   */
+  function finalizedAt(bytes32 _requestId) external view returns (uint128 _finalizedAt);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
@@ -269,6 +287,7 @@ interface IOracle {
 
   /**
    * @notice Generates the request ID and initializes the modules for the request
+   *
    * @dev The modules must be real contracts following the IModule interface
    * @param _request The request data
    * @return _requestId The id of the request, can be used to propose a response or query results
@@ -277,6 +296,7 @@ interface IOracle {
 
   /**
    * @notice Creates multiple requests, the same way as createRequest
+   *
    * @param _requestsData The array of calldata for each request
    * @return _batchRequestsIds The array of request IDs
    */
@@ -284,6 +304,7 @@ interface IOracle {
 
   /**
    * @notice Returns the list of request IDs
+   *
    * @param _startFrom The index to start from
    * @param _batchSize The number of requests to return
    * @return _list The list of request IDs
@@ -292,6 +313,7 @@ interface IOracle {
 
   /**
    * @notice Returns a request id
+   *
    * @param _nonce The nonce of the request
    * @return _requestId The id of the request
    */
@@ -299,6 +321,9 @@ interface IOracle {
 
   /**
    * @notice Creates a new response for a given request
+   *
+   * @param _request The request to create a response for
+   * @param _response The response data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
@@ -308,9 +333,11 @@ interface IOracle {
 
   /**
    * @notice Starts the process of disputing a response
-   * @dev If pre-dispute modules are being used, the returned dispute
-   * from `disputeModule.disputeResponse` may have a status other than `Active`,
-   * in which case the dispute is considered resolved and the dispute status updated.
+   *
+   * @param _request The request
+   * @param _response The response to dispute
+   * @param _dispute The dispute data
+   * @return _disputeId The id of the created dispute
    */
   function disputeResponse(
     Request calldata _request,
@@ -320,16 +347,28 @@ interface IOracle {
 
   /**
    * @notice Escalates a dispute, sending it to the resolution module
+   *
+   * @param _request The request
+   * @param _response The disputed response
+   * @param _dispute The dispute that is being escalated
    */
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
 
   /**
    * @notice Resolves a dispute
+   *
+   * @param _request The request
+   * @param _response The disputed response
+   * @param _dispute The dispute that is being resolved
    */
   function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
 
   /**
    * @notice Updates the status of a dispute
+   *
+   * @param _request The request
+   * @param _response The disputed response
+   * @param _dispute The dispute that is being updated
    * @param _status The new status of the dispute
    */
   function updateDisputeStatus(
@@ -341,6 +380,7 @@ interface IOracle {
 
   /**
    * @notice Checks if the given address is a module used in the request
+   *
    * @param _requestId The id of the request
    * @param _module The address to check
    * @return _allowedModule If the module is a part of the request
@@ -349,6 +389,7 @@ interface IOracle {
 
   /**
    * @notice Checks if the given address is participating in a specific request
+   *
    * @param _requestId The id of the request
    * @param _user The address to check
    * @return _isParticipant If the user is a participant of the request
@@ -357,6 +398,7 @@ interface IOracle {
 
   /**
    * @notice Returns the finalized response ID for a given request
+   *
    * @param _requestId The id of the request
    * @return _finalizedResponseId The id of the finalized response
    */
@@ -364,13 +406,18 @@ interface IOracle {
 
   /**
    * @notice Returns the ids of the responses for a given request
+   *
    * @param _requestId The id of the request
    * @return _ids The ids of the responses
    */
   function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
 
   /**
-   * @notice Finalizes a request
+   * @notice Finalizes the request and executes the post-request logic on the modules
+   *
+   * @dev In case of a request with no responses, an response with am empty `requestId` is expected
+   * @param _request The request being finalized
+   * @param _response The final response
    */
   function finalize(Request calldata _request, Response calldata _response) external;
 }
