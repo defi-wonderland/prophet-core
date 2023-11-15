@@ -19,6 +19,7 @@ interface IModule {
    * @param _finalizer The address that initiated the finalization
    */
   event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
+
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
@@ -44,8 +45,10 @@ interface IModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Finalizes a given request and executes any additional logic set by the chosen modules
+   * @notice Finalizes the request
    *
+   * @param _request The request being finalized
+   * @param _response The final response
    * @param _finalizer The address that initiated the finalization
    */
   function finalizeRequest(
