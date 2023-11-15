@@ -26,14 +26,6 @@ abstract contract Module is IModule {
     address _finalizer
   ) external virtual onlyOracle {}
 
-  /**
-   * @notice The hook that is called after `setupRequest`
-   *
-   * @param _requestId The id of the request
-   * @param _data The data of the request
-   */
-  function _afterSetupRequest(bytes32 _requestId, bytes calldata _data) internal virtual {}
-
   function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_request));
   }
