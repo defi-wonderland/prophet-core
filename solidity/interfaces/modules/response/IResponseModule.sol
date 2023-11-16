@@ -9,9 +9,12 @@ import {IOracle} from '../../IOracle.sol';
  * @notice Common interface for all response modules
  */
 interface IResponseModule is IModule {
-  // TODO: natspec
   /**
    * @notice Creates a new response for a given request
+   *
+   * @param _request The request to create a response for
+   * @param _response The response to create
+   * @param _sender The creator of the response
    */
   function propose(IOracle.Request calldata _request, IOracle.Response calldata _response, address _sender) external;
 }
