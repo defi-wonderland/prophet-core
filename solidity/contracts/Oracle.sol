@@ -243,52 +243,41 @@ contract Oracle is IOracle {
     emit DisputeStatusUpdated(_disputeId, _status, block.number);
   }
 
-  /// @inheritdoc IOracle
-  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
-    bytes memory _requestAllowedModules = _allowedModules[_requestId];
-
-    assembly ("memory-safe") {
-      // TODO: Review and test
-      let length := mload(_requestAllowedModules)
+  /**
+   * @notice Confirms wether the address is in the list or not
+   *
+   * @param _sought The address to look for
+   * @param _bytes The list of addresses packed together
+   * @return _found Whether the address was found or not
+   */
+  function _matchBytes(address _sought, bytes memory _bytes) internal pure returns (bool _found) {
+    assembly {
+      let length := mload(_bytes)
       let i := 0
 
-      // Iterate 20-bytes chunks of the modules list
+      // Iterate 20-bytes chunks of the list
       for {} lt(i, length) { i := add(i, 20) } {
-        // Load the module at index i
-        let _allowedModule := mload(add(add(_requestAllowedModules, 0x20), i))
+        // Load the address at index i
+        let _chunk := mload(add(add(_bytes, 0x20), i))
 
-        // Shift the modules to the right by 96 bits and compare with _module
-        if eq(shr(96, _allowedModule), _module) {
-          // Set isAllowed to true and return
-          _isAllowed := 1
+        // Shift the address to the right by 96 bits and compare with _sought
+        if eq(shr(96, _chunk), _sought) {
+          // Set _found to true and return
+          _found := 1
           break
         }
       }
     }
   }
 
-  // @inheritdoc IOracle
+  /// @inheritdoc IOracle
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
+    _isAllowed = _matchBytes(_module, _allowedModules[_requestId]);
+  }
+
+  /// @inheritdoc IOracle
   function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
-    bytes memory _requestParticipants = _participants[_requestId];
-
-    assembly ("memory-safe") {
-      // TODO: Review and test
-      let length := mload(_requestParticipants)
-      let i := 0
-
-      // Iterate 20-bytes chunks of the participants data
-      for {} lt(i, length) { i := add(i, 20) } {
-        // Load the participant at index i
-        let _participant := mload(add(add(_requestParticipants, 0x20), i))
-
-        // Shift the participant to the right by 96 bits and compare with _user
-        if eq(shr(96, _participant), _user) {
-          // Set _isParticipant to true and return
-          _isParticipant := 1
-          break
-        }
-      }
-    }
+    _isParticipant = _matchBytes(_user, _participants[_requestId]);
   }
 
   /// @inheritdoc IOracle
@@ -376,6 +365,7 @@ contract Oracle is IOracle {
 
   /**
    * @notice Stores a request in the contract and configures it in the modules
+   *
    * @param _request The request to be created
    * @return _requestId The id of the created request
    */
