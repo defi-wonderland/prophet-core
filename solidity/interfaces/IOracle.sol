@@ -192,6 +192,11 @@ interface IOracle {
    * @param disputeModule The address of the dispute module
    * @param resolutionModule The address of the resolution module
    * @param finalityModule The address of the finality module
+   * @param requestModuleData The parameters for the request module
+   * @param responseModuleData The parameters for the response module
+   * @param disputeModuleData The parameters for the dispute module
+   * @param resolutionModuleData The parameters for the resolution module
+   * @param finalityModuleData The parameters for the finality module
    * @param requester The address of the user who created the request
    * @param nonce The nonce of the request
    */
@@ -212,7 +217,6 @@ interface IOracle {
 
   /**
    * @notice The response struct
-   * @param createdAt The timestamp of the response creation
    * @param proposer The address of the user who proposed the response
    * @param requestId The id of the request this response is proposed for
    * @param response The encoded data of the response
@@ -225,7 +229,6 @@ interface IOracle {
 
   /**
    * @notice The dispute struct
-   * @param createdAt The timestamp of the dispute creation
    * @param disputer The address of the user who started the dispute
    * @param proposer The address of the user who proposed the response
    * @param responseId The id of the response being disputed
