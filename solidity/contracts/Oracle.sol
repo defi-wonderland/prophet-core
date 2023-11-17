@@ -128,7 +128,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
-    createdAt[_responseId] = uint128(block.timestamp);
+    createdAt[_responseId] = uint128(block.number);
 
     emit ResponseProposed(_requestId, _response, _responseId, block.number);
   }
@@ -164,7 +164,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
-    createdAt[_disputeId] = uint128(block.timestamp);
+    createdAt[_disputeId] = uint128(block.number);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
@@ -345,7 +345,7 @@ contract Oracle is IOracle {
       _finalizedResponses[_requestId] = _responseId;
     }
 
-    finalizedAt[_requestId] = uint128(block.timestamp);
+    finalizedAt[_requestId] = uint128(block.number);
 
     if (address(_request.finalityModule) != address(0)) {
       IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
@@ -376,7 +376,7 @@ contract Oracle is IOracle {
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = _getId(_request);
-    createdAt[_requestId] = uint128(block.timestamp);
+    createdAt[_requestId] = uint128(block.number);
     _requestIds[_requestNonce] = _requestId;
 
     _allowedModules[_requestId] = abi.encodePacked(

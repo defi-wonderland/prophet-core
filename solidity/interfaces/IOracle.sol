@@ -266,18 +266,18 @@ interface IOracle {
   function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
   /**
-   * @notice The creation timestamp of a request, response, or a dispute
+   * @notice The number of the block at which a request, response, or a dispute was created
    *
    * @param _id The request, response, or dispute id
-   * @return _createdAt The time of the creation
+   * @return _createdAt The block number
    */
   function createdAt(bytes32 _id) external view returns (uint128 _createdAt);
 
   /**
-   * @notice The finalization timestamp of a request
+   * @notice The number of the block at which a request was finalized
    *
    * @param _requestId The request id
-   * @return _finalizedAt The time of the finalization
+   * @return _finalizedAt The block number
    */
   function finalizedAt(bytes32 _requestId) external view returns (uint128 _finalizedAt);
 
