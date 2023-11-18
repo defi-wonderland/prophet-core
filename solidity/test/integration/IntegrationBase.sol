@@ -33,9 +33,6 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
 
   uint256 internal _initialBalance = 100_000 ether;
 
-  address public requester = makeAddr('requester');
-  address public proposer = makeAddr('proposer');
-  address public disputer = makeAddr('disputer');
   address public keeper = makeAddr('keeper');
   address public governance = makeAddr('governance');
 
