@@ -14,7 +14,7 @@ interface IOracle {
    * @notice Emitted when a request is created
    * @param _requestId The id of the created request
    */
-  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, uint256 _blockNumber);
+  event RequestCreated(bytes32 indexed _requestId, Request _request, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a response is proposed
@@ -22,7 +22,7 @@ interface IOracle {
    * @param _responseId The id of the proposed response
    */
   event ResponseProposed(
-    bytes32 indexed _requestId, Response _response, bytes32 indexed _responseId, uint256 _blockNumber
+    bytes32 indexed _requestId, bytes32 indexed _responseId, Response _response, uint256 _blockNumber
   );
 
   /**

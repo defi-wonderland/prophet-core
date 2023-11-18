@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+
 import {IOracle} from '../interfaces/IOracle.sol';
 
 import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
@@ -8,8 +10,6 @@ import {IResponseModule} from '../interfaces/modules/response/IResponseModule.so
 import {IDisputeModule} from '../interfaces/modules/dispute/IDisputeModule.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.sol';
-
-import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -130,7 +130,7 @@ contract Oracle is IOracle {
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     createdAt[_responseId] = uint128(block.number);
 
-    emit ResponseProposed(_requestId, _response, _responseId, block.number);
+    emit ResponseProposed(_requestId, _responseId, _response, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -208,7 +208,8 @@ contract Oracle is IOracle {
     }
 
     // Revert if the dispute is not active nor escalated
-    if (disputeStatus[_disputeId] > DisputeStatus.Escalated) {
+    DisputeStatus _currentStatus = disputeStatus[_disputeId];
+    if (_currentStatus != DisputeStatus.Active && _currentStatus != DisputeStatus.Escalated) {
       revert Oracle_CannotResolve(_disputeId);
     }
 
@@ -376,8 +377,8 @@ contract Oracle is IOracle {
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = _getId(_request);
-    createdAt[_requestId] = uint128(block.number);
     _requestIds[_requestNonce] = _requestId;
+    createdAt[_requestId] = uint128(block.number);
 
     _allowedModules[_requestId] = abi.encodePacked(
       _request.requestModule,
