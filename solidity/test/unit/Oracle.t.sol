@@ -26,46 +26,37 @@ contract ForTest_Oracle is Oracle {
 
   constructor() Oracle() {}
 
-  function forTest_setResponse(Response calldata _response) external returns (bytes32 _responseId) {
-    _responseId = _getId(_response);
-    _responseIds[_response.requestId] = abi.encodePacked(_responseIds[_response.requestId], _responseId);
-  }
-
-  // function forTest_setRequest(bytes32 _requestId, Request calldata _request) external {
-  //   _requests[_requestId] = _request;
-  // }
-
-  // function forTest_setResolutionModule(bytes32 _requestId, address _newResolutionModule) external {
-  //   _requests[_requestId].resolutionModule = IResolutionModule(_newResolutionModule);
-  // }
-
-  // function forTest_responseNonce() external view returns (uint256 _nonce) {
-  //   _nonce = _responseNonce;
-  // }
-
-  function forTest_addParticipant(bytes32 _requestId, address _participant) external {
+  function mock_addParticipant(bytes32 _requestId, address _participant) external {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _participant);
   }
 
-  function forTest_setFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) external {
+  function mock_addAllowedModule(bytes32 _requestId, address _module) external {
+    _allowedModules[_requestId] = abi.encodePacked(_allowedModules[_requestId], _module);
+  }
+
+  function mock_setFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) external {
     _finalizedResponses[_requestId] = _finalizedResponseId;
   }
 
-  function forTest_setDisputeOf(bytes32 _responseId, bytes32 _disputeId) external {
+  function mock_setFinalizedAt(bytes32 _requestId, uint128 _finalizedAt) external {
+    finalizedAt[_requestId] = _finalizedAt;
+  }
+
+  function mock_setDisputeOf(bytes32 _responseId, bytes32 _disputeId) external {
     disputeOf[_responseId] = _disputeId;
   }
 
-  function forTest_setDisputeStatus(bytes32 _disputeId, IOracle.DisputeStatus _status) external {
+  function mock_setDisputeStatus(bytes32 _disputeId, IOracle.DisputeStatus _status) external {
     disputeStatus[_disputeId] = _status;
   }
 
-  function forTest_addResponseId(bytes32 _requestId, bytes32 _responseId) external {
+  function mock_addResponseId(bytes32 _requestId, bytes32 _responseId) external {
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
   }
 
-  // function forTest_removeResponseId(bytes32 _requestId, bytes32 _responseId) external {
-  //   _responseIds[_requestId].remove(_responseId);
-  // }
+  function mock_resetResponseIds(bytes32 _requestId) external {
+    delete _responseIds[_requestId];
+  }
 }
 
 /**
@@ -89,7 +80,9 @@ contract BaseTest is Test, Helpers {
   event ResponseDisputed(
     bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute, uint256 _blockNumber
   );
-  event OracleRequestFinalized(bytes32 indexed _requestId, address indexed _caller);
+  event OracleRequestFinalized(
+    bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
+  );
   event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
   event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _status, uint256 _blockNumber);
   event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
@@ -128,15 +121,6 @@ contract BaseTest is Test, Helpers {
   }
 
   /**
-   * @notice Creates a mock request and stores it in the oracle
-   */
-  function _mockRequest() internal returns (bytes32 _requestId, IOracle.Request memory _request) {
-    (bytes32[] memory _ids, IOracle.Request[] memory _requests) = _mockRequests(1);
-    _requestId = _ids[0];
-    _request = _requests[0];
-  }
-
-  /**
    * @notice Create mock requests and store them in the oracle
    *
    * @param   _howMany How many request to store
@@ -153,7 +137,7 @@ contract BaseTest is Test, Helpers {
 
     for (uint256 _i; _i < _howMany; _i++) {
       IOracle.Request memory _request = IOracle.Request({
-        nonce: uint96(_initialNonce + _i + 1),
+        nonce: uint96(_initialNonce + _i),
         requester: requester,
         requestModuleData: bytes('requestModuleData'),
         responseModuleData: bytes('responseModuleData'),
@@ -197,7 +181,7 @@ contract Unit_CreateRequest is BaseTest {
     mockRequest.resolutionModuleData = _resolutionData;
     mockRequest.finalityModuleData = _finalityData;
     mockRequest.requester = requester;
-    mockRequest.nonce = uint96(oracle.totalRequestCount() + 1);
+    mockRequest.nonce = uint96(oracle.totalRequestCount());
 
     // Compute the associated request id
     bytes32 _theoreticalRequestId = _getId(mockRequest);
@@ -227,7 +211,7 @@ contract Unit_CreateRequest is BaseTest {
     }
 
     // Check: Maps the nonce to the requestId
-    assertEq(oracle.getRequestId(mockRequest.nonce), _requestId);
+    assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
 
     // Check: correct request id returned?
     assertEq(_requestId, _theoreticalRequestId);
@@ -258,7 +242,7 @@ contract Unit_CreateRequests is BaseTest {
       mockRequest.responseModuleData = _responseData;
       mockRequest.disputeModuleData = _disputeData;
       mockRequest.requester = requester;
-      mockRequest.nonce = uint96(oracle.totalRequestCount() + _i + 1);
+      mockRequest.nonce = uint96(oracle.totalRequestCount() + _i);
 
       bytes32 _theoreticalRequestId = _getId(mockRequest);
       _requests[_i] = mockRequest;
@@ -292,7 +276,7 @@ contract Unit_CreateRequests is BaseTest {
       }
 
       // Check: Maps the nonce to the requestId
-      assertEq(oracle.getRequestId(_requests[_i].nonce), _requestsIds[_i]);
+      assertEq(oracle.nonceToRequestId(_requests[_i].nonce), _requestsIds[_i]);
     }
 
     uint256 _newNonce = oracle.totalRequestCount();
@@ -328,7 +312,7 @@ contract Unit_ListRequestIds is BaseTest {
    *
    * @dev    This is testing _startFrom + _batchSize > _nonce scenario
    */
-  function test_listRequestIdsTooManyRequested(uint256 _howMany) public {
+  function test_listRequestIds_tooManyRequested(uint256 _howMany) public {
     // 1 to 10 request to list, fuzzed
     _howMany = bound(_howMany, 1, 10);
 
@@ -354,7 +338,7 @@ contract Unit_ListRequestIds is BaseTest {
   /**
    * @notice Test the request listing if there are no requests encoded
    */
-  function test_listRequestIdsZeroToReturn(uint256 _howMany) public {
+  function test_listRequestIds_zeroToReturn(uint256 _howMany) public {
     // Test: fetch any number of requests
     bytes32[] memory _requestsIds = oracle.listRequestIds(0, _howMany);
 
@@ -363,52 +347,18 @@ contract Unit_ListRequestIds is BaseTest {
   }
 }
 
-contract Unit_GetRequestId is BaseTest {
-  function test_getRequestId() public {
-    uint256 _totalRequestCount = oracle.totalRequestCount();
-
-    // Store mock requests and mock the associated requestData calls
-    (bytes32 _expectedRequestId,) = _mockRequest();
-    bytes32 _requestId = oracle.getRequestId(_totalRequestCount);
-
-    assertEq(_requestId, _expectedRequestId);
-  }
-}
-
 contract Unit_ProposeResponse is BaseTest {
   /**
    * @notice Test propose response: check _responses, _responseIds and _responseId
    */
-  function test_proposeResponse_(bytes calldata _responseData) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
+  function test_proposeResponse(bytes calldata _responseData) public {
+    bytes32 _requestId = _getId(mockRequest);
 
-    // Get the current response nonce
-    // uint256 _responseNonce = oracle.forTest_responseNonce();
+    // Update mock response
+    mockResponse.response = _responseData;
 
     // Compute the response ID
     bytes32 _responseId = _getId(mockResponse);
-
-    // Create mock response
-    mockResponse.requestId = _requestId;
-    mockResponse.response = _responseData;
-
-    // Setting incorrect proposer to simulate tampering with the response
-    // mockResponse.proposer = address(this);
-
-    // Mock and expect the responseModule propose call:
-    _mockAndExpect(
-      address(responseModule),
-      abi.encodeCall(IResponseModule.propose, (mockRequest, mockResponse, proposer)),
-      abi.encode(mockResponse)
-    );
-
-    // Test: propose the response
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotTamperParticipant.selector));
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
-    // Change the proposer address
-    // mockResponse.proposer = proposer;
 
     // Mock and expect the responseModule propose call:
     _mockAndExpect(
@@ -424,48 +374,39 @@ contract Unit_ProposeResponse is BaseTest {
     // Test: propose the response
     vm.prank(proposer);
     bytes32 _actualResponseId = oracle.proposeResponse(mockRequest, mockResponse);
+
+    mockResponse.response = bytes('secondResponse');
+
     // Check: emits ResponseProposed event?
     vm.expectEmit(true, true, true, true);
     emit ResponseProposed(_requestId, _getId(mockResponse), mockResponse, block.number);
 
     vm.prank(proposer);
     bytes32 _secondResponseId = oracle.proposeResponse(mockRequest, mockResponse);
+
     // Check: correct response id returned?
     assertEq(_actualResponseId, _responseId);
 
     // Check: responseId are unique?
     assertNotEq(_secondResponseId, _responseId);
 
-    // IOracle.Response memory _storedResponse = oracle.getResponse(_responseId);
-
-    // Check: correct response stored?
-    // assertEq(_storedResponse.createdAt, mockResponse.createdAt);
-    // assertEq(_storedResponse.proposer, mockResponse.proposer);
-    // assertEq(_storedResponse.requestId, mockResponse.requestId);
-    // assertEq(_storedResponse.disputeId, mockResponse.disputeId);
-    // assertEq(_storedResponse.response, mockResponse.response);
-
-    bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
-
     // Check: correct response id stored in the id list and unique?
+    bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
     assertEq(_responseIds.length, 2);
     assertEq(_responseIds[0], _responseId);
     assertEq(_responseIds[1], _secondResponseId);
   }
 
-  function test_proposeResponse_revertsIfAlreadyFinalized(bytes calldata _responseData, uint128 _finalizedAt) public {
+  function test_proposeResponse_revertsIfAlreadyFinalized(uint128 _finalizedAt) public {
     vm.assume(_finalizedAt > 0);
 
-    // Create mock request
-    (bytes32 _requestId,) = _mockRequest();
-    // IOracle.Request memory _request = oracle.getRequest(_requestId);
+    // Set the finalization time
+    bytes32 _requestId = _getId(mockRequest);
+    oracle.mock_setFinalizedAt(_requestId, _finalizedAt);
 
-    // Override the finalizedAt to make it be finalized
-    // _request.finalizedAt = _finalizedAt;
-    // oracle.forTest_setRequest(_requestId, _request);
-
-    // Should revert with already finalized
+    // Check: Reverts if already finalized?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, (_requestId)));
+    vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
   }
 }
@@ -475,42 +416,14 @@ contract Unit_DisputeResponse is BaseTest {
    * @notice Test dispute response: check _responses, _responseIds and _responseId
    */
   function test_disputeResponse() public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-
-    // Create mock response and store it
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = oracle.forTest_setResponse(mockResponse);
-    bytes32 _disputeId = keccak256(abi.encodePacked(disputer, _requestId, _responseId));
-
-    // Setting incorrect disputer to test tampering with the dispute
-    mockDispute.disputer = address(this);
-
-    _mockAndExpect(
-      address(disputeModule),
-      abi.encodeCall(IDisputeModule.disputeResponse, (mockRequest, mockResponse, mockDispute)),
-      abi.encode(mockDispute)
-    );
-
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotTamperParticipant.selector));
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-
-    // Set a correct disputer and any status but Active
-    mockDispute.disputer = disputer;
+    // Create a response
+    bytes32 _responseId = _getId(mockResponse);
+    bytes32 _disputeId = _getId(mockDispute);
+    oracle.mock_addResponseId(_getId(mockRequest), _responseId);
 
     for (uint256 _i; _i < uint256(type(IOracle.DisputeStatus).max); _i++) {
-      if (_i == uint256(IOracle.DisputeStatus.Active)) {
-        continue;
-      }
-
       // Set the new status
-      // mockDispute.status = IOracle.DisputeStatus(_i);
-
-      // Reset the request's finalization state
-      // IOracle.Request memory _request = oracle.getRequest(_requestId);
-      // _request.finalizedAt = 0;
-      // oracle.forTest_setRequest(_requestId, _request);
+      oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus(_i));
 
       // Mock and expect the disputeModule disputeResponse call
       _mockAndExpect(
@@ -519,62 +432,27 @@ contract Unit_DisputeResponse is BaseTest {
         abi.encode(mockDispute)
       );
 
-      _mockAndExpect(
-        address(disputeModule),
-        abi.encodeCall(IDisputeModule.onDisputeStatusChange, (_disputeId, mockRequest, mockResponse, mockDispute)),
-        abi.encode()
-      );
+      // Check: emits ResponseDisputed event?
+      vm.expectEmit(true, true, true, true);
+      emit ResponseDisputed(_responseId, _disputeId, mockDispute, block.number);
 
       vm.prank(disputer);
       oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
 
       // Reset the dispute of the response
-      // oracle.forTest_setDisputeOf(_responseId, bytes32(0));
+      oracle.mock_setDisputeOf(_responseId, bytes32(0));
     }
-
-    // mockDispute.status = IOracle.DisputeStatus.Active;
-    // Mock and expect the disputeModule disputeResponse call
-    _mockAndExpect(
-      address(disputeModule),
-      abi.encodeCall(IDisputeModule.disputeResponse, (mockRequest, mockResponse, mockDispute)),
-      abi.encode(mockDispute)
-    );
-
-    // Check: emits ResponseDisputed event?
-    vm.expectEmit(true, true, true, true);
-    emit ResponseDisputed(_responseId, _disputeId, mockDispute, block.number);
-
-    // Test: dispute the response
-    vm.prank(disputer);
-    bytes32 _actualDisputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-
-    // Check: correct dispute id returned?
-    assertEq(_disputeId, _actualDisputeId);
-
-    // IOracle.Dispute memory _storedDispute = oracle.getDispute(_disputeId);
-    // IOracle.Response memory _storedResponse = oracle.getResponse(_responseId);
-
-    // Check: correct dispute stored?
-    // assertEq(_storedDispute.createdAt, mockDispute.createdAt);
-    // assertEq(_storedDispute.disputer, mockDispute.disputer);
-    // assertEq(_storedDispute.proposer, mockDispute.proposer);
-    // assertEq(_storedDispute.responseId, mockDispute.responseId);
-    // assertEq(_storedDispute.requestId, mockDispute.requestId);
-    // assertEq(uint256(_storedDispute.status), uint256(mockDispute.status));
-    // assertEq(_storedResponse.disputeId, _disputeId);
   }
 
   /**
    * @notice reverts if the dispute already exists
    */
-  function test_disputeResponse_revertIfAlreadyDisputed(bytes32 _responseId, bytes32 _disputeId) public {
-    // Insure the disputeId is not empty
-    vm.assume(_disputeId != bytes32(''));
+  function test_disputeResponse_revertIfAlreadyDisputed() public {
+    bytes32 _responseId = _getId(mockResponse);
+    bytes32 _disputeId = _getId(mockDispute);
 
-    // Store a mock dispute for this response
     // Check: revert?
-    // stdstore.target(address(oracle)).sig('disputeOf(bytes32)').with_key(_responseId).checked_write(_disputeId);
-    oracle.forTest_setDisputeOf(_responseId, _disputeId);
+    oracle.mock_setDisputeOf(_responseId, _disputeId);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
 
     // Test: try to dispute the response again
@@ -589,11 +467,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
    *
    * @dev    This is testing every combination of previous and new status (4x4)
    */
-  function test_updatesStatus() public {
-    // Create mock request and store it
-    // (bytes32 _requestId,) = _mockRequest();
-    // mockRequest.resolutionModule = address(resolutionModule);
-    // mockRequest.resolutionModule = address(resolutionModule);
+  function test_updateDisputeStatus() public {
     bytes32 _requestId = _getId(mockRequest);
 
     // Try every initial status
@@ -606,7 +480,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
         bytes32 _disputeId = _getId(mockDispute);
 
         // Mock the dispute
-        oracle.forTest_setDisputeOf(_getId(mockResponse), _getId(mockDispute));
+        oracle.mock_setDisputeOf(_getId(mockResponse), _getId(mockDispute));
 
         // Mock and expect the disputeModule onDisputeStatusChange call
         _mockAndExpect(
@@ -637,7 +511,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
     _newStatus = bound(_newStatus, 0, 3);
 
     // Mock the dispute
-    oracle.forTest_setDisputeOf(_getId(mockResponse), _getId(mockDispute));
+    oracle.mock_setDisputeOf(_getId(mockResponse), _getId(mockDispute));
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeOrResolutionModule.selector, proposer));
@@ -655,8 +529,8 @@ contract Unit_ResolveDispute is BaseTest {
   function test_resolveDispute_callsResolutionModule() public {
     // Mock the dispute
     bytes32 _disputeId = _getId(mockDispute);
-    oracle.forTest_setDisputeOf(_getId(mockResponse), _disputeId);
-    oracle.forTest_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
+    oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+    oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
 
     // Mock and expect the resolution module call
     _mockAndExpect(
@@ -697,8 +571,8 @@ contract Unit_ResolveDispute is BaseTest {
       ) continue;
 
       // Mock the dispute
-      oracle.forTest_setDisputeOf(_getId(mockResponse), _disputeId);
-      oracle.forTest_setDisputeStatus(_disputeId, IOracle.DisputeStatus(_status));
+      oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+      oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus(_status));
 
       // Check: revert?
       vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotResolve.selector, _disputeId));
@@ -718,8 +592,8 @@ contract Unit_ResolveDispute is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // Mock the dispute
-    oracle.forTest_setDisputeOf(_getId(mockResponse), _disputeId);
-    oracle.forTest_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Escalated);
+    oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+    oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Escalated);
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NoResolutionModule.selector, _disputeId));
@@ -741,8 +615,12 @@ contract Unit_AllowedModule is BaseTest {
         && _notAModule != address(finalityModule)
     );
 
-    // Create mock request and store it - this uses the 5 modules globally defined
-    (bytes32 _requestId,) = _mockRequest();
+    bytes32 _requestId = _getId(mockRequest);
+    oracle.mock_addAllowedModule(_requestId, address(requestModule));
+    oracle.mock_addAllowedModule(_requestId, address(responseModule));
+    oracle.mock_addAllowedModule(_requestId, address(disputeModule));
+    oracle.mock_addAllowedModule(_requestId, address(resolutionModule));
+    oracle.mock_addAllowedModule(_requestId, address(finalityModule));
 
     // Check: the correct modules are recognized as valid
     assertTrue(oracle.allowedModule(_requestId, address(requestModule)));
@@ -764,9 +642,9 @@ contract Unit_IsParticipant is BaseTest {
     vm.assume(_notParticipant != requester && _notParticipant != proposer && _notParticipant != disputer);
 
     // Set valid participants
-    oracle.forTest_addParticipant(_requestId, requester);
-    oracle.forTest_addParticipant(_requestId, proposer);
-    oracle.forTest_addParticipant(_requestId, disputer);
+    oracle.mock_addParticipant(_requestId, requester);
+    oracle.mock_addParticipant(_requestId, proposer);
+    oracle.mock_addParticipant(_requestId, disputer);
 
     // Check: the participants are recognized
     assertTrue(oracle.isParticipant(_requestId, requester));
@@ -784,7 +662,7 @@ contract Unit_GetFinalizedResponseId is BaseTest {
    */
   function test_getFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) public {
     assertEq(oracle.getFinalizedResponseId(_requestId), bytes32(0));
-    oracle.forTest_setFinalizedResponseId(_requestId, _finalizedResponseId);
+    oracle.mock_setFinalizedResponseId(_requestId, _finalizedResponseId);
     assertEq(oracle.getFinalizedResponseId(_requestId), _finalizedResponseId);
   }
 }
@@ -799,13 +677,10 @@ contract Unit_Finalize is BaseTest {
     bool _useResolutionAndFinality,
     address _caller
   ) public setResolutionAndFinality(_useResolutionAndFinality) {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-
-    // mockResponse.proposer = _caller;
+    bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
 
-    // bytes32 _responseId = oracle.forTest_setResponse(mockResponse);
+    // Mock the finalize call on all modules
     bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
 
     _mockAndExpect(address(requestModule), _calldata, abi.encode());
@@ -819,99 +694,37 @@ contract Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     vm.expectEmit(true, true, true, true);
-    emit OracleRequestFinalized(_requestId, _caller);
+    emit OracleRequestFinalized(_requestId, _getId(mockResponse), _caller, block.number);
 
     // Test: finalize the request
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
   }
 
-  function test_finalizeRevertsWhenInvalidFinalizedResponse(address _caller) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-
-    // Create mock response and store it
-    // mockResponse.requestId = _requestId;
-    // mockResponse.disputeId = _disputeId;
-
-    bytes32 _responseId = oracle.forTest_setResponse(mockResponse);
-
-    // Dispute the response
-    _mockAndExpect(
-      address(disputeModule),
-      abi.encodeCall(IDisputeModule.disputeResponse, (mockRequest, mockResponse, mockDispute)),
-      abi.encode(mockDispute)
-    );
-
-    // Test: dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-
-    // Test: finalize the request with active dispute reverts
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-    vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
-
-    // mockDispute.status = IOracle.DisputeStatus.Escalated;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
-
-    // Test: finalize the request with escalated dispute reverts
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-    vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
-
-    // mockDispute.status = IOracle.DisputeStatus.Won;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
-
-    // Test: finalize the request with Won dispute reverts
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-    vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
-
-    // mockDispute.status = IOracle.DisputeStatus.NoResolution;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
-
-    // Test: finalize the request with NoResolution dispute reverts
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-    vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
-
-    // Override the finalizedAt to make it be finalized
-    // IOracle.Request memory _request = oracle.getRequest(_requestId);
-    // _request.finalizedAt = _request.createdAt;
-    // oracle.forTest_setRequest(_requestId, _request);
+  function test_finalize_revertsWhenAlreadyFinalized(address _caller) public {
+    bytes32 _requestId = _getId(mockRequest);
 
     // Test: finalize a finalized request
+    oracle.mock_setFinalizedAt(_requestId, uint128(block.number));
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
   }
 
-  function test_finalizeRevertsInvalidRequestId(address _caller) public {
+  function test_finalize_revertsInvalidRequestId(address _caller) public {
     // Create mock request and store it
     (bytes32[] memory _mockRequestIds,) = _mockRequests(2);
     bytes32 _requestId = _mockRequestIds[0];
-    // bytes32 _incorrectRequestId = _mockRequestIds[1];
 
     // Create mock response and store it
     mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
 
-    bytes32 _responseId = oracle.forTest_setResponse(mockResponse);
-
-    // Dispute the response
-    _mockAndExpect(
-      address(disputeModule),
-      abi.encodeCall(IDisputeModule.disputeResponse, (mockRequest, mockResponse, mockDispute)),
-      abi.encode(mockDispute)
-    );
-
-    // Test: dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    // Store the response
+    oracle.mock_addResponseId(_requestId, _responseId);
 
     // Test: finalize the request
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
   }
@@ -925,31 +738,32 @@ contract Unit_Finalize is BaseTest {
     bool _useResolutionAndFinality,
     address _caller
   ) public setResolutionAndFinality(_useResolutionAndFinality) {
+    vm.assume(_caller != address(0));
+
+    bytes32 _requestId = _getId(mockRequest);
+
     // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-    // bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
+    bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
 
-    // _mockAndExpect(address(requestModule), _calldata, abi.encode());
-    // _mockAndExpect(address(responseModule), _calldata, abi.encode());
-    // _mockAndExpect(address(resolutionModule), _calldata, abi.encode());
+    _mockAndExpect(address(requestModule), _calldata, abi.encode());
+    _mockAndExpect(address(responseModule), _calldata, abi.encode());
+    _mockAndExpect(address(disputeModule), _calldata, abi.encode());
 
-    // if (_useResolutionAndFinality) {
-    //   _mockAndExpect(address(disputeModule), _calldata, abi.encode());
-    //   _mockAndExpect(address(finalityModule), _calldata, abi.encode());
-    // }
+    if (_useResolutionAndFinality) {
+      _mockAndExpect(address(resolutionModule), _calldata, abi.encode());
+      _mockAndExpect(address(finalityModule), _calldata, abi.encode());
+    }
 
     // Check: emits OracleRequestFinalized event?
     vm.expectEmit(true, true, true, true);
-    emit OracleRequestFinalized(_requestId, _caller);
+    emit OracleRequestFinalized(_requestId, _getId(mockResponse), _caller, block.number);
 
     // Test: finalize the request
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
 
     // Override the finalizedAt to make it be finalized
-    // IOracle.Request memory _request = oracle.getRequest(_requestId);
-    // _request.finalizedAt = _request.createdAt;
-    // oracle.forTest_setRequest(_requestId, _request);
+    oracle.mock_setFinalizedAt(_requestId, uint128(block.number));
 
     // Test: finalize a finalized request
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
@@ -957,9 +771,10 @@ contract Unit_Finalize is BaseTest {
     oracle.finalize(mockRequest, mockResponse);
   }
 
-  function test_finalizeRequest_withDisputedResponse(bytes32 _responseId) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
+  function test_finalize_request_withDisputedResponse() public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _responseId = _getId(mockResponse);
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Test: finalize a request with a disputed response
     for (uint256 _i; _i < uint256(type(IOracle.DisputeStatus).max); _i++) {
@@ -969,17 +784,16 @@ contract Unit_Finalize is BaseTest {
       }
 
       // Mocking a response that has a dispute with the given status
-      // mockDispute.status = IOracle.DisputeStatus(_i);
-      oracle.forTest_addResponseId(_requestId, _responseId);
-      // oracle.forTest_setDisputeOf(_responseId, _disputeId);
-      // oracle.forTest_setDispute(_disputeId, mockDispute);
+      oracle.mock_addResponseId(_requestId, _responseId);
+      oracle.mock_setDisputeOf(_responseId, _disputeId);
+      oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus(_i));
 
       vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
       vm.prank(requester);
       oracle.finalize(mockRequest, mockResponse);
 
       // Resetting the response ids to start from scratch
-      // oracle.forTest_removeResponseId(_requestId, _responseId);
+      oracle.mock_resetResponseIds(_requestId);
     }
   }
 
@@ -990,26 +804,32 @@ contract Unit_Finalize is BaseTest {
    */
   function test_finalize_disputedResponse(
     bool _useResolutionAndFinality,
-    address _caller
+    address _caller,
+    uint8 _status
   ) public setResolutionAndFinality(_useResolutionAndFinality) {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
+    vm.assume(_status != uint256(IOracle.DisputeStatus.None));
+    vm.assume(_status < uint256(type(IOracle.DisputeStatus).max));
 
-    // Mock and expect the finalizeRequest call on the required modules
-    // bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
-    // _mockAndExpect(address(requestModule), _calldata, abi.encode());
-    // _mockAndExpect(address(responseModule), _calldata, abi.encode());
-    // _mockAndExpect(address(disputeModule), _calldata, abi.encode());
+    IOracle.DisputeStatus _disputeStatus = IOracle.DisputeStatus(_status);
 
-    // // If needed, mock and expect the finalizeRequest call on the resolution and finality modules
-    // if (_useResolutionAndFinality) {
-    //   _mockAndExpect(address(resolutionModule), _calldata, abi.encode());
-    //   _mockAndExpect(address(finalityModule), _calldata, abi.encode());
-    // }
+    // Compute the mock object ids
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _responseId = _getId(mockResponse);
+    bytes32 _disputeId = _getId(mockDispute);
 
-    // Check: emits OracleRequestFinalized event?
-    vm.expectEmit(true, true, true, true);
-    emit OracleRequestFinalized(_requestId, _caller);
+    // The response must be disputed
+    oracle.mock_setDisputeOf(_responseId, _disputeId);
+    oracle.mock_setDisputeStatus(_disputeId, _disputeStatus);
+
+    if (_disputeStatus == IOracle.DisputeStatus.Lost) {
+      // The finalization should come through
+      // Check: emits OracleRequestFinalized event?
+      vm.expectEmit(true, true, true, true);
+      emit OracleRequestFinalized(_requestId, _responseId, _caller, block.number);
+    } else {
+      // Check: Reverts because a disputed response cannot be final
+      vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    }
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1017,55 +837,26 @@ contract Unit_Finalize is BaseTest {
   }
 }
 
-contract Unit_TotalRequestCount is BaseTest {
-  function test_totalRequestCount(uint256 _requestsToAdd) public {
-    _requestsToAdd = bound(_requestsToAdd, 1, 10);
-    uint256 _initialCount = oracle.totalRequestCount();
-    _mockRequests(_requestsToAdd);
-    assert(oracle.totalRequestCount() == _initialCount + _requestsToAdd);
-  }
-}
-
 contract Unit_EscalateDispute is BaseTest {
-  function test_escalateDispute(bytes32 _disputeId) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
+  function test_escalateDispute() public {
+    bytes32 _disputeId = _getId(mockDispute);
 
-    // Create a dummy dispute
-    mockDispute.requestId = _requestId;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
+    oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+    oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
+
+    // Mock and expect the dispute module call
+    _mockAndExpect(
+      address(disputeModule),
+      abi.encodeCall(IDisputeModule.onDisputeStatusChange, (_disputeId, mockRequest, mockResponse, mockDispute)),
+      abi.encode()
+    );
 
     // Mock and expect the resolution module call
-    // _mockAndExpect(
-    //   address(resolutionModule), abi.encodeCall(IResolutionModule.startResolution, (_disputeId)), abi.encode()
-    // );
-
-    // Mock and expect the dispute module call
-    // _mockAndExpect(address(disputeModule), abi.encodeCall(IDisputeModule.disputeEscalated, (_disputeId)), abi.encode());
-
-    // Expect dispute escalated event
-    vm.expectEmit(true, true, true, true);
-    emit DisputeEscalated(address(this), _disputeId, block.number);
-
-    // Test: escalate the dispute
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
-
-    // IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
-    // assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Escalated));
-  }
-
-  function test_escalateDisputeNoResolutionModule(bytes32 _disputeId) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-
-    // oracle.forTest_setResolutionModule(_requestId, address(0));
-
-    // Create a dummy dispute
-    mockDispute.requestId = _requestId;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
-
-    // Mock and expect the dispute module call
-    // _mockAndExpect(address(disputeModule), abi.encodeCall(IDisputeModule.disputeEscalated, (_disputeId)), abi.encode());
+    _mockAndExpect(
+      address(resolutionModule),
+      abi.encodeCall(IResolutionModule.startResolution, (_disputeId, mockRequest, mockResponse, mockDispute)),
+      abi.encode()
+    );
 
     // Expect dispute escalated event
     vm.expectEmit(true, true, true, true);
@@ -1074,25 +865,47 @@ contract Unit_EscalateDispute is BaseTest {
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
-    // IOracle.Dispute memory _dispute = oracle.getDispute(_disputeId);
-    // assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Escalated));
+    // Check: The dispute has been escalated
+    assertEq(uint256(oracle.disputeStatus(_disputeId)), uint256(IOracle.DisputeStatus.Escalated));
   }
 
-  function test_escalateDisputeRevertsIfDisputeNotValid(bytes32 _disputeId) public {
+  function test_escalateDispute_noResolutionModule() public {
+    mockRequest.resolutionModule = address(0);
+    mockDispute.requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+
+    oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+    oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
+
+    // Mock and expect the dispute module call
+    _mockAndExpect(
+      address(disputeModule),
+      abi.encodeCall(IDisputeModule.onDisputeStatusChange, (_disputeId, mockRequest, mockResponse, mockDispute)),
+      abi.encode()
+    );
+
+    // Expect dispute escalated event
+    vm.expectEmit(true, true, true, true);
+    emit DisputeEscalated(address(this), _disputeId, block.number);
+
+    // Test: escalate the dispute
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+
+    // Check: The dispute has been escalated
+    assertEq(uint256(oracle.disputeStatus(_disputeId)), uint256(IOracle.DisputeStatus.Escalated));
+  }
+
+  function test_escalateDispute_revertsIfDisputeNotValid() public {
+    bytes32 _disputeId = _getId(mockDispute);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
   }
 
-  function test_escalateDisputeRevertsIfDisputeNotActive(bytes32 _disputeId) public {
-    // Create mock request and store it
-    (bytes32 _requestId,) = _mockRequest();
-
-    // Create a dummy dispute
-    mockDispute.requestId = _requestId;
-    // mockDispute.status = IOracle.DisputeStatus.None;
-    // oracle.forTest_setDispute(_disputeId, mockDispute);
+  function test_escalateDispute_revertsIfDisputeNotActive() public {
+    bytes32 _disputeId = _getId(mockDispute);
+    oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
 
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
 

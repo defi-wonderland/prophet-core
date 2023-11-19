@@ -39,9 +39,12 @@ interface IOracle {
   /**
    * @notice Emitted when a request is finalized
    * @param _requestId The id of the request being finalized
+   * @param _responseId The id of the final response, may be empty
    * @param _caller The address of the user who finalized the request
    */
-  event OracleRequestFinalized(bytes32 indexed _requestId, address indexed _caller);
+  event OracleRequestFinalized(
+    bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
+  );
 
   /**
    * @notice Emitted when a dispute is escalated
@@ -76,12 +79,6 @@ interface IOracle {
    * @param _caller The caller of the function
    */
   error Oracle_NotDisputeOrResolutionModule(address _caller);
-
-  /**
-   * @notice Thrown when an unauthorized caller is trying to propose a response
-   * @param _caller The caller of the function
-   */
-  error Oracle_NotDisputeModule(address _caller);
 
   /**
    * @notice Thrown when trying to resolve a dispute of a request without resolution module
@@ -120,12 +117,6 @@ interface IOracle {
   error Oracle_InvalidResponseId(bytes32 _responseId);
 
   /**
-   * @notice Thrown when trying to propose a response to an invalid request
-   * @param _requestId The id of the request
-   */
-  error Oracle_InvalidRequestId(bytes32 _requestId);
-
-  /**
    * @notice Thrown when trying to escalate a dispute that's not in the active state
    * @param _disputeId The id of the dispute
    */
@@ -138,22 +129,9 @@ interface IOracle {
   error Oracle_CannotResolve(bytes32 _disputeId);
 
   /**
-   * @notice Thrown when trying to delete a disputed response
-   * @param _responseId The id of the response being deleted
+   * @notice Thrown when trying to create a request with invalid parameters
    */
-  error Oracle_CannotDeleteWhileDisputing(bytes32 _responseId);
-
-  /**
-   * @notice Thrown when an unauthorized caller is trying to delete a response
-   * @param _caller The caller of the function
-   * @param _responseId The id of the response being deleted
-   */
-  error Oracle_CannotDeleteInvalidProposer(address _caller, bytes32 _responseId);
-
-  /**
-   * @notice Thrown when a module tries to tamper with the address of the user
-   */
-  error Oracle_CannotTamperParticipant();
+  error Oracle_InvalidRequestBody();
 
   /**
    * @notice Thrown when trying to propose a response with invalid parameters
@@ -161,9 +139,9 @@ interface IOracle {
   error Oracle_InvalidResponseBody();
 
   /**
-   * @notice Thrown when trying to create a request with invalid parameters
+   * @notice Thrown when trying to create a dispute with invalid parameters
    */
-  error Oracle_InvalidRequestBody();
+  error Oracle_InvalidDisputeBody();
 
   /*///////////////////////////////////////////////////////////////
                               ENUMS
@@ -269,6 +247,14 @@ interface IOracle {
   function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
   /**
+   * @notice The id of each request in chronological order
+   *
+   * @param _nonce The nonce of the request
+   * @return _requestId The id of the request
+   */
+  function nonceToRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
+
+  /**
    * @notice The number of the block at which a request, response, or a dispute was created
    *
    * @param _id The request, response, or dispute id
@@ -313,14 +299,6 @@ interface IOracle {
    * @return _list The list of request IDs
    */
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
-
-  /**
-   * @notice Returns a request id
-   *
-   * @param _nonce The nonce of the request
-   * @return _requestId The id of the request
-   */
-  function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
 
   /**
    * @notice Creates a new response for a given request

@@ -88,7 +88,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       resolutionModule: address(_resolutionModule),
       finalityModule: address(_finalityModule),
       requester: requester,
-      nonce: 1
+      nonce: 0
     });
 
     vm.prank(requester);
@@ -139,7 +139,7 @@ contract Integration_ResponseDispute is IntegrationBase {
       resolutionModule: address(_resolutionModule),
       finalityModule: address(_finalityModule),
       requester: requester,
-      nonce: 1
+      nonce: 0
     });
 
     IOracle.Response memory _response =

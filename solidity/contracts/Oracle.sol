@@ -26,6 +26,9 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   mapping(bytes32 _disputeId => DisputeStatus _status) public disputeStatus;
 
+  /// @inheritdoc IOracle
+  mapping(uint256 _requestNumber => bytes32 _id) public nonceToRequestId;
+
   /**
    * @notice The list of the response ids for each request
    */
@@ -45,12 +48,6 @@ contract Oracle is IOracle {
    * @notice The finalized response for each request
    */
   mapping(bytes32 _requestId => bytes32 _finalizedResponseId) internal _finalizedResponses;
-
-  /**
-   * @notice The id of each request in chronological order
-   */
-  // @audit we don't need this mapping imo
-  mapping(uint256 _requestNumber => bytes32 _id) internal _requestIds;
 
   /// @inheritdoc IOracle
   uint256 public totalRequestCount;
@@ -90,17 +87,12 @@ contract Oracle is IOracle {
 
     uint256 _index;
     while (_index < _batchSize) {
-      _list[_index] = _requestIds[_startFrom + _index];
+      _list[_index] = nonceToRequestId[_startFrom + _index];
 
       unchecked {
         ++_index;
       }
     }
-  }
-
-  /// @inheritdoc IOracle
-  function getRequestId(uint256 _nonce) external view returns (bytes32 _requestId) {
-    _requestId = _requestIds[_nonce];
   }
 
   /// @inheritdoc IOracle
@@ -142,22 +134,27 @@ contract Oracle is IOracle {
     bytes32 _requestId = _getId(_request);
     bytes32 _responseId = _getId(_response);
 
-    if (
-      _requestId != _response.requestId || _dispute.responseId != _responseId || _participants[_requestId].length == 0
-        || _dispute.disputer != msg.sender
-    ) {
-      revert();
+    if (_requestId != _response.requestId) {
+      revert Oracle_InvalidResponseBody();
     }
+
+    if (_dispute.responseId != _responseId || _dispute.disputer != msg.sender) {
+      revert Oracle_InvalidDisputeBody();
+    }
+
+    // TODO: Check for createdAt instead?
+    // if(_participants[_requestId].length == 0) {
+    //   revert();
+    // }
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
+
+    // TODO: Allow multiple disputes per response to prevent an attacker starting and losing a dispute,
+    // making it impossible for non-malicious actors to dispute a response?
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
-    }
-
-    if (_response.requestId != _requestId) {
-      revert Oracle_InvalidResponseId(_responseId);
     }
 
     _disputeId = _getId(_dispute);
@@ -291,12 +288,13 @@ contract Oracle is IOracle {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
 
-    for (uint256 _i = 0; _i < _length;) {
-      assembly {
+    assembly {
+      for { let _i := 0 } lt(_i, _length) { _i := add(_i, 1) } {
+        // Increase the size of the array
+        mstore(_ids, add(mload(_ids), 1))
+
+        // Store the response id in the array
         mstore(add(_ids, add(32, mul(_i, 32))), mload(add(_responses, add(32, mul(_i, 32)))))
-      }
-      unchecked {
-        ++_i;
       }
     }
   }
@@ -304,6 +302,7 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
     bytes32 _requestId = _getId(_request);
+    bytes32 _responseId;
 
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
@@ -316,7 +315,7 @@ contract Oracle is IOracle {
 
       if (_responsesAmount != 0) {
         for (uint256 _i = 0; _i < _responsesAmount;) {
-          bytes32 _responseId = _responses[_i];
+          _responseId = _responses[_i];
           bytes32 _disputeId = disputeOf[_responseId];
           DisputeStatus _status = disputeStatus[_disputeId];
 
@@ -328,10 +327,13 @@ contract Oracle is IOracle {
             ++_i;
           }
         }
+
+        // Reset the variable to emit bytes32(0) in the event
+        _responseId = bytes32(0);
       }
     } else {
       // Finalizing with a response
-      bytes32 _responseId = _getId(_response);
+      _responseId = _getId(_response);
 
       if (_response.requestId != _requestId) {
         revert Oracle_InvalidFinalizedResponse(_responseId);
@@ -360,8 +362,7 @@ contract Oracle is IOracle {
     IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
     IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
 
-    // TODO: What should be emitted here?
-    // emit OracleRequestFinalized(_requestId, msg.sender, block.timestamp / block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
   }
 
   /**
@@ -371,15 +372,16 @@ contract Oracle is IOracle {
    * @return _requestId The id of the created request
    */
   function _createRequest(Request calldata _request) internal returns (bytes32 _requestId) {
-    uint256 _requestNonce = ++totalRequestCount;
+    uint256 _requestNonce = totalRequestCount++;
 
     // @audit what about removing nonces? or how we avoid nonce clashing?
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = _getId(_request);
-    _requestIds[_requestNonce] = _requestId;
+    nonceToRequestId[_requestNonce] = _requestId;
     createdAt[_requestId] = uint128(block.number);
 
+    // solhint-disable-next-line func-named-parameters
     _allowedModules[_requestId] = abi.encodePacked(
       _request.requestModule,
       _request.responseModule,
