@@ -49,6 +49,10 @@ contract MockOracle is Oracle {
     nonceToRequestId[_nonce] = _requestId;
   }
 
+  function mock_setCreatedAt(bytes32 _requestId, uint128 _createdAt) external {
+    createdAt[_requestId] = _createdAt;
+  }
+
   function mock_setTotalRequestCount(uint256 _totalRequestCount) external {
     totalRequestCount = _totalRequestCount;
   }
@@ -440,6 +444,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
    */
   function test_updateDisputeStatus() public {
     bytes32 _requestId = _getId(mockRequest);
+    oracle.mock_setCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Try every initial status
     for (uint256 _previousStatus; _previousStatus < uint256(type(IOracle.DisputeStatus).max); _previousStatus++) {
@@ -482,6 +487,7 @@ contract Unit_UpdateDisputeStatus is BaseTest {
 
     // Mock the dispute
     oracle.mock_setDisputeOf(_getId(mockResponse), _getId(mockDispute));
+    oracle.mock_setCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeOrResolutionModule.selector, proposer));

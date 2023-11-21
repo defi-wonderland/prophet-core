@@ -227,6 +227,9 @@ contract Oracle is IOracle {
     DisputeStatus _status
   ) external {
     bytes32 _disputeId = _getId(_dispute);
+    bytes32 _requestId = _getId(_request);
+
+    if (_response.requestId != _requestId || createdAt[_requestId] == 0) revert Oracle_InvalidRequestBody();
 
     if (disputeOf[_getId(_response)] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
