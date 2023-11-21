@@ -60,4 +60,13 @@ contract Helpers is DSTestPlus {
   function _getId(IOracle.Dispute memory _dispute) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_dispute));
   }
+
+  function _mockContract(string memory _label) internal returns (address _contract) {
+    _contract = makeAddr(_label);
+    vm.etch(_contract, hex'69');
+  }
+
+  function _expectEmit(address _contract) internal {
+    vm.expectEmit(true, true, true, true, _contract);
+  }
 }
