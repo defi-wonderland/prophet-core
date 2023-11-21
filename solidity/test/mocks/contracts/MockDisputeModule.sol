@@ -9,26 +9,20 @@ contract MockDisputeModule is Module, IMockDisputeModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   function disputeResponse(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    address _disputer,
-    address _proposer
-  ) external view returns (IOracle.Dispute memory _dispute) {
-    _dispute = IOracle.Dispute({
-      createdAt: block.timestamp,
-      disputer: _disputer,
-      proposer: _proposer,
-      responseId: _responseId,
-      requestId: _requestId,
-      status: IOracle.DisputeStatus.Active
-    });
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external {}
+
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _requestData) {
+    _requestData = abi.decode(_data, (RequestParameters));
   }
 
-  function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _requestData) {
-    _requestData = abi.decode(requestData[_requestId], (RequestParameters));
-  }
-
-  function disputeEscalated(bytes32 _disputeId) external {}
   function moduleName() external view returns (string memory _moduleName) {}
-  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external {}
+  function onDisputeStatusChange(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external {}
 }

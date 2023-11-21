@@ -8,5 +8,5 @@ interface IMockResolutionModule is IResolutionModule {
     bytes data;
   }
 
-  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _requestData);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _requestData);
 }

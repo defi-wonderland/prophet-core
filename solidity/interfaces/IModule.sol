@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IOracle} from '../interfaces/IOracle.sol';
+
 /**
  * @title Module
  * @notice Abstract contract to be inherited by all modules
@@ -12,10 +14,12 @@ interface IModule {
 
   /**
    * @notice Emitted when a request is finalized
-   * @param _requestId The ID of the request that was finalized
+   * @param _requestId The id of the request that was finalized
+   * @param _response The final response
    * @param _finalizer The address that initiated the finalization
    */
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
+
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
@@ -34,35 +38,24 @@ interface IModule {
    *
    * @return _oracle The address of the oracle
    */
-  function oracle() external view returns (address _oracle);
-
-  /**
-   * @notice Returns the data of the request associated with the provided id
-   *
-   * @param _requestId The id of the request
-   * @return _requestData The data of the request
-   */
-  function requestData(bytes32 _requestId) external view returns (bytes memory _requestData);
+  function ORACLE() external view returns (IOracle _oracle);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Stores the request data and runs module-specific hooks
+   * @notice Finalizes the request
    *
-   * @param _requestId The ID of the request
-   * @param _data The data of the request
-   */
-  function setupRequest(bytes32 _requestId, bytes calldata _data) external;
-
-  /**
-   * @notice Finalizes a given request and executes any additional logic set by the chosen modules
-   *
-   * @param _requestId The ID of the request being finalized
+   * @param _request The request being finalized
+   * @param _response The final response
    * @param _finalizer The address that initiated the finalization
    */
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external;
 
   /**
    * @notice Returns the name of the module.

@@ -11,24 +11,26 @@ interface IDisputeModule is IModule {
 
   /**
    * @notice Emitted when a response is disputed
-   * @param _requestId The id of the request created
    * @param _responseId The id of the response disputed
-   * @param _disputer The address of the disputed
-   * @param _proposer The address of the proposer
+   * @param _disputeId The id of the dispute
+   * @param _dispute The dispute that is being created
+   * @param _blockNumber The current block number
    */
-  event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
+  event ResponseDisputed(
+    bytes32 indexed _requestId,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    IOracle.Dispute _dispute,
+    uint256 _blockNumber
+  );
 
   /**
    * @notice Emitted when a dispute status is updated
-   * @param _requestId The id of the request
-   * @param _responseId The id of the response
-   * @param _disputer The address of the disputed
-   * @param _proposer The address of the proposer
+   * @param _disputeId The id of the dispute
+   * @param _dispute The dispute
    * @param _status The new status of the dispute
    */
-  event DisputeStatusChanged(
-    bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer, IOracle.DisputeStatus _status
-  );
+  event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
 
   /*///////////////////////////////////////////////////////////////
                              FUNCTIONS
@@ -37,29 +39,25 @@ interface IDisputeModule is IModule {
   /**
    * @notice Called by the oracle when a dispute has been made on a response.
    * Bonds the tokens of the disputer.
-   * @param _requestId The ID of the request whose response is disputed
-   * @param _responseId The ID of the response being disputed
-   * @param _disputer The address of the user who disputed the response
-   * @param _proposer The address of the user who proposed the disputed response
-   * @return _dispute The dispute on the proposed response
+   * @param _request The id of the response being disputed
+   * @param _response The id of the response being disputed
+   * @param _dispute The id of the response being disputed
    */
   function disputeResponse(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    address _disputer,
-    address _proposer
-  ) external returns (IOracle.Dispute memory _dispute);
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external;
 
   /**
    * @notice Callback executed after a response to a dispute is received by the oracle
    * @param _disputeId The id of the dispute
    * @param _dispute The dispute data
    */
-  function onDisputeStatusChange(bytes32 _disputeId, IOracle.Dispute memory _dispute) external;
-
-  /**
-   * @notice Called by the oracle when a dispute has been escalated.
-   * @param _disputeId The ID of the dispute being escalated
-   */
-  function disputeEscalated(bytes32 _disputeId) external;
+  function onDisputeStatusChange(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external;
 }
