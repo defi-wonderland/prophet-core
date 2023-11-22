@@ -92,7 +92,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     });
 
     vm.prank(requester);
-    _requestId = oracle.createRequest(_request);
+    _requestId = oracle.createRequest(_request, _ipfsHash);
 
     IOracle.Response memory _response =
       IOracle.Response({requestId: _requestId, response: abi.encode('testResponse'), proposer: proposer});
@@ -190,7 +190,7 @@ contract Integration_ResponseDispute is IntegrationBase {
   //     ipfsHash: _ipfsHash
   //   });
   //   vm.prank(requester);
-  //   bytes32 _secondRequest = oracle.createRequest(_request);
+  //   bytes32 _secondRequest = oracle.createRequest(_request, _ipfsHash);
 
   //   vm.prank(proposer);
   //   bytes32 _secondResponseId = oracle.proposeResponse(_secondRequest, _responseData, _responseModuleData);

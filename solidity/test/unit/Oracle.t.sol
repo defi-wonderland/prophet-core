@@ -80,8 +80,11 @@ contract BaseTest is Test, Helpers {
   IResolutionModule public resolutionModule = IResolutionModule(_mockContract('resolutionModule'));
   IFinalityModule public finalityModule = IFinalityModule(_mockContract('finalityModule'));
 
+  // Mock IPFS hash
+  bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
+
   // Events
-  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, uint256 _blockNumber);
+  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, bytes32 _ipfsHash, uint256 _blockNumber);
   event ResponseProposed(
     bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Response _response, uint256 _blockNumber
   );
@@ -150,11 +153,11 @@ contract Unit_CreateRequest is BaseTest {
 
     // Check: emits RequestCreated event?
     _expectEmit(address(oracle));
-    emit RequestCreated(_getId(mockRequest), mockRequest, block.number);
+    emit RequestCreated(_getId(mockRequest), mockRequest, _ipfsHash, block.number);
 
     // Test: create the request
     vm.prank(requester);
-    bytes32 _requestId = oracle.createRequest(mockRequest);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
     // Check: Adds the requester to the list of participants
     assertTrue(oracle.isParticipant(_requestId, requester));
@@ -197,6 +200,7 @@ contract Unit_CreateRequests is BaseTest {
     IOracle.Request[] memory _requests = new IOracle.Request[](_requestsAmount);
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
     bool _useResolutionAndFinality = _requestData.length % 2 == 0;
+    bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
 
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
@@ -209,14 +213,15 @@ contract Unit_CreateRequests is BaseTest {
       bytes32 _theoreticalRequestId = _getId(mockRequest);
       _requests[_i] = mockRequest;
       _precalculatedIds[_i] = _theoreticalRequestId;
+      _ipfsHashes[_i] = keccak256(abi.encode(_theoreticalRequestId, mockRequest.nonce));
 
       // Check: emits RequestCreated event?
       _expectEmit(address(oracle));
-      emit RequestCreated(_theoreticalRequestId, mockRequest, block.number);
+      emit RequestCreated(_theoreticalRequestId, mockRequest, _ipfsHashes[_i], block.number);
     }
 
     vm.prank(requester);
-    bytes32[] memory _requestsIds = oracle.createRequests(_requests);
+    bytes32[] memory _requestsIds = oracle.createRequests(_requests, _ipfsHashes);
 
     for (uint256 _i = 0; _i < _requestsIds.length; _i++) {
       assertEq(_requestsIds[_i], _precalculatedIds[_i]);
