@@ -53,17 +53,20 @@ contract Oracle is IOracle {
   uint256 public totalRequestCount;
 
   /// @inheritdoc IOracle
-  function createRequest(Request calldata _request) external returns (bytes32 _requestId) {
-    _requestId = _createRequest(_request);
+  function createRequest(Request calldata _request, bytes32 _ipfsHash) external returns (bytes32 _requestId) {
+    _requestId = _createRequest(_request, _ipfsHash);
   }
 
   /// @inheritdoc IOracle
-  function createRequests(Request[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds) {
+  function createRequests(
+    Request[] calldata _requestsData,
+    bytes32[] calldata _ipfsHashes
+  ) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      _batchRequestsIds[_i] = _createRequest(_requestsData[_i]);
+      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
       unchecked {
         ++_i;
       }
@@ -372,9 +375,10 @@ contract Oracle is IOracle {
    * @notice Stores a request in the contract and configures it in the modules
    *
    * @param _request The request to be created
+   * @param _ipfsHash The hashed IPFS CID of the metadata json
    * @return _requestId The id of the created request
    */
-  function _createRequest(Request calldata _request) internal returns (bytes32 _requestId) {
+  function _createRequest(Request calldata _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
     // @audit what about removing nonces? or how we avoid nonce clashing?
@@ -396,7 +400,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
-    emit RequestCreated(_requestId, _request, block.number);
+    emit RequestCreated(_requestId, _request, _ipfsHash, block.number);
   }
 
   /**
