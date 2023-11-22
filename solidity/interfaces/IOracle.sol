@@ -13,8 +13,11 @@ interface IOracle {
   /**
    * @notice Emitted when a request is created
    * @param _requestId The id of the created request
+   * @param _request The request that has been created
+   * @param _ipfsHash The hashed IPFS CID of the metadata json
+   * @param _blockNumber The current block number
    */
-  event RequestCreated(bytes32 indexed _requestId, Request _request, uint256 _blockNumber);
+  event RequestCreated(bytes32 indexed _requestId, Request _request, bytes32 _ipfsHash, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a response is proposed
@@ -279,17 +282,22 @@ interface IOracle {
    *
    * @dev The modules must be real contracts following the IModule interface
    * @param _request The request data
+   * @param _ipfsHash The hashed IPFS CID of the metadata json
    * @return _requestId The id of the request, can be used to propose a response or query results
    */
-  function createRequest(Request memory _request) external returns (bytes32 _requestId);
+  function createRequest(Request memory _request, bytes32 _ipfsHash) external returns (bytes32 _requestId);
 
   /**
    * @notice Creates multiple requests, the same way as createRequest
    *
    * @param _requestsData The array of calldata for each request
    * @return _batchRequestsIds The array of request IDs
+   * @param _ipfsHashes The array of hashed IPFS CIDs of the metadata files
    */
-  function createRequests(Request[] calldata _requestsData) external returns (bytes32[] memory _batchRequestsIds);
+  function createRequests(
+    Request[] calldata _requestsData,
+    bytes32[] calldata _ipfsHashes
+  ) external returns (bytes32[] memory _batchRequestsIds);
 
   /**
    * @notice Returns the list of request IDs
