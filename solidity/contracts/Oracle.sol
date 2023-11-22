@@ -159,6 +159,10 @@ contract Oracle is IOracle {
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
     bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
 
+    if (disputeOf[_dispute.responseId] != _disputeId) {
+      revert Oracle_InvalidDisputeId(_disputeId);
+    }
+
     if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       revert Oracle_CannotEscalate(_disputeId);
     }
@@ -355,7 +359,7 @@ contract Oracle is IOracle {
     // @audit what about removing nonces? or how we avoid nonce clashing?
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
-    _requestId = _getId(_request);
+    _requestId = keccak256(abi.encode(_request));
     nonceToRequestId[_requestNonce] = _requestId;
     createdAt[_requestId] = uint128(block.number);
 
@@ -375,36 +379,6 @@ contract Oracle is IOracle {
   }
 
   /**
-   * @notice Computes the id a given request
-   *
-   * @param _request The request to compute the id for
-   * @return _id The id the request
-   */
-  function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_request));
-  }
-
-  /**
-   * @notice Computes the id a given response
-   *
-   * @param _response The response to compute the id for
-   * @return _id The id the response
-   */
-  function _getId(IOracle.Response calldata _response) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_response));
-  }
-
-  /**
-   * @notice Computes the id a given dispute
-   *
-   * @param _dispute The dispute to compute the id for
-   * @return _id The id the dispute
-   */
-  function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_dispute));
-  }
-
-  /**
    * @notice Validates the correctness of a request-response pair
    *
    * @param _request The request to compute the id for
@@ -415,8 +389,8 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) internal pure returns (bytes32 _responseId) {
-    bytes32 _requestId = _getId(_request);
-    _responseId = _getId(_response);
+    bytes32 _requestId = keccak256(abi.encode(_request));
+    _responseId = keccak256(abi.encode(_response));
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
 
@@ -433,9 +407,9 @@ contract Oracle is IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) internal pure returns (bytes32 _disputeId) {
-    bytes32 _requestId = _getId(_request);
-    bytes32 _responseId = _getId(_response);
-    _disputeId = _getId(_dispute);
+    bytes32 _requestId = keccak256(abi.encode(_request));
+    bytes32 _responseId = keccak256(abi.encode(_response));
+    _disputeId = keccak256(abi.encode(_dispute));
 
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
