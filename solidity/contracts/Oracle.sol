@@ -103,29 +103,23 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    bytes32 _requestId = _getId(_request);
+    _responseId = _validateResponse(_request, _response);
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
       revert Oracle_InvalidResponseBody();
     }
 
-    // The request id must match the response's request id
-    if (_response.requestId != _requestId) {
-      revert Oracle_InvalidResponseBody();
+    if (finalizedAt[_response.requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
-    if (finalizedAt[_requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_requestId);
-    }
-
-    _responseId = _getId(_response);
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
+    _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
-    _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
+    _responseIds[_response.requestId] = abi.encodePacked(_responseIds[_response.requestId], _responseId);
     createdAt[_responseId] = uint128(block.number);
 
-    emit ResponseProposed(_requestId, _responseId, _response, block.number);
+    emit ResponseProposed(_response.requestId, _responseId, _response, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -134,51 +128,36 @@ contract Oracle is IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) external returns (bytes32 _disputeId) {
-    bytes32 _requestId = _getId(_request);
-    bytes32 _responseId = _getId(_response);
-
-    if (_requestId != _response.requestId) {
-      revert Oracle_InvalidResponseBody();
-    }
-
-    if (_dispute.responseId != _responseId || _dispute.disputer != msg.sender) {
-      revert Oracle_InvalidDisputeBody();
-    }
+    _disputeId = _validateDispute(_request, _response, _dispute);
 
     // TODO: Check for createdAt instead?
     // if(_participants[_requestId].length == 0) {
     //   revert();
     // }
 
-    if (finalizedAt[_requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_requestId);
+    if (finalizedAt[_response.requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
     // TODO: Allow multiple disputes per response to prevent an attacker starting and losing a dispute,
     // making it impossible for non-malicious actors to dispute a response?
-    if (disputeOf[_responseId] != bytes32(0)) {
-      revert Oracle_ResponseAlreadyDisputed(_responseId);
+    if (disputeOf[_dispute.responseId] != bytes32(0)) {
+      revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
     }
 
-    _disputeId = _getId(_dispute);
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
-    disputeOf[_responseId] = _disputeId;
+    disputeOf[_dispute.responseId] = _disputeId;
     createdAt[_disputeId] = uint128(block.number);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
-    emit ResponseDisputed(_responseId, _disputeId, _dispute, block.number);
+    emit ResponseDisputed(_dispute.responseId, _disputeId, _dispute, block.number);
   }
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    bytes32 _requestId = _getId(_request);
-    bytes32 _disputeId = _getId(_dispute);
-
-    if (_dispute.requestId != _requestId || disputeOf[_dispute.responseId] != _disputeId) {
-      revert Oracle_InvalidDisputeId(_disputeId);
-    }
+    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
 
     if (disputeStatus[_disputeId] != DisputeStatus.Active) {
       revert Oracle_CannotEscalate(_disputeId);
@@ -200,10 +179,9 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    bytes32 _requestId = _getId(_request);
-    bytes32 _disputeId = _getId(_dispute);
+    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
 
-    if (_dispute.requestId != _requestId || disputeOf[_dispute.responseId] != _disputeId) {
+    if (disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
@@ -229,12 +207,9 @@ contract Oracle is IOracle {
     Dispute calldata _dispute,
     DisputeStatus _status
   ) external {
-    bytes32 _disputeId = _getId(_dispute);
-    bytes32 _requestId = _getId(_request);
+    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
 
-    if (_response.requestId != _requestId || createdAt[_requestId] == 0) revert Oracle_InvalidRequestBody();
-
-    if (disputeOf[_getId(_response)] != _disputeId) {
+    if (disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
@@ -307,16 +282,15 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
-    bytes32 _requestId = _getId(_request);
-    bytes32 _responseId;
+    bytes32 _responseId = _validateResponse(_request, _response);
 
-    if (finalizedAt[_requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_requestId);
+    if (finalizedAt[_response.requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
     // Finalizing without a response (by passing a Response with `requestId` == 0x0)
     if (_response.requestId == bytes32(0)) {
-      bytes32[] memory _responses = getResponseIds(_requestId);
+      bytes32[] memory _responses = getResponseIds(_response.requestId);
       uint256 _responsesAmount = _responses.length;
 
       if (_responsesAmount != 0) {
@@ -338,10 +312,7 @@ contract Oracle is IOracle {
         _responseId = bytes32(0);
       }
     } else {
-      // Finalizing with a response
-      _responseId = _getId(_response);
-
-      if (_response.requestId != _requestId) {
+      if (_response.requestId != _response.requestId) {
         revert Oracle_InvalidFinalizedResponse(_responseId);
       }
 
@@ -351,10 +322,10 @@ contract Oracle is IOracle {
         revert Oracle_InvalidFinalizedResponse(_responseId);
       }
 
-      _finalizedResponses[_requestId] = _responseId;
+      _finalizedResponses[_response.requestId] = _responseId;
     }
 
-    finalizedAt[_requestId] = uint128(block.number);
+    finalizedAt[_response.requestId] = uint128(block.number);
 
     if (address(_request.finalityModule) != address(0)) {
       IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
@@ -368,7 +339,7 @@ contract Oracle is IOracle {
     IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
     IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
 
-    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
+    emit OracleRequestFinalized(_response.requestId, _responseId, msg.sender, block.number);
   }
 
   /**
@@ -431,5 +402,42 @@ contract Oracle is IOracle {
    */
   function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_dispute));
+  }
+
+  /**
+   * @notice Validates the correctness of a request-response pair
+   *
+   * @param _request The request to compute the id for
+   * @param _response The response to compute the id for
+   * @return _responseId The id the response
+   */
+  function _validateResponse(
+    Request calldata _request,
+    Response calldata _response
+  ) internal pure returns (bytes32 _responseId) {
+    bytes32 _requestId = _getId(_request);
+    _responseId = _getId(_response);
+    if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
+  }
+
+  /**
+   * @notice Validates the correctness of a request-response-dispute triplet
+   *
+   * @param _request The request to compute the id for
+   * @param _response The response to compute the id for
+   * @param _dispute The dispute to compute the id for
+   * @return _disputeId The id the dispute
+   */
+  function _validateDispute(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute
+  ) internal pure returns (bytes32 _disputeId) {
+    bytes32 _requestId = _getId(_request);
+    bytes32 _responseId = _getId(_response);
+    _disputeId = _getId(_dispute);
+
+    if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
+    if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
 }
