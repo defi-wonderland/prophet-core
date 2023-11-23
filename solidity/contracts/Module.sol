@@ -28,6 +28,36 @@ abstract contract Module is IModule {
   ) external virtual onlyOracle {}
 
   /**
+   * @notice Computes the id a given request
+   *
+   * @param _request The request to compute the id for
+   * @return _id The id the request
+   */
+  function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_request));
+  }
+
+  /**
+   * @notice Computes the id a given response
+   *
+   * @param _response The response to compute the id for
+   * @return _id The id the response
+   */
+  function _getId(IOracle.Response calldata _response) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_response));
+  }
+
+  /**
+   * @notice Computes the id a given dispute
+   *
+   * @param _dispute The dispute to compute the id for
+   * @return _id The id the dispute
+   */
+  function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_dispute));
+  }
+
+  /**
    * @notice Validates the correctness of a request-response pair
    *
    * @param _request The request to compute the id for
@@ -38,8 +68,8 @@ abstract contract Module is IModule {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
   ) internal pure returns (bytes32 _responseId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    _responseId = keccak256(abi.encode(_response));
+    bytes32 _requestId = _getId(_request);
+    _responseId = _getId(_response);
     if (_response.requestId != _requestId) revert Module_InvalidResponseBody();
   }
 
@@ -56,9 +86,9 @@ abstract contract Module is IModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) internal pure returns (bytes32 _disputeId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    bytes32 _responseId = keccak256(abi.encode(_response));
-    _disputeId = keccak256(abi.encode(_dispute));
+    bytes32 _requestId = _getId(_request);
+    bytes32 _responseId = _getId(_response);
+    _disputeId = _getId(_dispute);
 
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Module_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Module_InvalidResponseBody();
