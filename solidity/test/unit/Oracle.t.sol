@@ -568,7 +568,13 @@ contract Unit_ResolveDispute is BaseTest {
   function test_resolveDispute_revertsIfNoResolutionModule() public {
     // Clear the resolution module
     mockRequest.resolutionModule = address(0);
-    mockDispute.requestId = _getId(mockRequest);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
     // Mock the dispute
@@ -701,7 +707,7 @@ contract Unit_Finalize is BaseTest {
     oracle.mock_addResponseId(_requestId, _responseId);
 
     // Test: finalize the request
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
   }
@@ -846,7 +852,14 @@ contract Unit_EscalateDispute is BaseTest {
 
   function test_escalateDispute_noResolutionModule() public {
     mockRequest.resolutionModule = address(0);
-    mockDispute.requestId = _getId(mockRequest);
+
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
