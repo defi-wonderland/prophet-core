@@ -693,7 +693,7 @@ contract Unit_Finalize is BaseTest {
   /**
    * @notice Test the response validation, its requestId should match the id of the provided request
    */
-  function test_finalize_revertsInvalidRequestId(address _caller, bytes32 _requestId) public {
+  function test_finalize_revertsInvalidRequestId(address _caller, bytes32 _requestId) public assumeFuzzable(_caller) {
     mockResponse.requestId = _requestId;
     bytes32 _responseId = _getId(mockResponse);
 
