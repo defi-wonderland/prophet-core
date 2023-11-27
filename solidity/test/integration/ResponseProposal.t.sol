@@ -1,113 +1,89 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import './IntegrationBase.sol';
+import './IntegrationBase.sol';
 
-// contract Integration_ResponseProposal is IntegrationBase {
-//   bytes32 internal _requestId;
+contract Integration_ResponseProposal is IntegrationBase {
+  bytes32 internal _requestId;
 
-//   function setUp() public override {
-//     super.setUp();
+  function setUp() public override {
+    super.setUp();
 
-//     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
+    _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
 
-//     IOracle.NewRequest memory _request = IOracle.NewRequest({
-//       requestModuleData: abi.encode(
-//         IMockRequestModule.RequestParameters({
-//           url: _expectedUrl,
-//           body: _expectedBody,
-//           accountingExtension: _accountingExtension,
-//           paymentToken: usdc,
-//           paymentAmount: _expectedReward
-//         })
-//         ),
-//       responseModuleData: abi.encode(
-//         IMockResponseModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: usdc,
-//           bondAmount: _expectedBondAmount,
-//           deadline: _expectedDeadline,
-//           disputeWindow: _baseDisputeWindow
-//         })
-//         ),
-//       disputeModuleData: abi.encode(
-//         IMockDisputeModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: usdc,
-//           bondAmount: _expectedBondAmount
-//         })
-//         ),
-//       resolutionModuleData: abi.encode(),
-//       finalityModuleData: abi.encode(
-//         IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
-//         ),
-//       requestModule: _requestModule,
-//       responseModule: _responseModule,
-//       disputeModule: _disputeModule,
-//       resolutionModule: _resolutionModule,
-//       finalityModule: _finalityModule,
-//       ipfsHash: _ipfsHash
-//     });
+    mockRequest.requestModuleData = abi.encode(
+      IMockRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: _expectedReward
+      })
+    );
 
-//     vm.prank(requester);
-//     _requestId = oracle.createRequest(_request);
-//   }
+    mockRequest.responseModuleData = abi.encode(
+      IMockResponseModule.RequestParameters({
+        accountingExtension: _accountingExtension,
+        bondToken: usdc,
+        bondAmount: _expectedBondAmount,
+        deadline: _expectedDeadline,
+        disputeWindow: _baseDisputeWindow
+      })
+    );
 
-//   function test_proposeResponse_validResponse(bytes memory _response) public {
-//     vm.prank(proposer);
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _response);
+    mockRequest.disputeModuleData = abi.encode(
+      IMockDisputeModule.RequestParameters({
+        accountingExtension: _accountingExtension,
+        bondToken: usdc,
+        bondAmount: _expectedBondAmount
+      })
+    );
 
-//     IOracle.Response memory _responseData = oracle.getResponse(_responseId);
+    mockRequest.resolutionModuleData = abi.encode();
 
-//     // Check: response data is correctly stored?
-//     assertEq(_responseData.proposer, proposer);
-//     assertEq(_responseData.response, _response);
-//     assertEq(_responseData.createdAt, block.timestamp);
-//     assertEq(_responseData.disputeId, bytes32(0));
-//   }
+    mockRequest.finalityModuleData = abi.encode(
+      IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
+    );
 
-//   function test_proposeResponse_nonExistentRequest(bytes memory _response, bytes32 _nonExistentRequestId) public {
-//     vm.assume(_nonExistentRequestId != _requestId);
+    mockRequest.requestModule = address(_requestModule);
+    mockRequest.responseModule = address(_responseModule);
+    mockRequest.disputeModule = address(_disputeModule);
+    mockRequest.resolutionModule = address(_resolutionModule);
+    mockRequest.finalityModule = address(_finalityModule);
 
-//     // Check: does revert if request does not exist?
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidRequestId.selector, _nonExistentRequestId));
+    mockRequest.nonce = uint96(oracle.totalRequestCount());
+    mockRequest.requester = requester;
 
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_nonExistentRequestId, _response);
-//   }
+    mockResponse.requestId = _getId(mockRequest);
 
-//   function test_deleteResponse(bytes memory _responseData) public {
-//     vm.prank(proposer);
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+    vm.prank(requester);
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//     IOracle.Response memory _response = oracle.getResponse(_responseId);
-//     assertEq(_response.proposer, proposer);
-//     assertEq(_response.response, _responseData);
-//     assertEq(_response.createdAt, block.timestamp);
-//     assertEq(_response.disputeId, bytes32(0));
+  function test_proposeResponse_validResponse(bytes memory _response) public {
+    mockResponse.response = _response;
 
-//     vm.prank(proposer);
-//     oracle.deleteResponse(_responseId);
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
-//     // Check: response data is correctly deleted?
-//     IOracle.Response memory _deletedResponse = oracle.getResponse(_responseId);
-//     assertEq(_deletedResponse.proposer, address(0));
-//     assertEq(_deletedResponse.response.length, 0);
-//     assertEq(_deletedResponse.createdAt, 0);
-//     assertEq(_deletedResponse.disputeId, bytes32(0));
-//   }
+    bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
 
-//   function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
-//     _timestamp = bound(_timestamp, _expectedDeadline + _baseDisputeWindow, type(uint128).max);
+    // Check: response data is correctly stored?
+    assertEq(_responseIds.length, 1);
+    assertEq(_responseIds[0], _getId(mockResponse));
+  }
 
-//     vm.prank(proposer);
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
+  function test_proposeResponse_finalizedRequest(uint256 _timestamp) public {
+    _timestamp = bound(_timestamp, _expectedDeadline + _baseDisputeWindow, type(uint128).max);
 
-//     vm.warp(_timestamp);
-//     oracle.finalize(_requestId, _responseId);
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_requestId, _responseData);
-//   }
-// }
+    vm.warp(_timestamp);
+    oracle.finalize(mockRequest, mockResponse);
+
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+}
