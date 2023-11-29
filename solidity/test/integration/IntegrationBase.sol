@@ -6,7 +6,6 @@ pragma solidity ^0.8.19;
 import {console} from 'forge-std/console.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 import {Helpers} from '../utils/Helpers.sol';
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
@@ -28,7 +27,7 @@ import {MockFinalityModule, IMockFinalityModule} from '../mocks/contracts/MockFi
 import {TestConstants} from '../utils/TestConstants.sol';
 // solhint-enable no-unused-import
 
-contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
+contract IntegrationBase is TestConstants, Helpers {
   uint256 public constant FORK_BLOCK = 111_361_902;
 
   uint256 internal _initialBalance = 100_000 ether;
