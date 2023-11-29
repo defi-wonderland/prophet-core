@@ -664,6 +664,8 @@ contract Unit_Finalize is BaseTest {
   ) public setResolutionAndFinality(_useResolutionAndFinality) {
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+    oracle.mock_addResponseId(_requestId, _responseId);
 
     // Mock the finalize call on all modules
     bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
@@ -679,7 +681,7 @@ contract Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, _getId(mockResponse), _caller, block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, _caller, block.number);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -691,6 +693,8 @@ contract Unit_Finalize is BaseTest {
 
     // Test: finalize a finalized request
     oracle.mock_setFinalizedAt(_requestId, uint128(block.number));
+    oracle.mock_addResponseId(_requestId, _getId(mockResponse));
+
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     vm.prank(_caller);
     oracle.finalize(mockRequest, mockResponse);
@@ -700,6 +704,8 @@ contract Unit_Finalize is BaseTest {
    * @notice Test the response validation, its requestId should match the id of the provided request
    */
   function test_finalize_revertsInvalidRequestId(address _caller, bytes32 _requestId) public assumeFuzzable(_caller) {
+    vm.assume(_requestId != bytes32(0) && _requestId != _getId(mockRequest));
+
     mockResponse.requestId = _requestId;
     bytes32 _responseId = _getId(mockResponse);
 
@@ -723,6 +729,7 @@ contract Unit_Finalize is BaseTest {
     vm.assume(_caller != address(0));
 
     bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = bytes32(0);
 
     // Create mock request and store it
     bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
@@ -738,7 +745,7 @@ contract Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, _getId(mockResponse), _caller, block.number);
+    emit OracleRequestFinalized(_requestId, bytes32(0), _caller, block.number);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -799,6 +806,7 @@ contract Unit_Finalize is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // The response must be disputed
+    oracle.mock_addResponseId(_requestId, _responseId);
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, _disputeStatus);
 
