@@ -5,7 +5,7 @@ import './IntegrationBase.sol';
 
 contract Integration_Finalization is IntegrationBase {
   address internal _finalizer = makeAddr('finalizer');
-  address _callbackTarget = makeAddr('target');
+  address internal _callbackTarget = makeAddr('target');
 
   function setUp() public override {
     super.setUp();
