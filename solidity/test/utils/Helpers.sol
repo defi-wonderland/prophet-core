@@ -19,6 +19,22 @@ contract Helpers is DSTestPlus {
   IOracle.Dispute public mockDispute =
     IOracle.Dispute({disputer: disputer, responseId: mockId, proposer: proposer, requestId: mockId});
 
+  modifier assumeFuzzable(address _address) {
+    _assumeFuzzable(_address);
+    _;
+  }
+
+  /**
+   * @notice Ensures that a fuzzed address can be used for deployment and calls
+   *
+   * @param _address The address to check
+   */
+  function _assumeFuzzable(address _address) internal pure {
+    assumeNotForgeAddress(_address);
+    assumeNotZeroAddress(_address);
+    assumeNotPrecompile(_address);
+  }
+
   /**
    * @notice Sets up a mock and expects a call to it
    *

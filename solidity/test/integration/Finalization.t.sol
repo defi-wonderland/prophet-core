@@ -1,198 +1,140 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import './IntegrationBase.sol';
+import './IntegrationBase.sol';
 
-// contract Integration_Finalization is IntegrationBase {
-//   bytes internal _responseData;
+contract Integration_Finalization is IntegrationBase {
+  address internal _finalizer = makeAddr('finalizer');
+  address internal _callbackTarget = makeAddr('target');
 
-//   address internal _finalizer = makeAddr('finalizer');
+  function setUp() public override {
+    super.setUp();
+    _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
+    vm.etch(_callbackTarget, hex'069420');
+  }
 
-//   function setUp() public override {
-//     super.setUp();
-//     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
-//   }
+  /**
+   * @notice Test to check if another module can be set as callback module.
+   */
+  function test_targetIsAnotherModule() public {
+    mockRequest.finalityModuleData = abi.encode(
+      IMockFinalityModule.RequestParameters({
+        target: address(_finalityModule),
+        data: abi.encodeWithSignature('callback()')
+      })
+    );
 
-//   /**
-//    * @notice Test to check if another module can be set as callback module.
-//    */
-//   function test_targetIsAnotherModule() public {
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule,
-//       abi.encode(
-//         IMockFinalityModule.RequestParameters({
-//           target: address(_finalityModule),
-//           data: abi.encodeWithSignature('callback()')
-//         })
-//       )
-//     );
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//     vm.prank(requester);
-//     bytes32 _requestId = oracle.createRequest(_request);
-//     bytes32 _responseId = _setupFinalizationStage(_requestId);
+    _jumpToFinalization();
 
-//     vm.warp(block.timestamp + _baseDisputeWindow);
-//     vm.prank(_finalizer);
-//     oracle.finalize(_requestId, _responseId);
-//   }
+    vm.warp(block.timestamp + _baseDisputeWindow);
+    vm.prank(_finalizer);
+    oracle.finalize(mockRequest, mockResponse);
+  }
 
-//   /**
-//    * @notice Test to check that finalization data is set and callback calls are made.
-//    */
-//   function test_makeAndIgnoreLowLevelCalls(bytes memory _calldata) public {
-//     address _callbackTarget = makeAddr('target');
-//     vm.etch(_callbackTarget, hex'069420');
+  /**
+   * @notice Test to check that finalization data is set and callback calls are made.
+   */
+  function test_makeAndIgnoreLowLevelCalls(bytes memory _calldata) public {
+    mockRequest.finalityModuleData =
+      abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}));
 
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}))
-//     );
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
-//     vm.prank(requester);
-//     bytes32 _requestId = oracle.createRequest(_request);
-//     bytes32 _responseId = _setupFinalizationStage(_requestId);
+    _jumpToFinalization();
 
-//     // Check: all low-level calls are made?
-//     vm.expectCall(_callbackTarget, _calldata);
+    // Check: all low-level calls are made?
+    vm.expectCall(_callbackTarget, _calldata);
 
-//     vm.warp(block.timestamp + _baseDisputeWindow);
-//     vm.prank(_finalizer);
-//     oracle.finalize(_requestId, _responseId);
+    vm.warp(block.timestamp + _baseDisputeWindow);
+    vm.prank(_finalizer);
+    oracle.finalize(mockRequest, mockResponse);
 
-//     IOracle.Response memory _finalizedResponse = oracle.getFinalizedResponse(_requestId);
-//     // Check: is response finalized?
-//     assertEq(_finalizedResponse.requestId, _requestId);
-//   }
+    bytes32 _responseId = oracle.getFinalizedResponseId(_requestId);
+    // Check: is request finalized?
+    assertEq(_responseId, _getId(mockResponse));
+  }
 
-//   /**
-//    * @notice Test to check that finalizing a request that has no response will revert.
-//    */
-//   function test_revertFinalizeIfNoResponse(bytes32 _responseId) public {
-//     address _callbackTarget = makeAddr('target');
-//     vm.etch(_callbackTarget, hex'069420');
+  /**
+   * @notice Test to check that finalizing a request that has no response will succeed.
+   */
+  function test_finalizeWithoutResponse() public {
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
-//     );
+    mockResponse.requestId = bytes32(0);
 
-//     vm.prank(requester);
-//     bytes32 _requestId = oracle.createRequest(_request);
+    // Check: finalizes if request has no response?
+    vm.prank(_finalizer);
+    oracle.finalize(mockRequest, mockResponse);
+  }
 
-//     vm.prank(_finalizer);
+  /**
+   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   */
+  function test_revertFinalizeWithDisputedResponse() public {
+    mockRequest.finalityModuleData =
+      abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}));
 
-//     // Check: reverts if request has no response?
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-//     oracle.finalize(_requestId, _responseId);
-//   }
+    mockResponse.requestId = _getId(mockRequest);
+    mockDispute.requestId = mockResponse.requestId;
+    mockDispute.responseId = _getId(mockResponse);
 
-//   /**
-//    * @notice Test to check that finalizing a request with a ongoing dispute with revert.
-//    */
-//   function test_revertFinalizeWithDisputedResponse() public {
-//     address _callbackTarget = makeAddr('target');
-//     vm.etch(_callbackTarget, hex'069420');
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
-//     );
+    vm.prank(proposer);
+    bytes32 _responseId = oracle.proposeResponse(mockRequest, mockResponse);
 
-//     vm.prank(requester);
-//     bytes32 _requestId = oracle.createRequest(_request);
+    vm.prank(disputer);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
 
-//     vm.prank(proposer);
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
+    vm.prank(_finalizer);
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    oracle.finalize(mockRequest, mockResponse);
+  }
 
-//     vm.prank(disputer);
-//     oracle.disputeResponse(_requestId, _responseId);
+  /**
+   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   */
+  function test_revertFinalizeInDisputeWindow() public {
+    mockRequest.finalityModuleData =
+      abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}));
 
-//     vm.prank(_finalizer);
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
-//     oracle.finalize(_requestId, _responseId);
-//   }
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//   /**
-//    * @notice Test to check that finalizing a request with a ongoing dispute with revert.
-//    */
-//   function test_revertFinalizeInDisputeWindow() public {
-//     address _callbackTarget = makeAddr('target');
-//     vm.etch(_callbackTarget, hex'069420');
+  /**
+   * @notice Test to check that finalizing a request without disputes triggers callback calls and executes without reverting.
+   */
+  function test_finalizeWithUndisputedResponse(bytes calldata _calldata) public {
+    mockRequest.finalityModuleData =
+      abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}));
 
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}))
-//     );
+    vm.expectCall(_callbackTarget, _calldata);
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//     vm.prank(requester);
-//     oracle.createRequest(_request);
-//   }
-//   /**
-//    * @notice Test to check that finalizing a request without disputes triggers callback calls and executes without reverting.
-//    */
+    _jumpToFinalization();
 
-//   function test_finalizeWithUndisputedResponse(bytes calldata _calldata) public {
-//     address _callbackTarget = makeAddr('target');
-//     vm.etch(_callbackTarget, hex'069420');
+    vm.warp(block.timestamp + _baseDisputeWindow);
+    vm.prank(_finalizer);
+    oracle.finalize(mockRequest, mockResponse);
+  }
 
-//     IOracle.NewRequest memory _request = _customFinalizationRequest(
-//       _finalityModule, abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}))
-//     );
+  /**
+   * @notice Internal helper function to setup the finalization stage of a request.
+   */
+  function _jumpToFinalization() internal returns (bytes32 _responseId) {
+    mockResponse.requestId = _getId(mockRequest);
 
-//     vm.expectCall(_callbackTarget, _calldata);
-//     vm.prank(requester);
-//     bytes32 _requestId = oracle.createRequest(_request);
-//     bytes32 _responseId = _setupFinalizationStage(_requestId);
+    vm.prank(proposer);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
 
-//     vm.warp(block.timestamp + _baseDisputeWindow);
-//     vm.prank(_finalizer);
-//     oracle.finalize(_requestId, _responseId);
-//   }
-
-//   /**
-//    * @notice Internal helper function to setup the finalization stage of a request.
-//    */
-//   function _setupFinalizationStage(bytes32 _requestId) internal returns (bytes32 _responseId) {
-//     vm.prank(proposer);
-//     _responseId = oracle.proposeResponse(_requestId, abi.encode('responsedata'));
-
-//     vm.warp(_expectedDeadline + 1);
-//   }
-
-//   function _customFinalizationRequest(
-//     IFinalityModule _finalityModule,
-//     bytes memory _finalityModuleData
-//   ) internal view returns (IOracle.NewRequest memory _request) {
-//     _request = IOracle.NewRequest({
-//       requestModuleData: abi.encode(
-//         IMockRequestModule.RequestParameters({
-//           url: _expectedUrl,
-//           body: _expectedBody,
-//           accountingExtension: _accountingExtension,
-//           paymentToken: usdc,
-//           paymentAmount: _expectedReward
-//         })
-//         ),
-//       responseModuleData: abi.encode(
-//         IMockResponseModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: usdc,
-//           bondAmount: _expectedBondAmount,
-//           deadline: _expectedDeadline,
-//           disputeWindow: _baseDisputeWindow
-//         })
-//         ),
-//       disputeModuleData: abi.encode(
-//         IMockDisputeModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: usdc,
-//           bondAmount: _expectedBondAmount
-//         })
-//         ),
-//       resolutionModuleData: abi.encode(),
-//       finalityModuleData: _finalityModuleData,
-//       requestModule: _requestModule,
-//       responseModule: _responseModule,
-//       disputeModule: _disputeModule,
-//       resolutionModule: _resolutionModule,
-//       finalityModule: _finalityModule,
-//       ipfsHash: _ipfsHash
-//     });
-//   }
-// }
+    vm.warp(_expectedDeadline + 1);
+  }
+}

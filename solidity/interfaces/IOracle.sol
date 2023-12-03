@@ -114,12 +114,6 @@ interface IOracle {
   error Oracle_InvalidDisputeId(bytes32 _disputeId);
 
   /**
-   * @notice Thrown when trying to dispute an invalid response
-   * @param _responseId The id of the response being disputed
-   */
-  error Oracle_InvalidResponseId(bytes32 _responseId);
-
-  /**
    * @notice Thrown when trying to escalate a dispute that's not in the active state
    * @param _disputeId The id of the dispute
    */

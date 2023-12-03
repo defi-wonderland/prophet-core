@@ -253,6 +253,26 @@ contract Oracle is IOracle {
     }
   }
 
+  function _matchBytes32(bytes32 _sought, bytes memory _bytes) internal pure returns (bool _found) {
+    assembly {
+      let length := mload(_bytes)
+      let i := 0
+
+      // Iterate 32-bytes chunks of the list
+      for {} lt(i, length) { i := add(i, 32) } {
+        // Load the address at index i
+        let _chunk := mload(add(add(_bytes, 0x20), i))
+
+        // Shift the address to the right by 96 bits and compare with _sought
+        if eq(_chunk, _sought) {
+          // Set _found to true and return
+          _found := 1
+          break
+        }
+      }
+    }
+  }
+
   /// @inheritdoc IOracle
   function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
     _isAllowed = _matchBytes(_module, _allowedModules[_requestId]);
@@ -286,15 +306,13 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
-    bytes32 _responseId = _validateResponse(_request, _response);
-
-    if (finalizedAt[_response.requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_response.requestId);
-    }
+    bytes32 _requestId;
+    bytes32 _responseId;
 
     // Finalizing without a response (by passing a Response with `requestId` == 0x0)
     if (_response.requestId == bytes32(0)) {
-      bytes32[] memory _responses = getResponseIds(_response.requestId);
+      _requestId = keccak256(abi.encode(_request));
+      bytes32[] memory _responses = getResponseIds(_requestId);
       uint256 _responsesAmount = _responses.length;
 
       if (_responsesAmount != 0) {
@@ -316,7 +334,9 @@ contract Oracle is IOracle {
         _responseId = bytes32(0);
       }
     } else {
-      if (_response.requestId != _response.requestId) {
+      _responseId = _validateResponse(_request, _response);
+      _requestId = _response.requestId;
+      if (!_matchBytes32(_responseId, _responseIds[_requestId])) {
         revert Oracle_InvalidFinalizedResponse(_responseId);
       }
 
@@ -326,10 +346,14 @@ contract Oracle is IOracle {
         revert Oracle_InvalidFinalizedResponse(_responseId);
       }
 
-      _finalizedResponses[_response.requestId] = _responseId;
+      _finalizedResponses[_requestId] = _responseId;
     }
 
-    finalizedAt[_response.requestId] = uint128(block.number);
+    if (finalizedAt[_requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
+    }
+
+    finalizedAt[_requestId] = uint128(block.number);
 
     if (address(_request.finalityModule) != address(0)) {
       IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
@@ -343,7 +367,7 @@ contract Oracle is IOracle {
     IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
     IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
 
-    emit OracleRequestFinalized(_response.requestId, _responseId, msg.sender, block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
   }
 
   /**
