@@ -35,10 +35,6 @@
     "*.sol": "solhint --fix 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol' && solhint --fix -c .solhint.tests.json 'solidity/test/**/*.sol'",
     "package.json": "sort-package-json"
   },
-  "dependencies": {
-    "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
-    "forge-std": "https://github.com/foundry-rs/forge-std.git#v1.7.3"
-  },
   "devDependencies": {
     "@commitlint/cli": "17.0.3",
     "@commitlint/config-conventional": "17.0.3",
@@ -46,6 +42,8 @@
     "@typechain/truffle-v5": "8.0.2",
     "@typechain/web3-v1": "6.0.2",
     "dotenv-cli": "7.2.1",
+    "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "forge-std": "https://github.com/foundry-rs/forge-std.git#v1.7.3",
     "fs-extra": "10.1.0",
     "husky": "8.0.3",
     "lint-staged": "13.2.2",
