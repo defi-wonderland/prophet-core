@@ -21,7 +21,7 @@ contract ForTest_Module is Module {
 /**
  * @title Module Abstract Unit tests
  */
-contract Module_UnitTest is Test, Helpers {
+contract Module_Unit is Test, Helpers {
   // The target contract
   Module public module;
 
@@ -43,7 +43,7 @@ contract Module_UnitTest is Test, Helpers {
     vm.assume(_caller != address(oracle));
 
     // Check: reverts if not called by oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
     vm.prank(_caller);
     module.finalizeRequest(mockRequest, mockResponse, _caller);
 
