@@ -73,7 +73,7 @@ contract Integration_Finalization is IntegrationBase {
   }
 
   /**
-   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   * @notice Test to check that finalizing a request with a ongoing dispute will revert.
    */
   function test_revertFinalizeWithDisputedResponse() public {
     mockRequest.finalityModuleData =
@@ -87,18 +87,18 @@ contract Integration_Finalization is IntegrationBase {
     oracle.createRequest(mockRequest, _ipfsHash);
 
     vm.prank(proposer);
-    bytes32 _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
 
     vm.prank(_finalizer);
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidFinalizedResponse.selector, _responseId));
+    vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
     oracle.finalize(mockRequest, mockResponse);
   }
 
   /**
-   * @notice Test to check that finalizing a request with a ongoing dispute with revert.
+   * @notice Test to check that finalizing a request with a ongoing dispute will revert.
    */
   function test_revertFinalizeInDisputeWindow() public {
     mockRequest.finalityModuleData =
