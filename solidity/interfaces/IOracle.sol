@@ -103,9 +103,14 @@ interface IOracle {
 
   /**
    * @notice Thrown when trying to finalize a request with an invalid response
-   * @param _responseId The id of the response
    */
-  error Oracle_InvalidFinalizedResponse(bytes32 _responseId);
+  error Oracle_InvalidFinalizedResponse();
+
+  /**
+   * @notice Thrown when trying to finalize a request without a response while there is, in fact, a response
+   * @param _responseId The id of the response that would be suitable for finalization
+   */
+  error Oracle_FinalizableResponseExists(bytes32 _responseId);
 
   /**
    * @notice Thrown when trying to resolve or escalate an invalid dispute
@@ -148,12 +153,12 @@ interface IOracle {
    * @notice All available statuses a dispute can have
    */
   enum DisputeStatus {
-    None,
-    Active,
-    Escalated,
-    Won,
-    Lost,
-    NoResolution
+    None, // The dispute has not been started yet
+    Active, // The dispute is active and can be escalated or resolved
+    Escalated, // The dispute is being resolved by the resolution module
+    Won, // The disputer has won the dispute
+    Lost, // The disputer has lost the dispute
+    NoResolution // The dispute was inconclusive
   }
 
   /*///////////////////////////////////////////////////////////////

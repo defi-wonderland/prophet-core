@@ -130,16 +130,15 @@ contract Oracle is IOracle {
   ) external returns (bytes32 _disputeId) {
     _disputeId = _validateDispute(_request, _response, _dispute);
 
-    // TODO: Check for createdAt instead?
-    // if(_participants[_requestId].length == 0) {
-    //   revert();
-    // }
+    if (createdAt[_dispute.requestId] == 0) {
+      revert Oracle_InvalidDisputeBody();
+    }
 
     if (finalizedAt[_response.requestId] != 0) {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
-    // TODO: Allow multiple disputes per response to prevent an attacker starting and losing a dispute,
+    // TODO: Allow multiple disputes per response to prevent an attacker from starting and losing a dispute,
     // making it impossible for non-malicious actors to dispute a response?
     if (disputeOf[_dispute.responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
@@ -311,42 +310,9 @@ contract Oracle is IOracle {
 
     // Finalizing without a response (by passing a Response with `requestId` == 0x0)
     if (_response.requestId == bytes32(0)) {
-      _requestId = keccak256(abi.encode(_request));
-      bytes32[] memory _responses = getResponseIds(_requestId);
-      uint256 _responsesAmount = _responses.length;
-
-      if (_responsesAmount != 0) {
-        for (uint256 _i = 0; _i < _responsesAmount;) {
-          _responseId = _responses[_i];
-          bytes32 _disputeId = disputeOf[_responseId];
-          DisputeStatus _status = disputeStatus[_disputeId];
-
-          if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
-            revert Oracle_InvalidFinalizedResponse(_responseId);
-          }
-
-          unchecked {
-            ++_i;
-          }
-        }
-
-        // Reset the variable to emit bytes32(0) in the event
-        _responseId = bytes32(0);
-      }
+      _requestId = _finalizeWithoutResponse(_request);
     } else {
-      _responseId = _validateResponse(_request, _response);
-      _requestId = _response.requestId;
-      if (!_matchBytes32(_responseId, _responseIds[_requestId])) {
-        revert Oracle_InvalidFinalizedResponse(_responseId);
-      }
-
-      DisputeStatus _status = disputeStatus[disputeOf[_responseId]];
-
-      if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
-        revert Oracle_InvalidFinalizedResponse(_responseId);
-      }
-
-      _finalizedResponses[_requestId] = _responseId;
+      (_requestId, _responseId) = _finalizeWithResponse(_request, _response);
     }
 
     if (finalizedAt[_requestId] != 0) {
@@ -371,6 +337,62 @@ contract Oracle is IOracle {
   }
 
   /**
+   * @notice Finalizing a request that either does not have any responses or only has disputed responses
+   *
+   * @param _request The request to be finalized
+   * @return _requestId The id of the finalized request
+   */
+  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
+    _requestId = keccak256(abi.encode(_request));
+    bytes32[] memory _responses = getResponseIds(_requestId);
+    uint256 _responsesAmount = _responses.length;
+
+    if (_responsesAmount != 0) {
+      for (uint256 _i = 0; _i < _responsesAmount;) {
+        bytes32 _responseId = _responses[_i];
+        bytes32 _disputeId = disputeOf[_responseId];
+        DisputeStatus _status = disputeStatus[_disputeId];
+
+        // If there is an undisputed response or with a lost dispute, must finalize with it
+        if (_status == DisputeStatus.None || _status == DisputeStatus.Lost) {
+          revert Oracle_FinalizableResponseExists(_responseId);
+        }
+
+        unchecked {
+          ++_i;
+        }
+      }
+    }
+  }
+
+  /**
+   * @notice Finalizing a request with a response
+   *
+   * @param _request The request to be finalized
+   * @param _response The final response
+   * @return _requestId The id of the finalized request
+   * @return _responseId The id of the final response
+   */
+  function _finalizeWithResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response
+  ) internal returns (bytes32 _requestId, bytes32 _responseId) {
+    _responseId = _validateResponse(_request, _response);
+    _requestId = _response.requestId;
+    if (!_matchBytes32(_responseId, _responseIds[_requestId])) {
+      revert Oracle_InvalidFinalizedResponse();
+    }
+
+    DisputeStatus _status = disputeStatus[disputeOf[_responseId]];
+
+    if (_status != DisputeStatus.None && _status != DisputeStatus.Lost) {
+      revert Oracle_InvalidFinalizedResponse();
+    }
+
+    _finalizedResponses[_requestId] = _responseId;
+  }
+
+  /**
    * @notice Stores a request in the contract and configures it in the modules
    *
    * @param _request The request to be created
@@ -380,7 +402,6 @@ contract Oracle is IOracle {
   function _createRequest(Request calldata _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
-    // @audit what about removing nonces? or how we avoid nonce clashing?
     if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
 
     _requestId = keccak256(abi.encode(_request));
