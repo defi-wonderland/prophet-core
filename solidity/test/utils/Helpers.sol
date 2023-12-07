@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
+// import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
+import {Test} from 'forge-std/Test.sol';
 import {IOracle} from '../../contracts/Oracle.sol';
 
-contract Helpers is DSTestPlus {
+contract Helpers is Test {
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
 
@@ -80,11 +81,11 @@ contract Helpers is DSTestPlus {
   /**
    * @notice Creates a mock contract, labels it and erases the bytecode
    *
-   * @param _label The label to use for the mock contract
+   * @param _name The label to use for the mock contract
    * @return _contract The address of the mock contract
    */
-  function _mockContract(string memory _label) internal returns (address _contract) {
-    _contract = makeAddr(_label);
+  function _mockContract(string memory _name) internal returns (address _contract) {
+    _contract = makeAddr(_name);
     vm.etch(_contract, hex'69');
   }
 
@@ -95,5 +96,17 @@ contract Helpers is DSTestPlus {
    */
   function _expectEmit(address _contract) internal {
     vm.expectEmit(true, true, true, true, _contract);
+  }
+
+  /**
+   * @notice Assigns the given address a name
+   *
+   * @param _address The address to label
+   * @param _name The name to assign to the address
+   * @return _address The address that was labeled
+   */
+  function _label(address _address, string memory _name) internal returns (address) {
+    vm.label(_address, _name);
+    return _address;
   }
 }

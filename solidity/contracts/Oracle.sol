@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
-
 import {IOracle} from '../interfaces/IOracle.sol';
 
 import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
@@ -12,8 +10,6 @@ import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionMod
 import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.sol';
 
 contract Oracle is IOracle {
-  using EnumerableSet for EnumerableSet.Bytes32Set;
-
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 

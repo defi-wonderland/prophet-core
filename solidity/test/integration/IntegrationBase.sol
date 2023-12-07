@@ -5,9 +5,6 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {Helpers} from '../utils/Helpers.sol';
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
@@ -24,6 +21,9 @@ import {MockDisputeModule, IMockDisputeModule} from '../mocks/contracts/MockDisp
 import {MockResolutionModule, IMockResolutionModule} from '../mocks/contracts/MockResolutionModule.sol';
 import {MockFinalityModule, IMockFinalityModule} from '../mocks/contracts/MockFinalityModule.sol';
 
+import {Helpers} from '../utils/Helpers.sol';
+import {IWETH9} from '../utils/external/IWETH9.sol';
+import {IERC20} from '../utils/external/IERC20.sol';
 import {TestConstants} from '../utils/TestConstants.sol';
 // solhint-enable no-unused-import
 
@@ -44,8 +44,8 @@ contract IntegrationBase is TestConstants, Helpers {
   MockFinalityModule internal _finalityModule;
   MockCallback internal _mockCallback;
 
-  IERC20 public usdc = IERC20(label(USDC_ADDRESS, 'USDC'));
-  IWETH9 public weth = IWETH9(label(WETH_ADDRESS, 'WETH'));
+  IERC20 public usdc = IERC20(_label(USDC_ADDRESS, 'USDC'));
+  IWETH9 public weth = IWETH9(_label(WETH_ADDRESS, 'WETH'));
 
   string internal _expectedUrl = 'https://api.coingecko.com/api/v3/simple/price?';
   string internal _expectedBody = 'ids=ethereum&vs_currencies=usd';
@@ -74,7 +74,7 @@ contract IntegrationBase is TestConstants, Helpers {
     vm.startPrank(governance);
 
     oracle = new Oracle();
-    label(address(oracle), 'Oracle');
+    _label(address(oracle), 'Oracle');
 
     _accountingExtension = new MockAccounting();
     _requestModule = new MockRequestModule(oracle);
