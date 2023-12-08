@@ -235,15 +235,15 @@ contract Oracle is IOracle {
       let i := 0
       let shiftBy := sub(256, mul(_chunkSize, 8))
 
-      // Iterate 32-bytes chunks of the list
+      // Iterate N-bytes chunks of the list
       for {} lt(i, length) { i := add(i, _chunkSize) } {
-        // Load the address at index i
+        // Load the value at index i
         let _chunk := mload(add(add(_list, 0x20), i))
 
-        // Shift the address to the right by 96 bits and compare with _sought
+        // Shift the value to the right and compare with _sought
         if eq(shr(shiftBy, _chunk), _sought) {
           // Set _found to true and return
-          _found := 1
+          _found := true
           break
         }
       }
