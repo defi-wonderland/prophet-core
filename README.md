@@ -1,5 +1,6 @@
 # Prophet Core
 
+[![Version](https://img.shields.io/npm/v/@defi-wonderland/prophet-core?label=Version)](https://www.npmjs.com/package/@defi-wonderland/prophet-core-contracts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/prophet-core/blob/main/LICENSE)
 
 ⚠️ The code has not been audited yet, tread with caution.
