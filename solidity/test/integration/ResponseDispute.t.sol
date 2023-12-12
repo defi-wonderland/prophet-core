@@ -38,7 +38,10 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
 
-    vm.prank(disputer);
+    address _anotherDisputer = makeAddr('anotherDisputer');
+    mockDispute.disputer = _anotherDisputer;
+
+    vm.prank(_anotherDisputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
