@@ -68,6 +68,14 @@ interface IModule {
   ) external;
 
   /**
+   * @notice Validates parameters prior to creating a request
+   *
+   * @param _encodedParameters The encoded parameters for the request
+   * @param _valid Boolean indicating if the parameters are valid or not
+   */
+  function validateParameters(bytes memory _encodedParameters) external pure returns (bool _valid);
+
+  /**
    * @notice Returns the name of the module.
    *
    * @return _moduleName The name of the module.
