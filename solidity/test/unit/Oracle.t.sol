@@ -456,8 +456,8 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 }
 
 contract Oracle_Unit_DisputeResponse is BaseTest {
-  bytes32 _responseId;
-  bytes32 _disputeId;
+  bytes32 internal _responseId;
+  bytes32 internal _disputeId;
 
   function setUp() public override {
     super.setUp();
