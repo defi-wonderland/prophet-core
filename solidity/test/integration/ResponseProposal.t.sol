@@ -37,6 +37,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.warp(_timestamp);
     oracle.finalize(mockRequest, mockResponse);
 
+    mockResponse.response = abi.encode(_timestamp);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
