@@ -139,10 +139,6 @@ contract Oracle is IOracle {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (createdAt[_disputeId] != 0) {
-      revert Oracle_InvalidDisputeBody();
-    }
-
     if (finalizedAt[_response.requestId] != 0) {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
