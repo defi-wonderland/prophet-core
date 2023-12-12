@@ -423,6 +423,22 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
   }
 
   /**
+   * @notice Revert if the response has been already proposed
+   */
+  function test_proposeResponse_revertsIfDuplicateResponse() public {
+    // Test: propose a response
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+
+    // Test: try to propose the same response again
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+
+  /**
    * @notice Proposing a response to a finalized request should fail
    */
   function test_proposeResponse_revertsIfAlreadyFinalized(uint128 _finalizedAt) public {

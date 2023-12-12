@@ -106,6 +106,11 @@ contract Oracle is IOracle {
       revert Oracle_InvalidResponseBody();
     }
 
+    // Can't propose the same response twice
+    if (createdAt[_responseId] != 0) {
+      revert Oracle_InvalidResponseBody();
+    }
+
     if (finalizedAt[_response.requestId] != 0) {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
