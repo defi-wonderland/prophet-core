@@ -505,8 +505,24 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
 
-    // Test: try to dispute the response again
+    // Test: try to dispute the response
     vm.prank(_caller);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Reverts if the same dispute has been raised twice
+   */
+  function test_disputeResponse_revertIfDuplicateDispute() public {
+    // Test: dispute the response
+    vm.prank(disputer);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+
+    // Test: try to dispute the response again
+    vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 
@@ -518,7 +534,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
 
-    // Test: try to dispute the response again
+    // Test: try to dispute the response
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
