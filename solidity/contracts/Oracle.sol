@@ -126,6 +126,10 @@ contract Oracle is IOracle {
   ) external returns (bytes32 _disputeId) {
     _disputeId = _validateDispute(_request, _response, _dispute);
 
+    if (_dispute.disputer != msg.sender) {
+      revert Oracle_InvalidDisputeBody();
+    }
+
     if (createdAt[_dispute.requestId] == 0) {
       revert Oracle_InvalidDisputeBody();
     }

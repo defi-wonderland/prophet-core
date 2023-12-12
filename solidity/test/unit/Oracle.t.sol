@@ -497,6 +497,21 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   }
 
   /**
+   * @notice Reverts if the caller and the disputer are not the same
+   */
+  function test_disputeResponse_revertIfWrongDisputer(address _caller) public {
+    vm.assume(_caller != disputer);
+
+    // Check: revert?
+    oracle.mock_setDisputeOf(_responseId, _disputeId);
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+
+    // Test: try to dispute the response again
+    vm.prank(_caller);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Reverts if the request has already been disputed
    */
   function test_disputeResponse_revertIfAlreadyDisputed() public {
