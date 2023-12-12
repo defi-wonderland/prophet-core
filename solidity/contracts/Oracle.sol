@@ -134,8 +134,6 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
-    // TODO: Allow multiple disputes per response to prevent an attacker from starting and losing a dispute,
-    // making it impossible for non-malicious actors to dispute a response?
     if (disputeOf[_dispute.responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
     }
