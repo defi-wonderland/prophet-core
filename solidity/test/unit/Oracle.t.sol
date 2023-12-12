@@ -30,7 +30,7 @@ contract MockOracle is Oracle {
   }
 
   function mock_setFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) external {
-    _finalizedResponses[_requestId] = _finalizedResponseId;
+    finalizedResponseId[_requestId] = _finalizedResponseId;
   }
 
   function mock_setFinalizedAt(bytes32 _requestId, uint128 _finalizedAt) external {
@@ -727,17 +727,6 @@ contract Oracle_Unit_IsParticipant is BaseTest {
 
     // Check: any other address is not recognized as a participant
     assertFalse(oracle.isParticipant(_requestId, _notParticipant));
-  }
-}
-
-contract Oracle_Unit_GetFinalizedResponseId is BaseTest {
-  /**
-   * @notice Test if the finalized response id is returned correctly
-   */
-  function test_getFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) public {
-    assertEq(oracle.getFinalizedResponseId(_requestId), bytes32(0));
-    oracle.mock_setFinalizedResponseId(_requestId, _finalizedResponseId);
-    assertEq(oracle.getFinalizedResponseId(_requestId), _finalizedResponseId);
   }
 }
 

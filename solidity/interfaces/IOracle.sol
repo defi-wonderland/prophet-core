@@ -257,6 +257,14 @@ interface IOracle {
   function nonceToRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
 
   /**
+   * @notice Returns the finalized response ID for a given request
+   *
+   * @param _requestId The id of the request
+   * @return _finalizedResponseId The id of the finalized response
+   */
+  function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
+
+  /**
    * @notice The number of the block at which a request, response, or a dispute was created
    *
    * @param _id The request, response, or dispute id
@@ -383,14 +391,6 @@ interface IOracle {
    * @return _isParticipant If the user is a participant of the request
    */
   function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant);
-
-  /**
-   * @notice Returns the finalized response ID for a given request
-   *
-   * @param _requestId The id of the request
-   * @return _finalizedResponseId The id of the finalized response
-   */
-  function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
 
   /**
    * @notice Returns the ids of the responses for a given request
