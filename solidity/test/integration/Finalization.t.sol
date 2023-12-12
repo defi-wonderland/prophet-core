@@ -52,7 +52,7 @@ contract Integration_Finalization is IntegrationBase {
     vm.prank(_finalizer);
     oracle.finalize(mockRequest, mockResponse);
 
-    bytes32 _responseId = oracle.getFinalizedResponseId(_requestId);
+    bytes32 _responseId = oracle.finalizedResponseId(_requestId);
     // Check: is request finalized?
     assertEq(_responseId, _getId(mockResponse));
   }

@@ -25,6 +25,9 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   mapping(uint256 _requestNumber => bytes32 _id) public nonceToRequestId;
 
+  /// @inheritdoc IOracle
+  mapping(bytes32 _requestId => bytes32 _finalizedResponseId) public finalizedResponseId;
+
   /**
    * @notice The list of the response ids for each request
    */
@@ -39,11 +42,6 @@ contract Oracle is IOracle {
    * @notice The list of the allowed modules for each request
    */
   mapping(bytes32 _requestId => bytes _allowedModules) internal _allowedModules;
-
-  /**
-   * @notice The finalized response for each request
-   */
-  mapping(bytes32 _requestId => bytes32 _finalizedResponseId) internal _finalizedResponses;
 
   /// @inheritdoc IOracle
   uint256 public totalRequestCount;
@@ -143,8 +141,6 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
 
-    // TODO: Allow multiple disputes per response to prevent an attacker from starting and losing a dispute,
-    // making it impossible for non-malicious actors to dispute a response?
     if (disputeOf[_dispute.responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
     }
@@ -270,11 +266,6 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function getFinalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId) {
-    _finalizedResponseId = _finalizedResponses[_requestId];
-  }
-
-  /// @inheritdoc IOracle
   function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
@@ -376,7 +367,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidFinalizedResponse();
     }
 
-    _finalizedResponses[_requestId] = _responseId;
+    finalizedResponseId[_requestId] = _responseId;
   }
 
   /**
