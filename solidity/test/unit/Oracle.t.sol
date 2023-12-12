@@ -503,7 +503,6 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     vm.assume(_caller != disputer);
 
     // Check: revert?
-    oracle.mock_setDisputeOf(_responseId, _disputeId);
     vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
 
     // Test: try to dispute the response again
