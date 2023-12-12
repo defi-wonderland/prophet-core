@@ -7,11 +7,6 @@ contract Integration_ResponseDispute is IntegrationBase {
   bytes internal _responseData;
   bytes32 internal _requestId;
   bytes32 internal _responseId;
-  bytes internal _requestModuleData;
-  bytes internal _responseModuleData;
-  bytes internal _disputeModuleData;
-  bytes internal _resolutionModuleData;
-  bytes internal _finalityModuleData;
 
   function setUp() public override {
     super.setUp();
@@ -43,7 +38,10 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
 
-    vm.prank(disputer);
+    address _anotherDisputer = makeAddr('anotherDisputer');
+    mockDispute.disputer = _anotherDisputer;
+
+    vm.prank(_anotherDisputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }

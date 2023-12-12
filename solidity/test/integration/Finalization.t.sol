@@ -9,7 +9,6 @@ contract Integration_Finalization is IntegrationBase {
 
   function setUp() public override {
     super.setUp();
-    _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
     vm.etch(_callbackTarget, hex'069420');
   }
 

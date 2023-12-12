@@ -423,6 +423,22 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
   }
 
   /**
+   * @notice Revert if the response has been already proposed
+   */
+  function test_proposeResponse_revertsIfDuplicateResponse() public {
+    // Test: propose a response
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+
+    // Test: try to propose the same response again
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+
+  /**
    * @notice Proposing a response to a finalized request should fail
    */
   function test_proposeResponse_revertsIfAlreadyFinalized(uint128 _finalizedAt) public {
@@ -440,8 +456,8 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 }
 
 contract Oracle_Unit_DisputeResponse is BaseTest {
-  bytes32 _responseId;
-  bytes32 _disputeId;
+  bytes32 internal _responseId;
+  bytes32 internal _disputeId;
 
   function setUp() public override {
     super.setUp();
@@ -493,6 +509,20 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
 
     // Test: try to dispute the response
     vm.prank(disputer);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Reverts if the caller and the disputer are not the same
+   */
+  function test_disputeResponse_revertIfWrongDisputer(address _caller) public {
+    vm.assume(_caller != disputer);
+
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+
+    // Test: try to dispute the response again
+    vm.prank(_caller);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 

@@ -104,6 +104,11 @@ contract Oracle is IOracle {
       revert Oracle_InvalidResponseBody();
     }
 
+    // Can't propose the same response twice
+    if (createdAt[_responseId] != 0) {
+      revert Oracle_InvalidResponseBody();
+    }
+
     if (finalizedAt[_response.requestId] != 0) {
       revert Oracle_AlreadyFinalized(_response.requestId);
     }
@@ -123,6 +128,10 @@ contract Oracle is IOracle {
     Dispute calldata _dispute
   ) external returns (bytes32 _disputeId) {
     _disputeId = _validateDispute(_request, _response, _dispute);
+
+    if (_dispute.disputer != msg.sender) {
+      revert Oracle_InvalidDisputeBody();
+    }
 
     if (createdAt[_dispute.requestId] == 0) {
       revert Oracle_InvalidDisputeBody();

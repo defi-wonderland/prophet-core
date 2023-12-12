@@ -85,6 +85,8 @@ contract IntegrationBase is TestConstants, Helpers {
 
     vm.stopPrank();
 
+    _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
+
     // Configure the mock request
     mockRequest.requestModuleData = abi.encode(
       IMockRequestModule.RequestParameters({
