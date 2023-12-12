@@ -7,11 +7,6 @@ contract Integration_ResponseDispute is IntegrationBase {
   bytes internal _responseData;
   bytes32 internal _requestId;
   bytes32 internal _responseId;
-  bytes internal _requestModuleData;
-  bytes internal _responseModuleData;
-  bytes internal _disputeModuleData;
-  bytes internal _resolutionModuleData;
-  bytes internal _finalityModuleData;
 
   function setUp() public override {
     super.setUp();

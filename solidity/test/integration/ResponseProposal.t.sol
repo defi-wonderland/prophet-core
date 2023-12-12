@@ -9,52 +9,7 @@ contract Integration_ResponseProposal is IntegrationBase {
   function setUp() public override {
     super.setUp();
 
-    _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
-
-    mockRequest.requestModuleData = abi.encode(
-      IMockRequestModule.RequestParameters({
-        url: _expectedUrl,
-        body: _expectedBody,
-        accountingExtension: _accountingExtension,
-        paymentToken: usdc,
-        paymentAmount: _expectedReward
-      })
-    );
-
-    mockRequest.responseModuleData = abi.encode(
-      IMockResponseModule.RequestParameters({
-        accountingExtension: _accountingExtension,
-        bondToken: usdc,
-        bondAmount: _expectedBondAmount,
-        deadline: _expectedDeadline,
-        disputeWindow: _baseDisputeWindow
-      })
-    );
-
-    mockRequest.disputeModuleData = abi.encode(
-      IMockDisputeModule.RequestParameters({
-        accountingExtension: _accountingExtension,
-        bondToken: usdc,
-        bondAmount: _expectedBondAmount
-      })
-    );
-
-    mockRequest.resolutionModuleData = abi.encode();
-
-    mockRequest.finalityModuleData = abi.encode(
-      IMockFinalityModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
-    );
-
-    mockRequest.requestModule = address(_requestModule);
-    mockRequest.responseModule = address(_responseModule);
-    mockRequest.disputeModule = address(_disputeModule);
-    mockRequest.resolutionModule = address(_resolutionModule);
-    mockRequest.finalityModule = address(_finalityModule);
-
     mockRequest.nonce = uint96(oracle.totalRequestCount());
-    mockRequest.requester = requester;
-
-    mockResponse.requestId = _getId(mockRequest);
 
     vm.prank(requester);
     _requestId = oracle.createRequest(mockRequest, _ipfsHash);
