@@ -6,25 +6,29 @@ pragma solidity ^0.8.19;
 import {console} from 'forge-std/console.sol';
 
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
-import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
-import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
-import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
-import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
 
-import {Oracle, IOracle} from '../../contracts/Oracle.sol';
+import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
+import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
+import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
+import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
+
+import {IOracle, Oracle} from '../../contracts/Oracle.sol';
 
 import {IMockAccounting, MockAccounting} from '../mocks/contracts/MockAccounting.sol';
 import {MockCallback} from '../mocks/contracts/MockCallback.sol';
-import {MockRequestModule, IMockRequestModule} from '../mocks/contracts/MockRequestModule.sol';
-import {MockResponseModule, IMockResponseModule} from '../mocks/contracts/MockResponseModule.sol';
-import {MockDisputeModule, IMockDisputeModule} from '../mocks/contracts/MockDisputeModule.sol';
-import {MockResolutionModule, IMockResolutionModule} from '../mocks/contracts/MockResolutionModule.sol';
-import {MockFinalityModule, IMockFinalityModule} from '../mocks/contracts/MockFinalityModule.sol';
+
+import {IMockDisputeModule, MockDisputeModule} from '../mocks/contracts/MockDisputeModule.sol';
+
+import {IMockFinalityModule, MockFinalityModule} from '../mocks/contracts/MockFinalityModule.sol';
+import {IMockRequestModule, MockRequestModule} from '../mocks/contracts/MockRequestModule.sol';
+import {IMockResolutionModule, MockResolutionModule} from '../mocks/contracts/MockResolutionModule.sol';
+import {IMockResponseModule, MockResponseModule} from '../mocks/contracts/MockResponseModule.sol';
 
 import {Helpers} from '../utils/Helpers.sol';
-import {IWETH9} from '../utils/external/IWETH9.sol';
-import {IERC20} from '../utils/external/IERC20.sol';
+
 import {TestConstants} from '../utils/TestConstants.sol';
+import {IERC20} from '../utils/external/IERC20.sol';
+import {IWETH9} from '../utils/external/IWETH9.sol';
 // solhint-enable no-unused-import
 
 contract IntegrationBase is TestConstants, Helpers {

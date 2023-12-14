@@ -3,14 +3,15 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {IOracle} from '../../interfaces/IOracle.sol';
 import {IModule} from '../../interfaces/IModule.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
 
-import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
-import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
-import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
+
 import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
+import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
+import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
+import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 
 import {Oracle} from '../../contracts/Oracle.sol';
 import {Helpers} from '../utils/Helpers.sol';

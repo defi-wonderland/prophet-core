@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {Module, IModule} from '../../../contracts/Module.sol';
+import {IModule, Module} from '../../../contracts/Module.sol';
 import {IOracle} from '../../../interfaces/IOracle.sol';
 import {Helpers} from '../../utils/Helpers.sol';
 
