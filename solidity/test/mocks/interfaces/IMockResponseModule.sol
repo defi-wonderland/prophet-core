@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {IERC20} from '../../utils/external/IERC20.sol';
 
-import {IMockAccounting} from './IMockAccounting.sol';
 import {IResponseModule} from '../../../interfaces/modules/response/IResponseModule.sol';
+import {IMockAccounting} from './IMockAccounting.sol';
 
 interface IMockResponseModule is IResponseModule {
   struct RequestParameters {
