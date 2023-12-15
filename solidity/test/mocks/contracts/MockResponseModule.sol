@@ -20,4 +20,5 @@ contract MockResponseModule is Module, IMockResponseModule {
 
   function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external {}
   function moduleName() external view returns (string memory _moduleName) {}
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external {}
 }
