@@ -17,4 +17,12 @@ interface IResponseModule is IModule {
    * @param _sender The creator of the response
    */
   function propose(IOracle.Request calldata _request, IOracle.Response calldata _response, address _sender) external;
+
+  /**
+   * @notice Refunds the proposer for a valid and unutilized response
+   *
+   * @param _request The request
+   * @param _response The unutilized response
+   */
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external;
 }
