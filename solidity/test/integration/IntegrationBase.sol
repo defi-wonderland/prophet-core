@@ -32,7 +32,7 @@ import {IWETH9} from '../utils/external/IWETH9.sol';
 // solhint-enable no-unused-import
 
 contract IntegrationBase is TestConstants, Helpers {
-  uint256 public constant FORK_BLOCK = 111_361_902;
+  uint256 public constant FORK_BLOCK = 117_320_618;
 
   uint256 internal _initialBalance = 100_000 ether;
 

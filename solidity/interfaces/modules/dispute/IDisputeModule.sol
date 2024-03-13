@@ -52,6 +52,8 @@ interface IDisputeModule is IModule {
   /**
    * @notice Callback executed after a response to a dispute is received by the oracle
    * @param _disputeId The id of the dispute
+   * @param _request The request data
+   * @param _response The disputed response data
    * @param _dispute The dispute data
    */
   function onDisputeStatusChange(

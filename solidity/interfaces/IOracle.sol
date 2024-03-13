@@ -23,6 +23,8 @@ interface IOracle {
    * @notice Emitted when a response is proposed
    * @param _requestId The id of the request
    * @param _responseId The id of the proposed response
+   * @param _response The response that has been proposed
+   * @param _blockNumber The current block number
    */
   event ResponseProposed(
     bytes32 indexed _requestId, bytes32 indexed _responseId, Response _response, uint256 _blockNumber
@@ -44,6 +46,7 @@ interface IOracle {
    * @param _requestId The id of the request being finalized
    * @param _responseId The id of the final response, may be empty
    * @param _caller The address of the user who finalized the request
+   * @param _blockNumber The current block number
    */
   event OracleRequestFinalized(
     bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
@@ -159,6 +162,7 @@ interface IOracle {
     Won, // The disputer has won the dispute
     Lost, // The disputer has lost the dispute
     NoResolution // The dispute was inconclusive
+
   }
 
   /*///////////////////////////////////////////////////////////////
