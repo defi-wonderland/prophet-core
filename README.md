@@ -9,6 +9,8 @@
 
 Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules. With its emphasis on complete control and modularity across all aspects of the system, Prophet is an open-source public good for the Optimism community.
 
+Prophet can be used for attestations, governance, pricing of off-chain assets/indexes, prediction markets, scalable zk proving, block header updates and many other applications.
+
 ## Setup
 
 This project uses [Foundry](https://book.getfoundry.sh/). To build it locally, run:
