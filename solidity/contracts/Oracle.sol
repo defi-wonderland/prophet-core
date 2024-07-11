@@ -381,11 +381,11 @@ contract Oracle is IOracle {
   function _createRequest(Request memory _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
-    if (msg.sender != _request.requester || (_requestNonce != _request.nonce && _request.nonce != 0)) {
+    if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
+
+    if (msg.sender != _request.requester || _requestNonce != _request.nonce) {
       revert Oracle_InvalidRequestBody();
     }
-
-    if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
 
     _requestId = keccak256(abi.encode(_request));
     nonceToRequestId[_requestNonce] = _requestId;

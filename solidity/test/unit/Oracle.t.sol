@@ -295,18 +295,20 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
 
+    mockRequest.requestModuleData = _requestData;
+    mockRequest.responseModuleData = _responseData;
+    mockRequest.disputeModuleData = _disputeData;
+    mockRequest.requester = requester;
+    mockRequest.nonce = uint96(0);
+
+    bytes32 _theoreticalRequestId = _getId(mockRequest);
+    bytes32 _ipfsHash = keccak256(abi.encode(_theoreticalRequestId, uint96(0)));
+
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
-      mockRequest.requestModuleData = _requestData;
-      mockRequest.responseModuleData = _responseData;
-      mockRequest.disputeModuleData = _disputeData;
-      mockRequest.requester = requester;
-      mockRequest.nonce = uint96(0);
-
-      bytes32 _theoreticalRequestId = _getId(mockRequest);
       _requests[_i] = mockRequest;
       _precalculatedIds[_i] = _theoreticalRequestId;
-      _ipfsHashes[_i] = keccak256(abi.encode(_theoreticalRequestId, mockRequest.nonce));
+      _ipfsHashes[_i] = _ipfsHash;
     }
 
     vm.prank(requester);
