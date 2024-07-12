@@ -60,8 +60,14 @@ contract Oracle is IOracle {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
+    address _target;
+
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
+      _target = _decodeRequestData(_requestsData[_i].finalityModuleData);
+
+      if (_targetHasBytecode(_target)) {
+        _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
+      }
       unchecked {
         ++_i;
       }
@@ -441,5 +447,27 @@ contract Oracle is IOracle {
 
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
+  }
+
+  /**
+   * @notice Returns the address decoded  for a request
+   * @param _data The encoded request parameters
+   * @return _target The address of the target contract
+   */
+  function _decodeRequestData(bytes calldata _data) private pure returns (address _target) {
+    (_target,) = abi.decode(_data, (address, bytes));
+  }
+
+  /**
+   * @notice Checks if a target address has bytecode
+   * @param _target The address to check
+   * @return _hasBytecode Whether the target has bytecode or not
+   */
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
   }
 }
