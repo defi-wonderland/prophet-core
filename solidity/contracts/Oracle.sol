@@ -382,10 +382,14 @@ contract Oracle is IOracle {
    * @param _ipfsHash The hashed IPFS CID of the metadata json
    * @return _requestId The id of the created request
    */
-  function _createRequest(Request calldata _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
+  function _createRequest(Request memory _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
-    if (_requestNonce != _request.nonce || msg.sender != _request.requester) revert Oracle_InvalidRequestBody();
+    if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
+
+    if (msg.sender != _request.requester || _requestNonce != _request.nonce) {
+      revert Oracle_InvalidRequestBody();
+    }
 
     _requestId = keccak256(abi.encode(_request));
     nonceToRequestId[_requestNonce] = _requestId;

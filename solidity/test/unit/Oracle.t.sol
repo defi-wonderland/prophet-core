@@ -280,6 +280,43 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     uint256 _newNonce = oracle.totalRequestCount();
     assertEq(_newNonce, _initialNonce + _requestsAmount);
   }
+
+  /**
+   * @notice Test creation of requests in batch mode with nonce 0.
+   */
+  function test_createRequestsWithNonceZero(
+    bytes calldata _requestData,
+    bytes calldata _responseData,
+    bytes calldata _disputeData
+  ) public {
+    uint256 _initialNonce = oracle.totalRequestCount();
+    uint256 _requestsAmount = 5;
+    IOracle.Request[] memory _requests = new IOracle.Request[](_requestsAmount);
+    bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
+    bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
+
+    mockRequest.requestModuleData = _requestData;
+    mockRequest.responseModuleData = _responseData;
+    mockRequest.disputeModuleData = _disputeData;
+    mockRequest.requester = requester;
+    mockRequest.nonce = uint96(0);
+
+    bytes32 _theoreticalRequestId = _getId(mockRequest);
+    bytes32 _ipfsHash = keccak256(abi.encode(_theoreticalRequestId, uint96(0)));
+
+    // Generate requests batch
+    for (uint256 _i = 0; _i < _requestsAmount; _i++) {
+      _requests[_i] = mockRequest;
+      _precalculatedIds[_i] = _theoreticalRequestId;
+      _ipfsHashes[_i] = _ipfsHash;
+    }
+
+    vm.prank(requester);
+    oracle.createRequests(_requests, _ipfsHashes);
+
+    uint256 _newNonce = oracle.totalRequestCount();
+    assertEq(_newNonce, _initialNonce + _requestsAmount);
+  }
 }
 
 contract Oracle_Unit_ListRequestIds is BaseTest {
