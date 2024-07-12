@@ -134,20 +134,11 @@ contract Oracle is IOracle {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != msg.sender) {
+    if (
+      _dispute.disputer != msg.sender || createdAt[_dispute.requestId] == 0 || finalizedAt[_response.requestId] != 0
+        || disputeOf[_response.requestId] != bytes32(0)
+    ) {
       revert Oracle_InvalidDisputeBody();
-    }
-
-    if (createdAt[_dispute.requestId] == 0) {
-      revert Oracle_InvalidDisputeBody();
-    }
-
-    if (finalizedAt[_response.requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_response.requestId);
-    }
-
-    if (disputeOf[_dispute.responseId] != bytes32(0)) {
-      revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
     }
 
     _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], msg.sender);
