@@ -80,6 +80,9 @@ contract BaseTest is Test, Helpers {
   // Mock IPFS hash
   bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
 
+  // Mock target call contract
+  address public target = _mockContract('target');
+
   // Events
   event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, bytes32 _ipfsHash, uint256 _blockNumber);
   event ResponseProposed(
@@ -131,12 +134,11 @@ contract Oracle_Unit_CreateRequest is BaseTest {
     bytes calldata _requestData,
     bytes calldata _responseData,
     bytes calldata _disputeData,
-    bytes calldata _resolutionData,
-    bytes calldata _finalityData
+    bytes calldata _resolutionData
   ) public setResolutionAndFinality(_useResolutionAndFinality) {
     uint256 _initialNonce = oracle.totalRequestCount();
 
-    bytes memory _finalityDataEncoded = abi.encode(finalityModule, _finalityData);
+    bytes memory _finalityDataEncoded = abi.encode(target, mockRequest.finalityModuleData);
 
     // Create the request
     mockRequest.requestModuleData = _requestData;
@@ -226,8 +228,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
   function test_createRequests(
     bytes calldata _requestData,
     bytes calldata _responseData,
-    bytes calldata _disputeData,
-    bytes calldata _finalityData
+    bytes calldata _disputeData
   ) public {
     uint256 _initialNonce = oracle.totalRequestCount();
     uint256 _requestsAmount = 5;
@@ -236,7 +237,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     bool _useResolutionAndFinality = _requestData.length % 2 == 0;
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
 
-    bytes memory _finalityDataEncoded = abi.encode(finalityModule, _finalityData);
+    bytes memory _finalityDataEncoded = abi.encode(target, mockRequest.finalityModuleData);
 
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
@@ -293,8 +294,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
   function test_createRequestsWithNonceZero(
     bytes calldata _requestData,
     bytes calldata _responseData,
-    bytes calldata _disputeData,
-    bytes calldata _finalityData
+    bytes calldata _disputeData
   ) public {
     uint256 _initialNonce = oracle.totalRequestCount();
     uint256 _requestsAmount = 5;
@@ -302,7 +302,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
 
-    bytes memory _finalityDataEncoded = abi.encode(finalityModule, _finalityData);
+    bytes memory _finalityDataEncoded = abi.encode(target, mockRequest.finalityModuleData);
 
     mockRequest.requestModuleData = _requestData;
     mockRequest.responseModuleData = _responseData;
