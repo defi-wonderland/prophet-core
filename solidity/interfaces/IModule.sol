@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../interfaces/IOracle.sol';
+import {IOracle} from './IOracle.sol';
 
 /**
  * @title Module
