@@ -10,7 +10,13 @@ import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
 
+import {IDEncoder} from '../libraries/IDEncoder.sol';
+
 contract Oracle is IOracle {
+  using IDEncoder for Request;
+  using IDEncoder for Response;
+  using IDEncoder for Dispute;
+
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
@@ -283,7 +289,7 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+  function finalize(Request calldata _request, Response calldata _response) external {
     bytes32 _requestId;
     bytes32 _responseId;
 
@@ -321,8 +327,8 @@ contract Oracle is IOracle {
    * @param _request The request to be finalized
    * @return _requestId The id of the finalized request
    */
-  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
-    _requestId = keccak256(abi.encode(_request));
+  function _finalizeWithoutResponse(Request calldata _request) internal view returns (bytes32 _requestId) {
+    _requestId = _request.getId();
     bytes32[] memory _responses = getResponseIds(_requestId);
     uint256 _responsesAmount = _responses.length;
 
@@ -353,8 +359,8 @@ contract Oracle is IOracle {
    * @return _responseId The id of the final response
    */
   function _finalizeWithResponse(
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response
+    Request calldata _request,
+    Response calldata _response
   ) internal returns (bytes32 _requestId, bytes32 _responseId) {
     _responseId = _validateResponse(_request, _response);
     _requestId = _response.requestId;
@@ -387,7 +393,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidRequestBody();
     }
 
-    _requestId = keccak256(abi.encode(_request));
+    _requestId = _request.getId();
     nonceToRequestId[_requestNonce] = _requestId;
     createdAt[_requestId] = uint128(block.number);
 
@@ -417,8 +423,8 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) internal pure returns (bytes32 _responseId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    _responseId = keccak256(abi.encode(_response));
+    bytes32 _requestId = _request.getId();
+    _responseId = _response.getId();
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
 
@@ -435,9 +441,9 @@ contract Oracle is IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) internal pure returns (bytes32 _disputeId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    bytes32 _responseId = keccak256(abi.encode(_response));
-    _disputeId = keccak256(abi.encode(_dispute));
+    bytes32 _requestId = _request.getId();
+    bytes32 _responseId = _response.getId();
+    _disputeId = _dispute.getId();
 
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();

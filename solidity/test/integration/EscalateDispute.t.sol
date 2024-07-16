@@ -4,6 +4,10 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_EscalateDispute is IntegrationBase {
+  using IDEncoder for IOracle.Request;
+  using IDEncoder for IOracle.Response;
+  using IDEncoder for IOracle.Dispute;
+
   function test_escalateDispute() public {
     // Create the request
     vm.prank(requester);
@@ -21,7 +25,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // We check that the dispute was escalated
-    bytes32 _disputeId = _getId(mockDispute);
+    bytes32 _disputeId = mockDispute.getId();
     assertTrue(oracle.disputeStatus(_disputeId) == IOracle.DisputeStatus.Escalated);
 
     // Escalate dispute reverts if dispute is not active

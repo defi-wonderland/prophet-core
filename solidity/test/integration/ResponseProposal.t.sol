@@ -4,6 +4,10 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_ResponseProposal is IntegrationBase {
+  using IDEncoder for IOracle.Request;
+  using IDEncoder for IOracle.Response;
+  using IDEncoder for IOracle.Dispute;
+
   bytes32 internal _requestId;
 
   function setUp() public override {
@@ -25,7 +29,7 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     // Check: response data is correctly stored?
     assertEq(_responseIds.length, 1);
-    assertEq(_responseIds[0], _getId(mockResponse));
+    assertEq(_responseIds[0], mockResponse.getId());
   }
 
   function test_proposeResponse_finalizedRequest(uint256 _timestamp) public {

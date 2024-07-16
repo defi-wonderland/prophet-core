@@ -4,6 +4,10 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_Finalization is IntegrationBase {
+  using IDEncoder for IOracle.Request;
+  using IDEncoder for IOracle.Response;
+  using IDEncoder for IOracle.Dispute;
+
   address internal _finalizer = makeAddr('finalizer');
   address internal _callbackTarget = makeAddr('target');
 
@@ -54,7 +58,7 @@ contract Integration_Finalization is IntegrationBase {
 
     bytes32 _responseId = oracle.finalizedResponseId(_requestId);
     // Check: is request finalized?
-    assertEq(_responseId, _getId(mockResponse));
+    assertEq(_responseId, mockResponse.getId());
   }
 
   /**
@@ -78,9 +82,9 @@ contract Integration_Finalization is IntegrationBase {
     mockRequest.finalityModuleData =
       abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}));
 
-    mockResponse.requestId = _getId(mockRequest);
+    mockResponse.requestId = mockRequest.getId();
     mockDispute.requestId = mockResponse.requestId;
-    mockDispute.responseId = _getId(mockResponse);
+    mockDispute.responseId = mockResponse.getId();
 
     vm.prank(requester);
     oracle.createRequest(mockRequest, _ipfsHash);
@@ -129,7 +133,7 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Internal helper function to setup the finalization stage of a request.
    */
   function _jumpToFinalization() internal returns (bytes32 _responseId) {
-    mockResponse.requestId = _getId(mockRequest);
+    mockResponse.requestId = mockRequest.getId();
 
     vm.prank(proposer);
     _responseId = oracle.proposeResponse(mockRequest, mockResponse);

@@ -14,6 +14,8 @@ import {IResponseModule} from '../../interfaces/modules/response/IResponseModule
 
 import {IOracle, Oracle} from '../../contracts/Oracle.sol';
 
+import {IDEncoder} from '../../libraries/IDEncoder.sol';
+
 import {IMockAccounting, MockAccounting} from '../mocks/contracts/MockAccounting.sol';
 import {MockCallback} from '../mocks/contracts/MockCallback.sol';
 
@@ -32,6 +34,10 @@ import {IWETH9} from '../utils/external/IWETH9.sol';
 // solhint-enable no-unused-import
 
 contract IntegrationBase is TestConstants, Helpers {
+  using IDEncoder for IOracle.Request;
+  using IDEncoder for IOracle.Response;
+  using IDEncoder for IOracle.Dispute;
+
   uint256 public constant FORK_BLOCK = 122_612_760;
 
   uint256 internal _initialBalance = 100_000 ether;
@@ -134,11 +140,11 @@ contract IntegrationBase is TestConstants, Helpers {
     mockRequest.requester = requester;
 
     // Configure the mock response
-    mockResponse.requestId = _getId(mockRequest);
+    mockResponse.requestId = mockRequest.getId();
 
     // Configure the mock dispute
-    mockDispute.requestId = _getId(mockRequest);
-    mockDispute.responseId = _getId(mockResponse);
+    mockDispute.requestId = mockRequest.getId();
+    mockDispute.responseId = mockResponse.getId();
   }
 
   function _mineBlock() internal {

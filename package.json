@@ -19,7 +19,7 @@
     "postinstall": "husky install",
     "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
-    "lint:sol-logic": "solhint 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol'",
+    "lint:sol-logic": "solhint 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol' 'solidity/libraries/**/*.sol'",
     "lint:sol-tests": "solhint -c .solhint.tests.json 'solidity/test/**/*.sol'",
     "prepare": "husky install",
     "prepublishOnly": "pinst --disable",
@@ -32,7 +32,7 @@
   },
   "lint-staged": {
     "*.{js,css,md,ts,sol}": "forge fmt",
-    "*.sol": "solhint --fix 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol' && solhint --fix -c .solhint.tests.json 'solidity/test/**/*.sol'",
+    "*.sol": "solhint --fix 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol' 'solidity/libraries/**/*.sol' && solhint --fix -c .solhint.tests.json 'solidity/test/**/*.sol'",
     "package.json": "sort-package-json"
   },
   "devDependencies": {

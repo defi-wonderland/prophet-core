@@ -48,36 +48,6 @@ contract Helpers is Test {
   }
 
   /**
-   * @notice Computes the ID of a given request as it's done in the Oracle
-   *
-   * @param _request The request to compute the ID for
-   * @return _id The ID of the request
-   */
-  function _getId(IOracle.Request memory _request) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_request));
-  }
-
-  /**
-   * @notice Computes the ID of a given response as it's done in the Oracle
-   *
-   * @param _response The response to compute the ID for
-   * @return _id The ID of the response
-   */
-  function _getId(IOracle.Response memory _response) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_response));
-  }
-
-  /**
-   * @notice Computes the ID of a given dispute as it's done in the Oracle
-   *
-   * @param _dispute The dispute to compute the ID for
-   * @return _id The ID of the dispute
-   */
-  function _getId(IOracle.Dispute memory _dispute) internal pure returns (bytes32 _id) {
-    _id = keccak256(abi.encode(_dispute));
-  }
-
-  /**
    * @notice Creates a mock contract, labels it and erases the bytecode
    *
    * @param _name The label to use for the mock contract
