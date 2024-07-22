@@ -73,7 +73,7 @@ interface IModule {
    * @param _encodedParameters The encoded parameters for the request
    * @return _valid Boolean indicating if the parameters are valid or not
    */
-  function validateParameters(bytes calldata _encodedParameters) external pure returns (bool _valid);
+  function validateParameters(bytes calldata _encodedParameters) external view returns (bool _valid);
 
   /**
    * @notice Returns the name of the module.
