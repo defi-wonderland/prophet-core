@@ -73,7 +73,42 @@ abstract contract Module is IModule {
   ) internal pure returns (bytes32 _responseId) {
     bytes32 _requestId = _getId(_request);
     _responseId = _getId(_response);
+
     if (_response.requestId != _requestId) revert Module_InvalidResponseBody();
+  }
+
+  /**
+   * @notice Validates the correctness of a request-dispute pair
+   *
+   * @param _request The request to compute the id for
+   * @param _dispute The dispute to compute the id for
+   * @return _disputeId The id the dispute
+   */
+  function _validateDispute(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute
+  ) internal pure returns (bytes32 _disputeId) {
+    bytes32 _requestId = _getId(_request);
+    _disputeId = _getId(_dispute);
+
+    if (_dispute.requestId != _requestId) revert Module_InvalidDisputeBody();
+  }
+
+  /**
+   * @notice Validates the correctness of a response-dispute pair
+   *
+   * @param _response The response to compute the id for
+   * @param _dispute The dispute to compute the id for
+   * @return _disputeId The id the dispute
+   */
+  function _validateDispute(
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) internal pure returns (bytes32 _disputeId) {
+    bytes32 _responseId = _getId(_response);
+    _disputeId = _getId(_dispute);
+
+    if (_dispute.responseId != _responseId) revert Module_InvalidDisputeBody();
   }
 
   /**
@@ -82,18 +117,19 @@ abstract contract Module is IModule {
    * @param _request The request to compute the id for
    * @param _response The response to compute the id for
    * @param _dispute The dispute to compute the id for
+   * @return _responseId The id the response
    * @return _disputeId The id the dispute
    */
-  function _validateDispute(
+  function _validateResponseAndDispute(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal pure returns (bytes32 _disputeId) {
+  ) internal pure returns (bytes32 _responseId, bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
-    bytes32 _responseId = _getId(_response);
+    _responseId = _getId(_response);
     _disputeId = _getId(_dispute);
 
-    if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Module_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Module_InvalidResponseBody();
+    if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Module_InvalidDisputeBody();
   }
 }
