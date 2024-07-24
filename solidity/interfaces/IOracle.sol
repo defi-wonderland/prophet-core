@@ -269,12 +269,28 @@ interface IOracle {
   function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
 
   /**
-   * @notice The number of the block at which a request, response, or a dispute was created
+   * @notice The number of the block at which a request was created
    *
-   * @param _id The request, response, or dispute id
-   * @return _createdAt The block number
+   * @param _id The request id
+   * @return _requestCreatedAt The block number
    */
-  function createdAt(bytes32 _id) external view returns (uint128 _createdAt);
+  function requestCreatedAt(bytes32 _id) external view returns (uint128 _requestCreatedAt);
+
+  /**
+   * @notice The number of the block at which a response was created
+   *
+   * @param _id The response id
+   * @return _responseCreatedAt The block number
+   */
+  function responseCreatedAt(bytes32 _id) external view returns (uint128 _responseCreatedAt);
+
+  /**
+   * @notice The number of the block at which a dispute was created
+   *
+   * @param _id The dispute id
+   * @return _disputeCreatedAt The block number
+   */
+  function disputeCreatedAt(bytes32 _id) external view returns (uint128 _disputeCreatedAt);
 
   /**
    * @notice The number of the block at which a request was finalized

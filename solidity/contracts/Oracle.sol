@@ -15,7 +15,13 @@ contract Oracle is IOracle {
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
   /// @inheritdoc IOracle
-  mapping(bytes32 _id => uint128 _createdAt) public createdAt;
+  mapping(bytes32 _id => uint128 _requestCreatedAt) public requestCreatedAt;
+
+  /// @inheritdoc IOracle
+  mapping(bytes32 _id => uint128 _responseCreatedAt) public responseCreatedAt;
+
+  /// @inheritdoc IOracle
+  mapping(bytes32 _id => uint128 _disputeCreatedAt) public disputeCreatedAt;
 
   /// @inheritdoc IOracle
   mapping(bytes32 _responseId => bytes32 _disputeId) public disputeOf;
@@ -106,7 +112,7 @@ contract Oracle is IOracle {
     }
 
     // Can't propose the same response twice
-    if (createdAt[_responseId] != 0) {
+    if (responseCreatedAt[_responseId] != 0) {
       revert Oracle_InvalidResponseBody();
     }
 
@@ -117,7 +123,7 @@ contract Oracle is IOracle {
     _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_response.requestId] = abi.encodePacked(_responseIds[_response.requestId], _responseId);
-    createdAt[_responseId] = uint128(block.number);
+    responseCreatedAt[_responseId] = uint128(block.number);
 
     emit ResponseProposed(_response.requestId, _responseId, _response, block.number);
   }
@@ -134,7 +140,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != msg.sender || createdAt[_dispute.requestId] == 0) {
+    if (_dispute.disputer != msg.sender || requestCreatedAt[_dispute.requestId] == 0) {
       revert Oracle_InvalidDisputeBody();
     }
 
@@ -149,7 +155,7 @@ contract Oracle is IOracle {
     _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_dispute.responseId] = _disputeId;
-    createdAt[_disputeId] = uint128(block.number);
+    disputeCreatedAt[_disputeId] = uint128(block.number);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
@@ -389,7 +395,7 @@ contract Oracle is IOracle {
 
     _requestId = keccak256(abi.encode(_request));
     nonceToRequestId[_requestNonce] = _requestId;
-    createdAt[_requestId] = uint128(block.number);
+    requestCreatedAt[_requestId] = uint128(block.number);
 
     // solhint-disable-next-line func-named-parameters
     _allowedModules[_requestId] = abi.encodePacked(
