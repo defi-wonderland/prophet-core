@@ -28,7 +28,7 @@ abstract contract Module is IModule {
   ) external virtual onlyOracle {}
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters) external pure virtual returns (bool _valid) {}
+  function validateParameters(bytes calldata _encodedParameters) external view virtual returns (bool _valid) {}
 
   /**
    * @notice Computes the id a given request
