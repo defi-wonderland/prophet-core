@@ -409,6 +409,9 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     // Compute the response ID
     bytes32 _responseId = _getId(mockResponse);
 
+    // Set the request creation time
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
+
     // Mock and expect the responseModule propose call:
     _mockAndExpect(
       address(responseModule),
@@ -447,10 +450,23 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
   }
 
   /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_proposeResponse_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+
+  /**
    * @notice Revert if the caller is not the proposer nor the dispute module
    */
   function test_proposeResponse_revertsIfInvalidCaller(address _caller) public {
     vm.assume(_caller != proposer && _caller != address(disputeModule));
+
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
@@ -464,6 +480,9 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
    * @notice Revert if the response has been already proposed
    */
   function test_proposeResponse_revertsIfDuplicateResponse() public {
+    // Set the request creation time
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
+
     // Test: propose a response
     vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
@@ -485,6 +504,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     // Set the finalization time
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setFinalizedAt(_requestId, _finalizedAt);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     // Check: Reverts if already finalized?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, (_requestId)));
@@ -537,6 +557,18 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   }
 
   /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_disputeResponse_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    // Test: try to dispute the response
+    vm.prank(disputer);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Reverts if the dispute proposer and response proposer are not same
    */
   function test_disputeResponse_revertIfProposerIsNotValid(address _otherProposer) public {
@@ -544,7 +576,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
 
     mockDispute.proposer = _otherProposer;
 
@@ -560,7 +592,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
 
     // Test: try to dispute the response
     vm.prank(disputer);
@@ -637,6 +669,18 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
   }
 
   /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_updateDisputeStatus_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    // Test: change the status
+    vm.prank(address(resolutionModule));
+    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(0));
+  }
+
+  /**
    * @notice Providing a dispute that does not match the response should revert
    */
   function test_updateDisputeStatus_revertsIfInvalidDisputeId(bytes32 _randomId, uint256 _newStatus) public {
@@ -647,6 +691,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
 
     // Setting a random dispute id, not matching the mockDispute
     oracle.mock_setDisputeOf(_getId(mockResponse), _randomId);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
@@ -683,6 +728,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
   function test_resolveDispute_callsResolutionModule() public {
     // Mock the dispute
     bytes32 _disputeId = _getId(mockDispute);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
 
@@ -705,8 +751,20 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
    * @notice Test the revert when the function is called with an non-existent dispute id
    */
   function test_resolveDispute_revertsIfInvalidDispute() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _getId(mockDispute)));
+
+    // Test: try to resolve the dispute
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_resolveDispute_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
 
     // Test: try to resolve the dispute
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
@@ -725,6 +783,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
 
       // Mock the dispute
       oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
+      oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
       oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus(_status));
 
       // Check: revert?
@@ -753,6 +812,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
     // Mock the dispute
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Escalated);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NoResolutionModule.selector, _disputeId));
@@ -832,7 +892,9 @@ contract Oracle_Unit_Finalize is BaseTest {
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
     bytes32 _responseId = _getId(mockResponse);
+
     oracle.mock_addResponseId(_requestId, _responseId);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     // Mock the finalize call on all modules
     bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
@@ -858,6 +920,17 @@ contract Oracle_Unit_Finalize is BaseTest {
   }
 
   /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_finalize_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    vm.prank(requester);
+    oracle.finalize(mockRequest, mockResponse);
+  }
+
+  /**
    * @notice Finalizing an already finalized request
    */
   function test_finalize_withResponse_revertsWhenAlreadyFinalized() public {
@@ -866,6 +939,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     // Test: finalize a finalized request
     oracle.mock_setFinalizedAt(_requestId, uint128(block.number));
     oracle.mock_addResponseId(_requestId, _getId(mockResponse));
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     vm.prank(requester);
@@ -883,6 +957,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Store the response
     oracle.mock_addResponseId(_requestId, _responseId);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Test: finalize the request
     vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
@@ -894,6 +969,8 @@ contract Oracle_Unit_Finalize is BaseTest {
    * @notice Finalizing a request with an unrelated response
    */
   function test_finalize_withResponse_revertsIfInvalidResponse() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
+
     // Test: finalize the request
     vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
     vm.prank(requester);
@@ -914,6 +991,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Submit a response to the request
     oracle.mock_addResponseId(_requestId, _responseId);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Won);
 
@@ -936,6 +1014,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     vm.assume(_caller != address(0));
 
     bytes32 _requestId = _getId(mockRequest);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
     mockResponse.requestId = bytes32(0);
 
     // Create mock request and store it
@@ -977,6 +1056,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     vm.assume(_status <= uint256(type(IOracle.DisputeStatus).max));
 
     bytes32 _requestId = _getId(mockRequest);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     IOracle.DisputeStatus _disputeStatus = IOracle.DisputeStatus(_status);
 
@@ -1014,6 +1094,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Override the finalizedAt to make it be finalized
     oracle.mock_setFinalizedAt(_requestId, uint128(block.number));
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Test: finalize a finalized request
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
@@ -1031,6 +1112,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Submit a response to the request
     oracle.mock_addResponseId(_requestId, _responseId);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: reverts?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_FinalizableResponseExists.selector, _responseId));
@@ -1050,6 +1132,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Mock and expect the dispute module call
     _mockAndExpect(
@@ -1093,6 +1176,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
     oracle.mock_setDisputeStatus(_disputeId, IOracle.DisputeStatus.Active);
+    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
 
     // Mock and expect the dispute module call
     _mockAndExpect(
@@ -1113,10 +1197,21 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
   }
 
   /**
+   * @notice Revert if the request doesn't exist
+   */
+  function test_escalateDispute_revertsIfInvalidRequest() public {
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Revert if the provided dispute does not match the request or the response
    */
   function test_escalateDispute_revertsIfDisputeNotValid() public {
     bytes32 _disputeId = _getId(mockDispute);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
 
     // Test: escalate the dispute
@@ -1125,6 +1220,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
   function test_escalateDispute_revertsIfDisputeNotActive() public {
     bytes32 _disputeId = _getId(mockDispute);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
 
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));

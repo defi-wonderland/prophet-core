@@ -140,7 +140,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != msg.sender || requestCreatedAt[_dispute.requestId] == 0) {
+    if (_dispute.disputer != msg.sender) {
       revert Oracle_InvalidDisputeBody();
     }
 
@@ -329,6 +329,11 @@ contract Oracle is IOracle {
    */
   function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
     _requestId = keccak256(abi.encode(_request));
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequestBody();
+    }
+
     bytes32[] memory _responses = getResponseIds(_requestId);
     uint256 _responsesAmount = _responses.length;
 
@@ -422,8 +427,13 @@ contract Oracle is IOracle {
   function _validateResponse(
     Request calldata _request,
     Response calldata _response
-  ) internal pure returns (bytes32 _responseId) {
+  ) internal view returns (bytes32 _responseId) {
     bytes32 _requestId = keccak256(abi.encode(_request));
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequestBody();
+    }
+
     _responseId = keccak256(abi.encode(_response));
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
@@ -440,8 +450,13 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response,
     Dispute calldata _dispute
-  ) internal pure returns (bytes32 _disputeId) {
+  ) internal view returns (bytes32 _disputeId) {
     bytes32 _requestId = keccak256(abi.encode(_request));
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequestBody();
+    }
+
     bytes32 _responseId = keccak256(abi.encode(_response));
     _disputeId = keccak256(abi.encode(_dispute));
 
