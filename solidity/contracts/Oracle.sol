@@ -104,7 +104,7 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = _validateResponse(_request, _response);
+    _responseId = _validateProposeResponse(_request, _response);
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
@@ -435,6 +435,26 @@ contract Oracle is IOracle {
     }
 
     _responseId = keccak256(abi.encode(_response));
+
+    if (responseCreatedAt[_responseId] == 0) {
+      revert Oracle_InvalidResponseBody();
+    }
+
+    if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
+  }
+
+  function _validateProposeResponse(
+    Request calldata _request,
+    Response calldata _response
+  ) internal view returns (bytes32 _responseId) {
+    bytes32 _requestId = keccak256(abi.encode(_request));
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequestBody();
+    }
+
+    _responseId = keccak256(abi.encode(_response));
+
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
 
@@ -458,7 +478,16 @@ contract Oracle is IOracle {
     }
 
     bytes32 _responseId = keccak256(abi.encode(_response));
+
+    if (responseCreatedAt[_responseId] == 0) {
+      revert Oracle_InvalidResponseBody();
+    }
+
     _disputeId = keccak256(abi.encode(_dispute));
+
+    if (disputeCreatedAt[_disputeId] == 0) {
+      revert Oracle_InvalidDisputeBody();
+    }
 
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
     if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
