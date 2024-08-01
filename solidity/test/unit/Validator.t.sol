@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {IModule} from '../../interfaces/IModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
 
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
@@ -23,36 +22,36 @@ import {Helpers} from '../utils/Helpers.sol';
 contract MockValidator is Validator {
   constructor(IOracle _oracle) Validator(_oracle) {}
 
-  function getId(IOracle.Request calldata _request) external pure returns (bytes32) {
+  function getId(IOracle.Request calldata _request) external pure returns (bytes32 _requestId) {
     return _getId(_request);
   }
 
-  function getId(IOracle.Response calldata _response) external pure returns (bytes32) {
+  function getId(IOracle.Response calldata _response) external pure returns (bytes32 _responseId) {
     return _getId(_response);
   }
 
-  function getId(IOracle.Dispute calldata _dispute) external pure returns (bytes32) {
+  function getId(IOracle.Dispute calldata _dispute) external pure returns (bytes32 _disputeId) {
     return _getId(_dispute);
   }
 
   function validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) external view returns (bytes32) {
+  ) external view returns (bytes32 _responseId) {
     return _validateResponse(_request, _response);
   }
 
   function validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external view returns (bytes32) {
+  ) external view returns (bytes32 _disputeId) {
     return _validateDispute(_response, _dispute);
   }
 
   function validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) external view returns (bytes32) {
+  ) external view returns (bytes32 _disputeId) {
     return _validateDispute(_request, _dispute);
   }
 
