@@ -233,6 +233,29 @@ contract Oracle is IOracle {
     emit DisputeStatusUpdated(_disputeId, _status, block.number);
   }
 
+  /// @inheritdoc IOracle
+  function validateDispute(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute
+  ) external view returns (bytes32 _disputeId) {
+    _disputeId = _validateDispute(_request, _response, _dispute);
+    if (disputeCreatedAt[_disputeId] == 0) {
+      revert Oracle_InvalidDisputeBody();
+    }
+  }
+
+  /// @inheritdoc IOracle
+  function validateResponse(
+    Request calldata _request,
+    Response calldata _response
+  ) external view returns (bytes32 _responseId) {
+    _responseId = _validateResponse(_request, _response);
+    if (responseCreatedAt[_responseId] == 0) {
+      revert Oracle_InvalidResponseBody();
+    }
+  }
+
   /**
    * @notice Matches a bytes32 value against an encoded list of values
    *

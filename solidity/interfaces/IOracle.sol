@@ -395,6 +395,32 @@ interface IOracle {
   ) external;
 
   /**
+   * @notice Validates a dispute
+   *
+   * @param _request The request
+   * @param _response The disputed response
+   * @param _dispute The dispute that is being validated
+   * @return _disputeId The id of the dispute
+   */
+  function validateDispute(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute
+  ) external view returns (bytes32 _disputeId);
+
+  /**
+   * @notice Validates a response
+   *
+   * @param _request The request
+   * @param _response The response that is being validated
+   * @return _responseId The id of the response
+   */
+  function validateResponse(
+    Request calldata _request,
+    Response calldata _response
+  ) external view returns (bytes32 _responseId);
+
+  /**
    * @notice Checks if the given address is a module used in the request
    *
    * @param _requestId The id of the request

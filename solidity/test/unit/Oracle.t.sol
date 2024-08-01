@@ -54,6 +54,14 @@ contract MockOracle is Oracle {
     requestCreatedAt[_requestId] = _requestCreatedAt;
   }
 
+  function mock_setResponseCreatedAt(bytes32 _responseId, uint128 _responseCreatedAt) external {
+    responseCreatedAt[_responseId] = _responseCreatedAt;
+  }
+
+  function mock_setDisputeCreatedAt(bytes32 _disputeId, uint128 _disputeCreatedAt) external {
+    disputeCreatedAt[_disputeId] = _disputeCreatedAt;
+  }
+
   function mock_setTotalRequestCount(uint256 _totalRequestCount) external {
     totalRequestCount = _totalRequestCount;
   }
@@ -1131,5 +1139,95 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+  }
+}
+
+contract Oracle_Unit_ValidateResponse is BaseTest {
+  /**
+   * @notice Test if the response is validated correctly
+   */
+  function test_validateResponse(uint128 _creation) public {
+    vm.assume(_creation > 0);
+    // Set the response creation time to 0
+    oracle.mock_setResponseCreatedAt(_getId(mockResponse), _creation);
+    // Check: no revert?
+    oracle.validateResponse(mockRequest, mockResponse);
+  }
+
+  /**
+   * @notice Test reverts when the response requestId does not match
+   */
+  function test_invalidResponseBody(bytes32 _requestId) public {
+    vm.assume(_requestId != _getId(mockRequest));
+    // Change the request id for the response
+    mockResponse.requestId = _requestId;
+
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    oracle.validateResponse(mockRequest, mockResponse);
+  }
+
+  /**
+   * @notice Test reverts when the response creation time is 0
+   */
+  function test_responseNotCreated() public {
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    oracle.validateResponse(mockRequest, mockResponse);
+  }
+}
+
+contract Oracle_Unit_ValidateDispute is BaseTest {
+  /**
+   * @notice Test if the response is validated correctly
+   */
+  function test_validateDispute(uint128 _creation) public {
+    vm.assume(_creation > 0);
+    // Set the response creation time to 0
+    oracle.mock_setDisputeCreatedAt(_getId(mockDispute), _creation);
+    // Check: no revert?
+    oracle.validateDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Test reverts when the dispute requestId does not match
+   */
+  function test_invalidDisputeBody_DisputeRequestId(bytes32 _requestId) public {
+    vm.assume(_requestId != _getId(mockRequest));
+    // Change the request id for the response
+    mockDispute.requestId = _requestId;
+
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    oracle.validateDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Test reverts when the response requestId does not match
+   */
+  function test_invalidDisputeBody_ResponseRequestId(bytes32 _requestId) public {
+    vm.assume(_requestId != _getId(mockRequest));
+    // Change the request id for the response
+    mockResponse.requestId = _requestId;
+
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    oracle.validateDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Test reverts when the dispute responseId does not match
+   */
+  function test_invalidDisputeBody_DisputeResponseId(bytes32 _responseId) public {
+    vm.assume(_responseId != _getId(mockResponse));
+    // Change the request id for the response
+    mockDispute.responseId = _responseId;
+
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    oracle.validateDispute(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Test reverts when the dispute creation time is 0
+   */
+  function test_responseNotCreated() public {
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    oracle.validateDispute(mockRequest, mockResponse, mockDispute);
   }
 }
