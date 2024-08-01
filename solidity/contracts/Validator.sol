@@ -2,17 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from '../interfaces/IOracle.sol';
+import {IValidator} from '../interfaces/IValidator.sol';
 
-contract Validator {
-  /**
-   * @notice Thrown when the response provided does not match the request
-   */
-  error Validator_InvalidResponseBody();
+contract Validator is IValidator {
+  /// @inheritdoc IValidator
+  IOracle public immutable ORACLE;
 
-  /**
-   * @notice Thrown when the dispute provided does not match the request or response
-   */
-  error Validator_InvalidDisputeBody();
+  constructor(IOracle _oracle) payable {
+    ORACLE = _oracle;
+  }
 
   /**
    * @notice Computes the id a given request
@@ -54,11 +52,12 @@ contract Validator {
   function _validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) internal pure returns (bytes32 _responseId) {
+  ) internal view returns (bytes32 _responseId) {
     bytes32 _requestId = _getId(_request);
     _responseId = _getId(_response);
 
     if (_response.requestId != _requestId) revert Validator_InvalidResponseBody();
+    if (ORACLE.responseCreatedAt(_responseId) == 0) revert Validator_InvalidResponse();
   }
 
   /**
@@ -71,11 +70,12 @@ contract Validator {
   function _validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) internal pure returns (bytes32 _disputeId) {
+  ) internal view returns (bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
     _disputeId = _getId(_dispute);
 
     if (_dispute.requestId != _requestId) revert Validator_InvalidDisputeBody();
+    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 
   /**
@@ -88,11 +88,12 @@ contract Validator {
   function _validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal pure returns (bytes32 _disputeId) {
+  ) internal view returns (bytes32 _disputeId) {
     bytes32 _responseId = _getId(_response);
     _disputeId = _getId(_dispute);
 
     if (_dispute.responseId != _responseId) revert Validator_InvalidDisputeBody();
+    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 
   /**
@@ -108,12 +109,13 @@ contract Validator {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal pure returns (bytes32 _responseId, bytes32 _disputeId) {
+  ) internal view returns (bytes32 _responseId, bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
     _responseId = _getId(_response);
     _disputeId = _getId(_dispute);
 
     if (_response.requestId != _requestId) revert Validator_InvalidResponseBody();
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Validator_InvalidDisputeBody();
+    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 }

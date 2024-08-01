@@ -14,12 +14,15 @@ import {IResolutionModule} from '../../interfaces/modules/resolution/IResolution
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 
 import {Validator} from '../../contracts/Validator.sol';
+import {IValidator} from '../../interfaces/IValidator.sol';
 import {Helpers} from '../utils/Helpers.sol';
 
 /**
  * @notice Harness to deploy and test Oracle
  */
 contract MockValidator is Validator {
+  constructor(IOracle _oracle) Validator(_oracle) {}
+
   function getId(IOracle.Request calldata _request) external pure returns (bytes32) {
     return _getId(_request);
   }
@@ -35,21 +38,21 @@ contract MockValidator is Validator {
   function validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) external pure returns (bytes32) {
+  ) external view returns (bytes32) {
     return _validateResponse(_request, _response);
   }
 
   function validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external pure returns (bytes32) {
+  ) external view returns (bytes32) {
     return _validateDispute(_response, _dispute);
   }
 
   function validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) external pure returns (bytes32) {
+  ) external view returns (bytes32) {
     return _validateDispute(_request, _dispute);
   }
 
@@ -57,7 +60,7 @@ contract MockValidator is Validator {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external pure returns (bytes32 _responseId, bytes32 _disputeId) {
+  ) external view returns (bytes32 _responseId, bytes32 _disputeId) {
     return _validateResponseAndDispute(_request, _response, _dispute);
   }
 }
@@ -69,6 +72,9 @@ contract BaseTest is Test, Helpers {
   // The target contract
   MockValidator public validator;
 
+  // Mock Oracle
+  IOracle public oracle = IOracle(_mockContract('oracle'));
+
   // Mock modules
   IRequestModule public requestModule = IRequestModule(_mockContract('requestModule'));
   IResponseModule public responseModule = IResponseModule(_mockContract('responseModule'));
@@ -77,7 +83,7 @@ contract BaseTest is Test, Helpers {
   IFinalityModule public finalityModule = IFinalityModule(_mockContract('finalityModule'));
 
   function setUp() public virtual {
-    validator = new MockValidator();
+    validator = new MockValidator(oracle);
 
     mockRequest.requestModule = address(requestModule);
     mockRequest.responseModule = address(responseModule);
@@ -88,6 +94,15 @@ contract BaseTest is Test, Helpers {
     mockResponse.requestId = _getId(mockRequest);
     mockDispute.requestId = mockResponse.requestId;
     mockDispute.responseId = _getId(mockResponse);
+
+    vm.mockCall(
+      address(oracle),
+      abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)),
+      abi.encode(1000)
+    );
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(1000)
+    );
   }
 }
 
@@ -117,8 +132,16 @@ contract ValidatorValidateResponse is BaseTest {
   function test_validateResponse_InvalidResponseBody() public {
     IOracle.Response memory response = mockResponse;
     response.requestId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidResponseBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
     validator.validateResponse(mockRequest, response);
+  }
+
+  function test_validateResponse_InvalidResponse() public {
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)), abi.encode(0)
+    );
+    vm.expectRevert(IValidator.Validator_InvalidResponse.selector);
+    validator.validateResponse(mockRequest, mockResponse);
   }
 }
 
@@ -131,8 +154,16 @@ contract ValidatorValidateDisputeRequest is BaseTest {
   function test_validateDispute_InvalidDisputeBody() public {
     IOracle.Dispute memory dispute = mockDispute;
     dispute.requestId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     validator.validateDispute(mockRequest, dispute);
+  }
+
+  function test_validateDispute_InvalidDispute() public {
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(0)
+    );
+    vm.expectRevert(IValidator.Validator_InvalidDispute.selector);
+    validator.validateDispute(mockRequest, mockDispute);
   }
 }
 
@@ -145,8 +176,16 @@ contract ValidatorValidateDisputeResponse is BaseTest {
   function test_validateDispute_InvalidDisputeBody() public {
     IOracle.Dispute memory dispute = mockDispute;
     dispute.responseId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     validator.validateDispute(mockResponse, dispute);
+  }
+
+  function test_validateDispute_InvalidDispute() public {
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(0)
+    );
+    vm.expectRevert(IValidator.Validator_InvalidDispute.selector);
+    validator.validateDispute(mockResponse, mockDispute);
   }
 }
 
@@ -161,21 +200,29 @@ contract ValidatorValidateResponseAndDispute is BaseTest {
   function test_validateResponseAndDispute_InvalidResponseBody() public {
     IOracle.Response memory response = mockResponse;
     response.requestId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidResponseBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
     validator.validateResponseAndDispute(mockRequest, response, mockDispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBody() public {
     IOracle.Dispute memory dispute = mockDispute;
     dispute.requestId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     validator.validateResponseAndDispute(mockRequest, mockResponse, dispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBodyResponseId() public {
     IOracle.Dispute memory dispute = mockDispute;
     dispute.responseId = bytes32('invalid');
-    vm.expectRevert(Validator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     validator.validateResponseAndDispute(mockRequest, mockResponse, dispute);
+  }
+
+  function test_validateResponseAndDispute_InvalidResponse() public {
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(0)
+    );
+    vm.expectRevert(IValidator.Validator_InvalidDispute.selector);
+    validator.validateResponseAndDispute(mockRequest, mockResponse, mockDispute);
   }
 }

@@ -6,12 +6,7 @@ import {IOracle} from '../interfaces/IOracle.sol';
 import {Validator} from './Validator.sol';
 
 abstract contract Module is Validator, IModule {
-  /// @inheritdoc IModule
-  IOracle public immutable ORACLE;
-
-  constructor(IOracle _oracle) payable {
-    ORACLE = _oracle;
-  }
+  constructor(IOracle _oracle) payable Validator(_oracle) {}
 
   /**
    * @notice Checks that the caller is the oracle
