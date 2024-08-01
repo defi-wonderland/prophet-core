@@ -218,7 +218,7 @@ contract ValidatorValidateResponseAndDispute is BaseTest {
     validator.validateResponseAndDispute(mockRequest, mockResponse, dispute);
   }
 
-  function test_validateResponseAndDispute_InvalidResponse() public {
+  function test_validateResponseAndDispute_InvalidDispute() public {
     vm.mockCall(
       address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(0)
     );

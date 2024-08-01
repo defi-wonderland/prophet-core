@@ -43,7 +43,7 @@ contract Validator is IValidator {
   }
 
   /**
-   * @notice Validates the correctness of a request-response pair
+   * @notice Validates the correctness and existance of a request-response pair
    *
    * @param _request The request to compute the id for
    * @param _response The response to compute the id for
