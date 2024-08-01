@@ -29,16 +29,6 @@ interface IModule {
    */
   error Module_OnlyOracle();
 
-  /**
-   * @notice Thrown when the response provided does not match the request
-   */
-  error Module_InvalidResponseBody();
-
-  /**
-   * @notice Thrown when the dispute provided does not match the request or response
-   */
-  error Module_InvalidDisputeBody();
-
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
   //////////////////////////////////////////////////////////////*/
