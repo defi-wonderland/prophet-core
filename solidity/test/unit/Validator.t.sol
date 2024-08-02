@@ -107,25 +107,25 @@ contract BaseTest is Test, Helpers {
 
 contract ValidatorGetIds is BaseTest {
   function test_getId_request() public {
-    bytes32 requestId = validator.getId(mockRequest);
-    assertEq(requestId, keccak256(abi.encode(mockRequest)));
+    bytes32 _requestId = validator.getId(mockRequest);
+    assertEq(_requestId, keccak256(abi.encode(mockRequest)));
   }
 
   function test_getId_response() public {
-    bytes32 responseId = validator.getId(mockResponse);
-    assertEq(responseId, keccak256(abi.encode(mockResponse)));
+    bytes32 _responseId = validator.getId(mockResponse);
+    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
   }
 
   function test_getId_dispute() public {
-    bytes32 disputeId = validator.getId(mockDispute);
-    assertEq(disputeId, keccak256(abi.encode(mockDispute)));
+    bytes32 _disputeId = validator.getId(mockDispute);
+    assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
   }
 }
 
 contract ValidatorValidateResponse is BaseTest {
   function test_validateResponse() public {
-    bytes32 responseId = validator.validateResponse(mockRequest, mockResponse);
-    assertEq(responseId, keccak256(abi.encode(mockResponse)));
+    bytes32 _responseId = validator.validateResponse(mockRequest, mockResponse);
+    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
   }
 
   function test_validateResponse_InvalidResponseBody() public {
@@ -146,8 +146,8 @@ contract ValidatorValidateResponse is BaseTest {
 
 contract ValidatorValidateDisputeRequest is BaseTest {
   function test_validateDispute() public {
-    bytes32 disputeId = validator.validateDispute(mockRequest, mockDispute);
-    assertEq(disputeId, keccak256(abi.encode(mockDispute)));
+    bytes32 _disputeId = validator.validateDispute(mockRequest, mockDispute);
+    assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
@@ -168,8 +168,8 @@ contract ValidatorValidateDisputeRequest is BaseTest {
 
 contract ValidatorValidateDisputeResponse is BaseTest {
   function test_validateDispute() public {
-    bytes32 disputeId = validator.validateDispute(mockResponse, mockDispute);
-    assertEq(disputeId, keccak256(abi.encode(mockDispute)));
+    bytes32 _disputeId = validator.validateDispute(mockResponse, mockDispute);
+    assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
