@@ -29,27 +29,6 @@ interface IModule {
    */
   error Module_OnlyOracle();
 
-  /**
-   * @notice Thrown when the response provided does not match the request
-   */
-  error Module_InvalidResponseBody();
-
-  /**
-   * @notice Thrown when the dispute provided does not match the request or response
-   */
-  error Module_InvalidDisputeBody();
-
-  /*///////////////////////////////////////////////////////////////
-                              VARIABLES
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Returns the address of the oracle
-   *
-   * @return _oracle The address of the oracle
-   */
-  function ORACLE() external view returns (IOracle _oracle);
-
   /*///////////////////////////////////////////////////////////////
                               LOGIC
   //////////////////////////////////////////////////////////////*/
