@@ -20,8 +20,6 @@ import {Helpers} from '../utils/Helpers.sol';
  * @notice Harness to deploy and test Oracle
  */
 contract MockValidator is Validator {
-  constructor(IOracle _oracle) Validator(_oracle) {}
-
   function getId(IOracle.Request calldata _request) external pure returns (bytes32 _requestId) {
     return _getId(_request);
   }
@@ -37,21 +35,21 @@ contract MockValidator is Validator {
   function validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) external view returns (bytes32 _responseId) {
+  ) external pure returns (bytes32 _responseId) {
     return _validateResponse(_request, _response);
   }
 
   function validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external view returns (bytes32 _disputeId) {
+  ) external pure returns (bytes32 _disputeId) {
     return _validateDispute(_response, _dispute);
   }
 
   function validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) external view returns (bytes32 _disputeId) {
+  ) external pure returns (bytes32 _disputeId) {
     return _validateDispute(_request, _dispute);
   }
 
@@ -59,7 +57,7 @@ contract MockValidator is Validator {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external view returns (bytes32 _responseId, bytes32 _disputeId) {
+  ) external pure returns (bytes32 _responseId, bytes32 _disputeId) {
     return _validateResponseAndDispute(_request, _response, _dispute);
   }
 }
@@ -82,7 +80,7 @@ contract BaseTest is Test, Helpers {
   IFinalityModule public finalityModule = IFinalityModule(_mockContract('finalityModule'));
 
   function setUp() public virtual {
-    validator = new MockValidator(oracle);
+    validator = new MockValidator();
 
     mockRequest.requestModule = address(requestModule);
     mockRequest.responseModule = address(responseModule);

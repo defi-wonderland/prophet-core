@@ -31,15 +31,4 @@ interface IValidator {
    * @notice Thrown when the dispute provided does not exist
    */
   error Validator_InvalidDispute();
-
-  /*///////////////////////////////////////////////////////////////
-                              VARIABLES
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Returns the address of the oracle
-   *
-   * @return _oracle The address of the oracle
-   */
-  function ORACLE() external view returns (IOracle _oracle);
 }

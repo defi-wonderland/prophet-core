@@ -5,13 +5,6 @@ import {IOracle} from '../interfaces/IOracle.sol';
 import {IValidator} from '../interfaces/IValidator.sol';
 
 contract Validator is IValidator {
-  /// @inheritdoc IValidator
-  IOracle public immutable ORACLE;
-
-  constructor(IOracle _oracle) payable {
-    ORACLE = _oracle;
-  }
-
   /**
    * @notice Computes the id a given request
    *
@@ -52,12 +45,11 @@ contract Validator is IValidator {
   function _validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) internal view returns (bytes32 _responseId) {
+  ) internal pure returns (bytes32 _responseId) {
     bytes32 _requestId = _getId(_request);
     _responseId = _getId(_response);
 
     if (_response.requestId != _requestId) revert Validator_InvalidResponseBody();
-    if (ORACLE.responseCreatedAt(_responseId) == 0) revert Validator_InvalidResponse();
   }
 
   /**
@@ -70,12 +62,11 @@ contract Validator is IValidator {
   function _validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _disputeId) {
+  ) internal pure returns (bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
     _disputeId = _getId(_dispute);
 
     if (_dispute.requestId != _requestId) revert Validator_InvalidDisputeBody();
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 
   /**
@@ -88,12 +79,11 @@ contract Validator is IValidator {
   function _validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _disputeId) {
+  ) internal pure returns (bytes32 _disputeId) {
     bytes32 _responseId = _getId(_response);
     _disputeId = _getId(_dispute);
 
     if (_dispute.responseId != _responseId) revert Validator_InvalidDisputeBody();
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 
   /**
@@ -109,13 +99,12 @@ contract Validator is IValidator {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _responseId, bytes32 _disputeId) {
+  ) internal pure returns (bytes32 _responseId, bytes32 _disputeId) {
     bytes32 _requestId = _getId(_request);
     _responseId = _getId(_response);
     _disputeId = _getId(_dispute);
 
     if (_response.requestId != _requestId) revert Validator_InvalidResponseBody();
     if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Validator_InvalidDisputeBody();
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
   }
 }

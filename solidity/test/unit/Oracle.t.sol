@@ -5,6 +5,7 @@ import 'forge-std/Test.sol';
 
 import {IModule} from '../../interfaces/IModule.sol';
 import {IOracle} from '../../interfaces/IOracle.sol';
+import {IValidator} from '../../interfaces/IValidator.sol';
 
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 
@@ -458,17 +459,6 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
   }
 
   /**
-   * @notice Revert if the request doesn't exist
-   */
-  function test_proposeResponse_revertsIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
-
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
-  }
-
-  /**
    * @notice Revert if the caller is not the proposer nor the dispute module
    */
   function test_proposeResponse_revertsIfInvalidCaller(address _caller) public {
@@ -568,41 +558,14 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   }
 
   /**
-   * @notice Revert if the request doesn't exist
-   */
-  function test_disputeResponse_revertsIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
-
-    // Test: try to dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
-   * @notice Revert if the response doesn't exist
-   */
-  function test_disputeResponse_revertsIfInvalidResponse() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_responseId, 0);
-
-    // Check: revert?
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidResponseBody.selector));
-
-    // Test: try to dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
    * @notice Reverts if the dispute proposer and response proposer are not same
    */
   function test_disputeResponse_revertIfProposerIsNotValid(address _otherProposer) public {
     vm.assume(_otherProposer != proposer);
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
 
     mockDispute.proposer = _otherProposer;
 
@@ -612,13 +575,13 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   }
 
   /**
-   * @notice Reverts if the request doesn't exist
+   * @notice Reverts if the dispute doesn't exist
    */
-  function test_disputeResponse_revertIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
+  function test_disputeResponse_revertIfInvalidDispute() public {
+    oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
 
     // Test: try to dispute the response
     vm.prank(disputer);
@@ -694,34 +657,6 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
         assertEq(_newStatus, uint256(oracle.disputeStatus(_disputeId)));
       }
     }
-  }
-
-  /**
-   * @notice Revert if the request doesn't exist
-   */
-  function test_updateDisputeStatus_revertsIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
-
-    // Test: change the status
-    vm.prank(address(resolutionModule));
-    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(0));
-  }
-
-  /**
-   * @notice Revert if the response doesn't exist
-   */
-  function test_updateDisputeStatus_revertsIfInvalidResponse() public {
-    bytes32 _requestId = _getId(mockRequest);
-    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
-
-    // Check: revert?
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidResponseBody.selector));
-
-    // Test: change the status
-    vm.prank(address(resolutionModule));
-    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(0));
   }
 
   /**
@@ -811,32 +746,6 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _getId(mockDispute)));
-
-    // Test: try to resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
-   * @notice Revert if the request doesn't exist
-   */
-  function test_resolveDispute_revertsIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
-
-    // Test: try to resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
-   * @notice Revert if the response doesn't exist
-   */
-  function test_resolveDispute_revertsIfInvalidResponse() public {
-    bytes32 _requestId = _getId(mockRequest);
-    oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
-
-    // Check: revert?
-    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidResponseBody.selector));
 
     // Test: try to resolve the dispute
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
@@ -1019,7 +928,7 @@ contract Oracle_Unit_Finalize is BaseTest {
    */
   function test_finalize_revertsIfInvalidRequest() public {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
 
     vm.prank(requester);
     oracle.finalize(mockRequest, mockResponse);
@@ -1074,7 +983,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     oracle.mock_setResponseCreatedAt(_requestId, uint128(block.number));
 
     // Test: finalize the request
-    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
     vm.prank(requester);
     oracle.finalize(mockRequest, mockResponse);
   }
@@ -1317,27 +1226,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
   }
 
   /**
-   * @notice Revert if the request doesn't exist
-   */
-  function test_escalateDispute_revertsIfInvalidRequest() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
-
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
-   * @notice Revert if the response doesn't exist
-   */
-  function test_escalateDispute_revertsIfInvalidResponse() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
-    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
-
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
+   * /**
    * @notice Revert if the dispute doesn't exist
    */
   function test_escalateDispute_revertsIfInvalidDispute() public {
