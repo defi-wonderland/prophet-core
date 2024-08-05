@@ -63,18 +63,20 @@ interface IOracle {
   /**
    * @notice Emitted when a dispute's status changes
    * @param _disputeId The id of the dispute
+   * @param _dispute The dispute that is being updated
    * @param _status The new dispute status
    * @param _blockNumber The block number of the status update
    */
-  event DisputeStatusUpdated(bytes32 indexed _disputeId, DisputeStatus _status, uint256 _blockNumber);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, Dispute _dispute, DisputeStatus _status, uint256 _blockNumber);
 
   /**
    * @notice Emitted when a dispute is resolved
-   * @param _caller The address of the user who resolved the dispute
    * @param _disputeId The id of the dispute being resolved
+   * @param _dispute The dispute that is being updated
+   * @param _caller The address of the user who resolved the dispute
    * @param _blockNumber The block number of the dispute resolution
    */
-  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
+  event DisputeResolved(bytes32 indexed _disputeId, Dispute _dispute, address indexed _caller, uint256 _blockNumber);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS
