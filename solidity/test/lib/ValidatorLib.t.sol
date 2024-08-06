@@ -75,7 +75,7 @@ contract ValidatorLibValidateResponse is BaseTest {
   }
 
   function test__validateResponse_InvalidResponseBody() public {
-    IOracle.Response memory _response = mock_Response;
+    IOracle.Response memory _response = mockResponse;
     _response.requestId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
     ValidatorLib._validateResponse(mockRequest, _response);
