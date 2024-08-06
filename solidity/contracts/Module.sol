@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {IModule} from '../interfaces/IModule.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
 
-import {ValidatorLib} from '../lib/ValidatorLib.sol';
 import {Validator} from './Validator.sol';
 
 abstract contract Module is IModule, Validator {

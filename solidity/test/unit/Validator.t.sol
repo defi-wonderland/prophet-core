@@ -11,7 +11,6 @@ import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
-import {ValidatorLib} from '../../lib/ValidatorLib.sol';
 
 import {IValidator, Validator} from '../../contracts/Validator.sol';
 

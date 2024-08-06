@@ -75,10 +75,10 @@ contract ValidatorLibValidateResponse is BaseTest {
   }
 
   function test__validateResponse_InvalidResponseBody() public {
-    IOracle.Response memory response = mockResponse;
-    response.requestId = bytes32('invalid');
+    IOracle.Response memory _response = mock_Response;
+    _response.requestId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    ValidatorLib._validateResponse(mockRequest, response);
+    ValidatorLib._validateResponse(mockRequest, _response);
   }
 }
 
@@ -89,10 +89,10 @@ contract ValidatorLibValidateDisputeRequest is BaseTest {
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.requestId = bytes32('invalid');
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.requestId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    ValidatorLib._validateDispute(mockRequest, dispute);
+    ValidatorLib._validateDispute(mockRequest, _dispute);
   }
 }
 
@@ -103,39 +103,39 @@ contract ValidatorLibValidateDisputeResponse is BaseTest {
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.responseId = bytes32('invalid');
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.responseId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    ValidatorLib._validateDispute(mockResponse, dispute);
+    ValidatorLib._validateDispute(mockResponse, _dispute);
   }
 }
 
 contract ValidatorLib_ValidateResponseAndDispute is BaseTest {
   function test_validateResponseAndDispute() public {
-    (bytes32 responseId, bytes32 disputeId) =
+    (bytes32 _responseId, bytes32 _disputeId) =
       ValidatorLib._validateResponseAndDispute(mockRequest, mockResponse, mockDispute);
-    assertEq(responseId, keccak256(abi.encode(mockResponse)));
-    assertEq(disputeId, keccak256(abi.encode(mockDispute)));
+    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
+    assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
   }
 
   function test_validateResponseAndDispute_InvalidResponseBody() public {
-    IOracle.Response memory response = mockResponse;
-    response.requestId = bytes32('invalid');
+    IOracle.Response memory _response = mockResponse;
+    _response.requestId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    ValidatorLib._validateResponseAndDispute(mockRequest, response, mockDispute);
+    ValidatorLib._validateResponseAndDispute(mockRequest, _response, mockDispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.requestId = bytes32('invalid');
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.requestId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    ValidatorLib._validateResponseAndDispute(mockRequest, mockResponse, dispute);
+    ValidatorLib._validateResponseAndDispute(mockRequest, mockResponse, _dispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBodyResponseId() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.responseId = bytes32('invalid');
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.responseId = bytes32('invalid');
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    ValidatorLib._validateResponseAndDispute(mockRequest, mockResponse, dispute);
+    ValidatorLib._validateResponseAndDispute(mockRequest, mockResponse, _dispute);
   }
 }
