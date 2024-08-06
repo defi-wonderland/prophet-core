@@ -68,21 +68,6 @@ contract ValidatorLibGetIds is BaseTest {
   }
 }
 
-contract ValidatorLibValidateRequestAndResponse is BaseTest {
-  function test_validateRequestAndResponse() public {
-    (bytes32 _requestId, bytes32 _responseId) = ValidatorLib._validateRequestAndResponse(mockRequest, mockResponse);
-    assertEq(_requestId, keccak256(abi.encode(mockRequest)));
-    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
-  }
-
-  function test_validateRequestAndResponse_InvalidResponseBody() public {
-    IOracle.Response memory _response = mockResponse;
-    _response.requestId = bytes32('invalid');
-    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    ValidatorLib._validateRequestAndResponse(mockRequest, _response);
-  }
-}
-
 contract ValidatorLibValidateResponse is BaseTest {
   function test_validateResponse() public {
     bytes32 _responseId = ValidatorLib._validateResponse(mockRequest, mockResponse);

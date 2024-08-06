@@ -36,13 +36,6 @@ contract MockValidator is Validator {
     return _getId(_dispute);
   }
 
-  function validateRequestAndResponse(
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response
-  ) external view returns (bytes32 _requestId, bytes32 _responseId) {
-    return _validateRequestAndResponse(_request, _response);
-  }
-
   function validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
@@ -119,29 +112,6 @@ contract ValidatorGetIds is BaseTest {
   function test_getId_dispute() public {
     bytes32 _disputeId = validator.getId(mockDispute);
     assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
-  }
-}
-
-contract ValidatorValidateRequestAndResponse is BaseTest {
-  function test_validateRequestAndResponse() public {
-    (bytes32 _requestId, bytes32 _responseId) = validator.validateRequestAndResponse(mockRequest, mockResponse);
-    assertEq(_requestId, keccak256(abi.encode(mockRequest)));
-    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
-  }
-
-  function test_validateRequestAndResponse_InvalidResponseBody() public {
-    IOracle.Response memory _response = mockResponse;
-    _response.requestId = bytes32('invalid');
-    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    validator.validateResponse(mockRequest, _response);
-  }
-
-  function test_validateRequestAndResponse_InvalidResponse() public {
-    vm.mockCall(
-      address(oracle), abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)), abi.encode(0)
-    );
-    vm.expectRevert(IValidator.Validator_InvalidResponse.selector);
-    validator.validateRequestAndResponse(mockRequest, mockResponse);
   }
 }
 

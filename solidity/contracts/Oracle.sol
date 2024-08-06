@@ -105,8 +105,8 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    bytes32 _requestId;
-    (_requestId, _responseId) = ValidatorLib._validateRequestAndResponse(_request, _response);
+    bytes32 _requestId = ValidatorLib._getId(_request);
+    (_responseId) = ValidatorLib._validateResponse(_request, _response);
 
     if (requestCreatedAt[_requestId] == 0) {
       revert Oracle_InvalidRequest();
