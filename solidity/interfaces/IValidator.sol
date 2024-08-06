@@ -13,16 +13,6 @@ interface IValidator {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Thrown when the response provided does not match the request
-   */
-  error Validator_InvalidResponseBody();
-
-  /**
-   * @notice Thrown when the dispute provided does not match the request or response
-   */
-  error Validator_InvalidDisputeBody();
-
-  /**
    * @notice Thrown when the response provided does not exist
    */
   error Validator_InvalidResponse();
@@ -31,4 +21,12 @@ interface IValidator {
    * @notice Thrown when the dispute provided does not exist
    */
   error Validator_InvalidDispute();
+  /*///////////////////////////////////////////////////////////////
+                              VARIABLES
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice The oracle contract
+   */
+  function ORACLE() external view returns (IOracle _oracle);
 }

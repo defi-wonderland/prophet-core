@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {Validator} from './Validator.sol';
-
 import {IOracle} from '../interfaces/IOracle.sol';
 
 import {IDisputeModule} from '../interfaces/modules/dispute/IDisputeModule.sol';
@@ -11,8 +9,9 @@ import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.so
 import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
+import {ValidatorLib} from '../lib/ValidatorLib.sol';
 
-contract Oracle is Validator, IOracle {
+contract Oracle is IOracle {
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
@@ -106,7 +105,7 @@ contract Oracle is Validator, IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = _validateResponse(_request, _response);
+    _responseId = ValidatorLib._validateResponse(_request, _response);
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
@@ -136,7 +135,8 @@ contract Oracle is Validator, IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) external returns (bytes32 _disputeId) {
-    (bytes32 _responseId, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
+    bytes32 _responseId;
+    (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (responseCreatedAt[_responseId] == 0) {
       revert Oracle_InvalidResponseBody();
@@ -170,7 +170,7 @@ contract Oracle is Validator, IOracle {
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDisputeBody();
@@ -200,7 +200,7 @@ contract Oracle is Validator, IOracle {
 
   /// @inheritdoc IOracle
   function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDisputeBody();
@@ -232,7 +232,7 @@ contract Oracle is Validator, IOracle {
     Dispute calldata _dispute,
     DisputeStatus _status
   ) external {
-    (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDisputeBody();
@@ -346,7 +346,7 @@ contract Oracle is Validator, IOracle {
    * @return _requestId The id of the finalized request
    */
   function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
-    _requestId = _getId(_request);
+    _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {
       revert Oracle_InvalidRequestBody();
@@ -385,7 +385,7 @@ contract Oracle is Validator, IOracle {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
   ) internal returns (bytes32 _requestId, bytes32 _responseId) {
-    _responseId = _validateResponse(_request, _response);
+    _responseId = ValidatorLib._validateResponse(_request, _response);
 
     if (responseCreatedAt[_responseId] == 0) {
       revert Oracle_InvalidResponseBody();

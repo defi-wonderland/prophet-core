@@ -4,12 +4,10 @@ pragma solidity ^0.8.19;
 import {Script, console} from 'forge-std/Script.sol';
 
 import {Oracle} from '../contracts/Oracle.sol';
-import {Validator} from '../contracts/Validator.sol';
 
 // solhint-disable no-console
 contract Deploy is Script {
   Oracle oracle;
-  Validator validator;
 
   function run() public {
     address deployer = vm.rememberKey(vm.envUint('DEPLOYER_PRIVATE_KEY'));
