@@ -109,7 +109,7 @@ contract Oracle is IOracle {
     (_requestId, _responseId) = ValidatorLib._validateRequestAndResponse(_request, _response);
 
     if (requestCreatedAt[_requestId] == 0) {
-      revert Oracle_InvalidRequestBody();
+      revert Oracle_InvalidRequest();
     }
 
     // The caller must be the proposer, unless the response is coming from a dispute module
@@ -144,7 +144,7 @@ contract Oracle is IOracle {
     (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (responseCreatedAt[_responseId] == 0) {
-      revert Oracle_InvalidResponseBody();
+      revert Oracle_InvalidResponse();
     }
 
     if (_dispute.proposer != _response.proposer) {
@@ -178,7 +178,7 @@ contract Oracle is IOracle {
     (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
-      revert Oracle_InvalidDisputeBody();
+      revert Oracle_InvalidDispute();
     }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
@@ -208,7 +208,7 @@ contract Oracle is IOracle {
     (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
-      revert Oracle_InvalidDisputeBody();
+      revert Oracle_InvalidDispute();
     }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
@@ -240,7 +240,7 @@ contract Oracle is IOracle {
     (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
-      revert Oracle_InvalidDisputeBody();
+      revert Oracle_InvalidDispute();
     }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
@@ -354,7 +354,7 @@ contract Oracle is IOracle {
     _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {
-      revert Oracle_InvalidRequestBody();
+      revert Oracle_InvalidRequest();
     }
 
     bytes32[] memory _responses = getResponseIds(_requestId);
@@ -393,7 +393,7 @@ contract Oracle is IOracle {
     _responseId = ValidatorLib._validateResponse(_request, _response);
 
     if (responseCreatedAt[_responseId] == 0) {
-      revert Oracle_InvalidResponseBody();
+      revert Oracle_InvalidResponse();
     }
 
     _requestId = _response.requestId;
