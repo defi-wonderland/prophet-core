@@ -49,6 +49,24 @@ library ValidatorLib {
    *
    * @param _request The request to compute the id for
    * @param _response The response to compute the id for
+   * @return _requestId The id the request
+   * @return _responseId The id the response
+   */
+  function _validateRequestAndResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response
+  ) public pure returns (bytes32 _requestId, bytes32 _responseId) {
+    _requestId = _getId(_request);
+    _responseId = _getId(_response);
+
+    if (_response.requestId != _requestId) revert ValidatorLib_InvalidResponseBody();
+  }
+
+  /**
+   * @notice Validates the correctness and existance of a request-response pair
+   *
+   * @param _request The request to compute the id for
+   * @param _response The response to compute the id for
    * @return _responseId The id the response
    */
   function _validateResponse(

@@ -22,6 +22,13 @@ import {Helpers} from '../utils/Helpers.sol';
 contract MockValidator is Validator {
   constructor(IOracle _oracle) Validator(_oracle) {}
 
+  function validateRequestAndResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response
+  ) external view returns (bytes32 _requestId, bytes32 _responseId) {
+    return _validateRequestAndResponse(_request, _response);
+  }
+
   function validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
@@ -84,8 +91,18 @@ contract BaseTest is Test, Helpers {
   }
 }
 
+contract ValidatorValidateRequestAndResponse is BaseTest {
+  function test_validateRequestAndResponse_InvalidResponse() public {
+    vm.mockCall(
+      address(oracle), abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)), abi.encode(0)
+    );
+    vm.expectRevert(IValidator.Validator_InvalidResponse.selector);
+    validator.validateRequestAndResponse(mockRequest, mockResponse);
+  }
+}
+
 contract ValidatorValidateResponse is BaseTest {
-  function test__validateResponse_InvalidResponse() public {
+  function test_validateResponse_InvalidResponse() public {
     vm.mockCall(
       address(oracle), abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)), abi.encode(0)
     );

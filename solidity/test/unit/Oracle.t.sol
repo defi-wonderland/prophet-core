@@ -459,6 +459,15 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     assertEq(_responseIds[1], _secondResponseId);
   }
 
+  function test_proposeResponse_revertsIfInvalidRequest() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
+
+    // Test: try to propose a response with an invalid request
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+
   /**
    * @notice Revert if the caller is not the proposer nor the dispute module
    */

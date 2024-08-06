@@ -48,6 +48,23 @@ abstract contract Validator is IValidator {
    *
    * @param _request The request to compute the id for
    * @param _response The response to compute the id for
+   * @return _requestId The id the request
+   * @return _responseId The id the response
+   */
+  function _validateRequestAndResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response
+  ) internal view returns (bytes32 _requestId, bytes32 _responseId) {
+    (_requestId, _responseId) = ValidatorLib._validateRequestAndResponse(_request, _response);
+
+    if (ORACLE.responseCreatedAt(_responseId) == 0) revert Validator_InvalidResponse();
+  }
+
+  /**
+   * @notice Validates the correctness and existance of a request-response pair
+   *
+   * @param _request The request to compute the id for
+   * @param _response The response to compute the id for
    * @return _responseId The id the response
    */
   function _validateResponse(

@@ -105,7 +105,12 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = ValidatorLib._validateResponse(_request, _response);
+    bytes32 _requestId;
+    (_requestId, _responseId) = ValidatorLib._validateRequestAndResponse(_request, _response);
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequestBody();
+    }
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
