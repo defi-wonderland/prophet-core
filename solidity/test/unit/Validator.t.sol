@@ -12,8 +12,10 @@ import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.so
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 
-import {Validator} from '../../contracts/Validator.sol';
-import {IValidator} from '../../interfaces/IValidator.sol';
+import {IValidator, Validator} from '../../contracts/Validator.sol';
+
+import {ValidatorLib} from '../../lib/ValidatorLib.sol';
+
 import {Helpers} from '../utils/Helpers.sol';
 
 /**
@@ -65,14 +67,14 @@ contract MockValidator is Validator {
 }
 
 /**
- * @title Oracle Unit tests
+ * @title Validator Unit tests
  */
 contract BaseTest is Test, Helpers {
-  // The target contract
-  MockValidator public validator;
-
   // Mock Oracle
   IOracle public oracle = IOracle(_mockContract('oracle'));
+
+  // The target contract
+  MockValidator public validator;
 
   // Mock modules
   IRequestModule public requestModule = IRequestModule(_mockContract('requestModule'));
@@ -93,15 +95,6 @@ contract BaseTest is Test, Helpers {
     mockResponse.requestId = _getId(mockRequest);
     mockDispute.requestId = mockResponse.requestId;
     mockDispute.responseId = _getId(mockResponse);
-
-    vm.mockCall(
-      address(oracle),
-      abi.encodeWithSelector(IOracle.responseCreatedAt.selector, _getId(mockResponse)),
-      abi.encode(1000)
-    );
-    vm.mockCall(
-      address(oracle), abi.encodeWithSelector(IOracle.disputeCreatedAt.selector, _getId(mockDispute)), abi.encode(1000)
-    );
   }
 }
 
@@ -129,10 +122,10 @@ contract ValidatorValidateResponse is BaseTest {
   }
 
   function test_validateResponse_InvalidResponseBody() public {
-    IOracle.Response memory response = mockResponse;
-    response.requestId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
-    validator.validateResponse(mockRequest, response);
+    IOracle.Response memory _response = mockResponse;
+    _response.requestId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
+    validator.validateResponse(mockRequest, _response);
   }
 
   function test_validateResponse_InvalidResponse() public {
@@ -151,10 +144,10 @@ contract ValidatorValidateDisputeRequest is BaseTest {
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.requestId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
-    validator.validateDispute(mockRequest, dispute);
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.requestId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    validator.validateDispute(mockRequest, _dispute);
   }
 
   function test_validateDispute_InvalidDispute() public {
@@ -173,10 +166,10 @@ contract ValidatorValidateDisputeResponse is BaseTest {
   }
 
   function test_validateDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.responseId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
-    validator.validateDispute(mockResponse, dispute);
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.responseId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    validator.validateDispute(mockResponse, _dispute);
   }
 
   function test_validateDispute_InvalidDispute() public {
@@ -188,33 +181,33 @@ contract ValidatorValidateDisputeResponse is BaseTest {
   }
 }
 
-contract ValidatorValidateResponseAndDispute is BaseTest {
+contract Validator_ValidateResponseAndDispute is BaseTest {
   function test_validateResponseAndDispute() public {
-    (bytes32 responseId, bytes32 disputeId) =
+    (bytes32 _responseId, bytes32 _disputeId) =
       validator.validateResponseAndDispute(mockRequest, mockResponse, mockDispute);
-    assertEq(responseId, keccak256(abi.encode(mockResponse)));
-    assertEq(disputeId, keccak256(abi.encode(mockDispute)));
+    assertEq(_responseId, keccak256(abi.encode(mockResponse)));
+    assertEq(_disputeId, keccak256(abi.encode(mockDispute)));
   }
 
   function test_validateResponseAndDispute_InvalidResponseBody() public {
-    IOracle.Response memory response = mockResponse;
-    response.requestId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
-    validator.validateResponseAndDispute(mockRequest, response, mockDispute);
+    IOracle.Response memory _response = mockResponse;
+    _response.requestId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
+    validator.validateResponseAndDispute(mockRequest, _response, mockDispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBody() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.requestId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
-    validator.validateResponseAndDispute(mockRequest, mockResponse, dispute);
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.requestId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    validator.validateResponseAndDispute(mockRequest, mockResponse, _dispute);
   }
 
   function test_validateResponseAndDispute_InvalidDisputeBodyResponseId() public {
-    IOracle.Dispute memory dispute = mockDispute;
-    dispute.responseId = bytes32('invalid');
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
-    validator.validateResponseAndDispute(mockRequest, mockResponse, dispute);
+    IOracle.Dispute memory _dispute = mockDispute;
+    _dispute.responseId = bytes32('invalid');
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    validator.validateResponseAndDispute(mockRequest, mockResponse, _dispute);
   }
 
   function test_validateResponseAndDispute_InvalidDispute() public {

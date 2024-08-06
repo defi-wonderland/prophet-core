@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle, IValidator} from '../interfaces/IValidator.sol';
+import {IOracle} from '../interfaces/IOracle.sol';
 
-import {ValidatorLib} from '../lib/ValidatorLib.sol';
+library ValidatorLib {
+  /**
+   * @notice Thrown when the response provided does not match the request
+   */
+  error ValidatorLib_InvalidResponseBody();
 
-abstract contract Validator is IValidator {
-  /// @inheritdoc IValidator
-  IOracle public immutable ORACLE;
+  /**
+   * @notice Thrown when the dispute provided does not match the request or response
+   */
+  error ValidatorLib_InvalidDisputeBody();
 
-  constructor(IOracle _oracle) {
-    ORACLE = _oracle;
-  }
   /**
    * @notice Computes the id a given request
    *
    * @param _request The request to compute the id for
    * @return _id The id the request
    */
-
-  function _getId(IOracle.Request calldata _request) internal pure returns (bytes32 _id) {
-    _id = ValidatorLib._getId(_request);
+  function _getId(IOracle.Request calldata _request) public pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_request));
   }
 
   /**
@@ -29,8 +30,8 @@ abstract contract Validator is IValidator {
    * @param _response The response to compute the id for
    * @return _id The id the response
    */
-  function _getId(IOracle.Response calldata _response) internal pure returns (bytes32 _id) {
-    _id = ValidatorLib._getId(_response);
+  function _getId(IOracle.Response calldata _response) public pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_response));
   }
 
   /**
@@ -39,8 +40,8 @@ abstract contract Validator is IValidator {
    * @param _dispute The dispute to compute the id for
    * @return _id The id the dispute
    */
-  function _getId(IOracle.Dispute calldata _dispute) internal pure returns (bytes32 _id) {
-    _id = ValidatorLib._getId(_dispute);
+  function _getId(IOracle.Dispute calldata _dispute) public pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_dispute));
   }
 
   /**
@@ -53,10 +54,11 @@ abstract contract Validator is IValidator {
   function _validateResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
-  ) internal view returns (bytes32 _responseId) {
-    _responseId = ValidatorLib._validateResponse(_request, _response);
+  ) public pure returns (bytes32 _responseId) {
+    bytes32 _requestId = _getId(_request);
+    _responseId = _getId(_response);
 
-    if (ORACLE.responseCreatedAt(_responseId) == 0) revert Validator_InvalidResponse();
+    if (_response.requestId != _requestId) revert ValidatorLib_InvalidResponseBody();
   }
 
   /**
@@ -69,10 +71,11 @@ abstract contract Validator is IValidator {
   function _validateDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _disputeId) {
-    _disputeId = ValidatorLib._validateDispute(_request, _dispute);
+  ) public pure returns (bytes32 _disputeId) {
+    bytes32 _requestId = _getId(_request);
+    _disputeId = _getId(_dispute);
 
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
+    if (_dispute.requestId != _requestId) revert ValidatorLib_InvalidDisputeBody();
   }
 
   /**
@@ -85,10 +88,11 @@ abstract contract Validator is IValidator {
   function _validateDispute(
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _disputeId) {
-    _disputeId = ValidatorLib._validateDispute(_response, _dispute);
+  ) public pure returns (bytes32 _disputeId) {
+    bytes32 _responseId = _getId(_response);
+    _disputeId = _getId(_dispute);
 
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
+    if (_dispute.responseId != _responseId) revert ValidatorLib_InvalidDisputeBody();
   }
 
   /**
@@ -104,9 +108,14 @@ abstract contract Validator is IValidator {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) internal view returns (bytes32 _responseId, bytes32 _disputeId) {
-    (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+  ) public pure returns (bytes32 _responseId, bytes32 _disputeId) {
+    bytes32 _requestId = _getId(_request);
+    _responseId = _getId(_response);
+    _disputeId = _getId(_dispute);
 
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert Validator_InvalidDispute();
+    if (_response.requestId != _requestId) revert ValidatorLib_InvalidResponseBody();
+    if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) {
+      revert ValidatorLib_InvalidDisputeBody();
+    }
   }
 }

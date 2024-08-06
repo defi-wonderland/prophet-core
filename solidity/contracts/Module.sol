@@ -3,10 +3,11 @@ pragma solidity ^0.8.19;
 
 import {IModule} from '../interfaces/IModule.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
+
 import {Validator} from './Validator.sol';
 
-abstract contract Module is Validator, IModule {
-  constructor(IOracle _oracle) payable Validator(_oracle) {}
+abstract contract Module is IModule, Validator {
+  constructor(IOracle _oracle) Validator(_oracle) {}
 
   /**
    * @notice Checks that the caller is the oracle

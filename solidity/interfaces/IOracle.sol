@@ -148,6 +148,21 @@ interface IOracle {
    */
   error Oracle_InvalidDisputeBody();
 
+  /**
+   * @notice Thrown when the request provided does not exist
+   */
+  error Oracle_InvalidRequest();
+
+  /**
+   * @notice Thrown when the response provided does not exist
+   */
+  error Oracle_InvalidResponse();
+
+  /**
+   * @notice Thrown when the dispute provided does not exist
+   */
+  error Oracle_InvalidDispute();
+
   /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/

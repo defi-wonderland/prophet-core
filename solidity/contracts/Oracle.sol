@@ -9,6 +9,7 @@ import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.so
 import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
+import {ValidatorLib} from '../lib/ValidatorLib.sol';
 
 contract Oracle is IOracle {
   /// @inheritdoc IOracle
@@ -104,7 +105,12 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    _responseId = _validateResponse(_request, _response);
+    bytes32 _requestId = ValidatorLib._getId(_request);
+    (_responseId) = ValidatorLib._validateResponse(_request, _response);
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequest();
+    }
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
@@ -134,13 +140,18 @@ contract Oracle is IOracle {
     Response calldata _response,
     Dispute calldata _dispute
   ) external returns (bytes32 _disputeId) {
-    _disputeId = _validateDispute(_request, _response, _dispute);
+    bytes32 _responseId;
+    (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+
+    if (responseCreatedAt[_responseId] == 0) {
+      revert Oracle_InvalidResponse();
+    }
 
     if (_dispute.proposer != _response.proposer) {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != msg.sender || requestCreatedAt[_dispute.requestId] == 0) {
+    if (_dispute.disputer != msg.sender) {
       revert Oracle_InvalidDisputeBody();
     }
 
@@ -164,7 +175,11 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+
+    if (disputeCreatedAt[_disputeId] == 0) {
+      revert Oracle_InvalidDispute();
+    }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
@@ -190,7 +205,11 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+
+    if (disputeCreatedAt[_disputeId] == 0) {
+      revert Oracle_InvalidDispute();
+    }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
@@ -218,7 +237,11 @@ contract Oracle is IOracle {
     Dispute calldata _dispute,
     DisputeStatus _status
   ) external {
-    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+
+    if (disputeCreatedAt[_disputeId] == 0) {
+      revert Oracle_InvalidDispute();
+    }
 
     if (disputeOf[_dispute.responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
@@ -328,7 +351,12 @@ contract Oracle is IOracle {
    * @return _requestId The id of the finalized request
    */
   function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
-    _requestId = keccak256(abi.encode(_request));
+    _requestId = ValidatorLib._getId(_request);
+
+    if (requestCreatedAt[_requestId] == 0) {
+      revert Oracle_InvalidRequest();
+    }
+
     bytes32[] memory _responses = getResponseIds(_requestId);
     uint256 _responsesAmount = _responses.length;
 
@@ -362,7 +390,12 @@ contract Oracle is IOracle {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response
   ) internal returns (bytes32 _requestId, bytes32 _responseId) {
-    _responseId = _validateResponse(_request, _response);
+    _responseId = ValidatorLib._validateResponse(_request, _response);
+
+    if (responseCreatedAt[_responseId] == 0) {
+      revert Oracle_InvalidResponse();
+    }
+
     _requestId = _response.requestId;
     if (!_matchBytes(_responseId, _responseIds[_requestId], 32)) {
       revert Oracle_InvalidFinalizedResponse();
@@ -410,42 +443,5 @@ contract Oracle is IOracle {
     IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
     emit RequestCreated(_requestId, _request, _ipfsHash, block.number);
-  }
-
-  /**
-   * @notice Validates the correctness of a request-response pair
-   *
-   * @param _request The request to compute the id for
-   * @param _response The response to compute the id for
-   * @return _responseId The id the response
-   */
-  function _validateResponse(
-    Request calldata _request,
-    Response calldata _response
-  ) internal pure returns (bytes32 _responseId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    _responseId = keccak256(abi.encode(_response));
-    if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
-  }
-
-  /**
-   * @notice Validates the correctness of a request-response-dispute triplet
-   *
-   * @param _request The request to compute the id for
-   * @param _response The response to compute the id for
-   * @param _dispute The dispute to compute the id for
-   * @return _disputeId The id the dispute
-   */
-  function _validateDispute(
-    Request calldata _request,
-    Response calldata _response,
-    Dispute calldata _dispute
-  ) internal pure returns (bytes32 _disputeId) {
-    bytes32 _requestId = keccak256(abi.encode(_request));
-    bytes32 _responseId = keccak256(abi.encode(_response));
-    _disputeId = keccak256(abi.encode(_dispute));
-
-    if (_dispute.requestId != _requestId || _dispute.responseId != _responseId) revert Oracle_InvalidDisputeBody();
-    if (_response.requestId != _requestId) revert Oracle_InvalidResponseBody();
   }
 }
