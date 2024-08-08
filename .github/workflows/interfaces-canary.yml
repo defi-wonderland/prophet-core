@@ -39,9 +39,9 @@ jobs:
         run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
       - name: Export Solidity - ${{ matrix.export_type }}
-        uses: defi-wonderland/solidity-exporter-action@f88d70e5ede5ac64295cb86d497cb20c07181259
+        uses: defi-wonderland/solidity-exporter-action@491bd879d67819d8342c46fe5343159f171d6747
         with:
-          package_name: "@defi-wonderland/prophet-core${{ env.EXPORT_NAME }}"
+          package_name: "@defi-wonderland/prophet-core"
           out: 'out'
           interfaces: 'solidity/interfaces'
           contracts: 'solidity/contracts'
