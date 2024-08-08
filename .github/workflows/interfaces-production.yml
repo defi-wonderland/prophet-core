@@ -1,10 +1,12 @@
-name: Canary Release
+name: Production Release
 
-on: workflow_dispatch
+on:
+  release:
+    types: [published]
 
 jobs:
-  export:
-    name: Generate Interfaces And Contracts
+  release:
+    name: Release
 
     runs-on: ubuntu-latest
     strategy:
@@ -36,9 +38,6 @@ jobs:
 
       - name: Build project and generate out directory
         run: yarn build
-
-      - name: Update version
-        run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
       - name: Export Solidity - Export Type ${{ matrix.export_type }}
         uses: defi-wonderland/solidity-exporter-action@v2.1.0
