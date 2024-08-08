@@ -48,7 +48,7 @@ jobs:
           libraries: "solidity/libraries"
           export_type: '${{ matrix.export_type }}'
 
-      - name: Publish to NPM - ${{ matrix.export_type }}
+      - name: Publish to NPM - Export Type: ${{ matrix.export_type }}
         run: cd export/@defi-wonderland/prophet-core${{ env.EXPORT_NAME }} && npm publish --access public --tag canary
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

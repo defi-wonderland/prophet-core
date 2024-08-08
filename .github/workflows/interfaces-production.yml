@@ -1,32 +1,33 @@
-name: Interface Exporter Action - Production
+name: Canary Release
 
-on:
-  push:
-    branches:
-      - main
+on: workflow_dispatch
 
 jobs:
-  generate-and-publish-interfaces:
-    if: github.repository == 'defi-wonderland/prophet-core'
-    name: Generate Interfaces
+  export:
+    name: Generate Interfaces And Contracts
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        typing_type: ["abi", "contracts"]
+        export_type: ['interfaces', 'all']
+
+    env:
+      EXPORT_NAME: ${{ matrix.export_type == 'interfaces' && '-interfaces' || '' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
 
-      - name: Use Node.js
-        uses: actions/setup-node@v3
+      - name: Install Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
-          registry-url: "https://registry.npmjs.org"
+          registry-url: 'https://registry.npmjs.org'
+          node-version: 20.x
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn --frozen-lockfile
@@ -34,18 +35,20 @@ jobs:
       - name: Build project and generate out directory
         run: yarn build
 
-      - name: Export Interfaces - ${{ matrix.typing_type }}
-        uses: defi-wonderland/interface-exporter-action@v1.2.2
-        with:
-          out_dir: "out"
-          interfaces_dir: "solidity/interfaces"
-          contracts_dir: "solidity/contracts"
-          lib_dir: "solidity/lib"
-          typing_type: "${{ matrix.typing_type }}"
-          package_name: "@defi-wonderland/prophet-core-${{ matrix.typing_type }}"
-          destination_dir: "exported-interfaces/prophet-core-${{ matrix.typing_type }}"
+      - name: Update version
+        run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
-      - name: Publish
-        run: cd exported-interfaces/prophet-core-${{ matrix.typing_type }} && npm publish --access public
+      - name: Export Solidity - Export Type: ${{ matrix.export_type }}
+        uses: defi-wonderland/solidity-exporter-action@491bd879d67819d8342c46fe5343159f171d6747
+        with:
+          package_name: "@defi-wonderland/prophet-core"
+          out: 'out'
+          interfaces: 'solidity/interfaces'
+          contracts: 'solidity/contracts'
+          libraries: "solidity/libraries"
+          export_type: '${{ matrix.export_type }}'
+
+      - name: Publish to NPM - Export Type: ${{ matrix.export_type }}
+        run: cd export/@defi-wonderland/prophet-core${{ env.EXPORT_NAME }} && npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
