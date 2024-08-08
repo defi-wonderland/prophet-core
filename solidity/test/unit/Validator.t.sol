@@ -14,7 +14,7 @@ import {IResponseModule} from '../../interfaces/modules/response/IResponseModule
 
 import {IValidator, Validator} from '../../contracts/Validator.sol';
 
-import {ValidatorLib} from '../../lib/ValidatorLib.sol';
+import {ValidatorLib} from '../../libraries/ValidatorLib.sol';
 
 import {Helpers} from '../utils/Helpers.sol';
 
