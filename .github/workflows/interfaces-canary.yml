@@ -2,10 +2,10 @@ name: Canary Release
 
 on: workflow_dispatch
 
-
 jobs:
   export:
     name: Generate Interfaces And Contracts
+
     # 1) Fill the project name to be used in NPM
     env:
       PROJECT_NAME: '@defi-wonderland/prophet-core'
