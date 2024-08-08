@@ -10,6 +10,9 @@ jobs:
       matrix:
         export_type: ['interfaces', 'all']
 
+    env:
+      EXPORT_NAME: ${{ matrix.export_type == 'interfaces' && '-interfaces' || '' }}
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -38,7 +41,7 @@ jobs:
       - name: Export Solidity - ${{ matrix.export_type }}
         uses: defi-wonderland/solidity-exporter-action@f88d70e5ede5ac64295cb86d497cb20c07181259
         with:
-          package_name: "@defi-wonderland/prophet-core-${{ matrix.export_type }}"
+          package_name: "@defi-wonderland/prophet-core${{ env.EXPORT_NAME }}"
           out: 'out'
           interfaces: 'solidity/interfaces'
           contracts: 'solidity/contracts'
@@ -46,6 +49,6 @@ jobs:
           export_type: '${{ matrix.export_type }}'
 
       - name: Publish to NPM - ${{ matrix.export_type }}
-        run: cd export/@defi-wonderland/prophet-core-${{ matrix.export_type }} && npm publish --access public --tag canary
+        run: cd export/@defi-wonderland/prophet-core${{ env.EXPORT_NAME }} && npm publish --access public --tag canary
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
