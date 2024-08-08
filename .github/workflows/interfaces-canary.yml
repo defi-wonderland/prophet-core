@@ -38,7 +38,7 @@ jobs:
       - name: Update version
         run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
-      - name: Export Solidity - Export Type: ${{ matrix.export_type }}
+      - name: Export Solidity - Export Type ${{ matrix.export_type }}
         uses: defi-wonderland/solidity-exporter-action@2289697fa6706a35e145b3ccd15a05475d6faf93
         with:
           package_name: "@defi-wonderland/prophet-core"
@@ -48,7 +48,7 @@ jobs:
           libraries: "solidity/libraries"
           export_type: '${{ matrix.export_type }}'
 
-      - name: Publish to NPM - Export Type: ${{ matrix.export_type }}
+      - name: Publish to NPM - Export Type ${{ matrix.export_type }}
         run: cd export/@defi-wonderland/prophet-core${{ env.EXPORT_NAME }} && npm publish --access public --tag canary
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
