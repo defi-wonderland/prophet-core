@@ -39,7 +39,7 @@ jobs:
         run: yarn version --new-version "0.0.0-${GITHUB_SHA::8}" --no-git-tag-version
 
       - name: Export Solidity - Export Type ${{ matrix.export_type }}
-        uses: defi-wonderland/solidity-exporter-action@2289697fa6706a35e145b3ccd15a05475d6faf93
+        uses: defi-wonderland/solidity-exporter-action@v2.1.0
         with:
           package_name: "@defi-wonderland/prophet-core"
           out: 'out'
