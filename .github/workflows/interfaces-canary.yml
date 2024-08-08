@@ -4,14 +4,14 @@ on: workflow_dispatch
 
 
 jobs:
-  # 1) Fill the project name to be used in NPM
-  env:
-    PROJECT_NAME: '@defi-wonderland/prophet-core'
-
-  # 2) Remove the following line if you wish to export your Solidity contracts and interfaces and publish them to NPM
-  if: false
   export:
     name: Generate Interfaces And Contracts
+    # 1) Fill the project name to be used in NPM
+    env:
+      PROJECT_NAME: @defi-wonderland/prophet-core
+
+    # 2) Remove the following line if you wish to export your Solidity contracts and interfaces and publish them to NPM
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
