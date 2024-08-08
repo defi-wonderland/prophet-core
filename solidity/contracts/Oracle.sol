@@ -227,7 +227,7 @@ contract Oracle is IOracle {
 
     IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _response, _dispute);
 
-    emit DisputeResolved(msg.sender, _disputeId, block.number);
+    emit DisputeResolved(_disputeId, _dispute, msg.sender, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -253,7 +253,7 @@ contract Oracle is IOracle {
     disputeStatus[_disputeId] = _status;
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
-    emit DisputeStatusUpdated(_disputeId, _status, block.number);
+    emit DisputeStatusUpdated(_disputeId, _dispute, _status, block.number);
   }
 
   /**

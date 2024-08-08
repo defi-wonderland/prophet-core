@@ -102,8 +102,12 @@ contract BaseTest is Test, Helpers {
     bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
   );
   event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
-  event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.DisputeStatus _status, uint256 _blockNumber);
-  event DisputeResolved(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
+  event DisputeStatusUpdated(
+    bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status, uint256 _blockNumber
+  );
+  event DisputeResolved(
+    bytes32 indexed _disputeId, IOracle.Dispute _dispute, address indexed _caller, uint256 _blockNumber
+  );
 
   function setUp() public virtual {
     oracle = new MockOracle();
@@ -652,7 +656,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
 
         // Check: emits DisputeStatusUpdated event?
         _expectEmit(address(oracle));
-        emit DisputeStatusUpdated(_disputeId, IOracle.DisputeStatus(_newStatus), block.number);
+        emit DisputeStatusUpdated(_disputeId, mockDispute, IOracle.DisputeStatus(_newStatus), block.number);
 
         // Test: change the status
         vm.prank(address(resolutionModule));
@@ -747,7 +751,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
 
     // Check: emits DisputeResolved event?
     _expectEmit(address(oracle));
-    emit DisputeResolved(address(this), _disputeId, block.number);
+    emit DisputeResolved(_disputeId, mockDispute, address(this), block.number);
 
     // Test: resolve the dispute
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
