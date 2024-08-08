@@ -40,6 +40,7 @@ jobs:
           out_dir: "out"
           interfaces_dir: "solidity/interfaces"
           contracts_dir: "solidity/contracts"
+          lib_dir: "solidity/lib"
           typing_type: "${{ matrix.typing_type }}"
           package_name: "@defi-wonderland/prophet-core-${{ matrix.typing_type }}"
           destination_dir: "exported-interfaces/prophet-core-${{ matrix.typing_type }}"
