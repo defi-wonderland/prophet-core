@@ -6,11 +6,7 @@ jobs:
   export:
     name: Generate Interfaces And Contracts
 
-    # 1) Fill the project name to be used in NPM
-    env:
-      PROJECT_NAME: '@defi-wonderland/prophet-core'
-
-    # 2) Remove the following line if you wish to export your Solidity contracts and interfaces and publish them to NPM
+    # 1) Remove the following line if you wish to export your Solidity contracts and interfaces and publish them to NPM
     if: false
     runs-on: ubuntu-latest
     strategy:
@@ -18,6 +14,8 @@ jobs:
         export_type: ['interfaces', 'all']
 
     env:
+    # 2) Fill the project name to be used in NPM
+      PROJECT_NAME: '@defi-wonderland/prophet-core'
       EXPORT_NAME: ${{ matrix.export_type == 'interfaces' && '-interfaces' || '' }}
 
     steps:
