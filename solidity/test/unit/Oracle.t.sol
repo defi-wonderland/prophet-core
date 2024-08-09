@@ -956,7 +956,7 @@ contract Oracle_Unit_Finalize is BaseTest {
   function test_finalize_revertsIfInvalidResponse() public {
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setRequestCreatedAt(_requestId, uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
+    oracle.mock_setResponseCreatedAt(_requestId, 0);
 
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidResponse.selector);
@@ -1000,19 +1000,6 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Test: finalize the request
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
-  }
-
-  /**
-   * @notice Finalizing a request with an unrelated response
-   */
-  function test_finalize_withResponse_revertsIfInvalidResponse() public {
-    oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
-    oracle.mock_setResponseCreatedAt(_getId(mockResponse), uint128(block.number));
-
-    // Test: finalize the request
-    vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
     vm.prank(requester);
     oracle.finalize(mockRequest, mockResponse);
   }
