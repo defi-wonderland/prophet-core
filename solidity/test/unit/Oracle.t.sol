@@ -16,7 +16,7 @@ import {IResponseModule} from '../../interfaces/modules/response/IResponseModule
 import {Oracle} from '../../contracts/Oracle.sol';
 import {Helpers} from '../utils/Helpers.sol';
 
-import {ValidatorLib} from '../../lib/ValidatorLib.sol';
+import {ValidatorLib} from '../../libraries/ValidatorLib.sol';
 
 /**
  * @notice Harness to deploy and test Oracle

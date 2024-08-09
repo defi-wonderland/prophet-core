@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IOracle, IValidator} from '../interfaces/IValidator.sol';
 
-import {ValidatorLib} from '../lib/ValidatorLib.sol';
+import {ValidatorLib} from '../libraries/ValidatorLib.sol';
 
 abstract contract Validator is IValidator {
   /// @inheritdoc IValidator

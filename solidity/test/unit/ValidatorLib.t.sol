@@ -12,7 +12,7 @@ import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.so
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 
-import {ValidatorLib} from '../../lib/ValidatorLib.sol';
+import {ValidatorLib} from '../../libraries/ValidatorLib.sol';
 import {Helpers} from '../utils/Helpers.sol';
 
 /**

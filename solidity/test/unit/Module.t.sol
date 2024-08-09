@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {IModule, Module} from '../../../contracts/Module.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-import {Helpers} from '../../utils/Helpers.sol';
+import {IModule, Module} from '../../contracts/Module.sol';
+import {IOracle} from '../../interfaces/IOracle.sol';
+import {Helpers} from '../utils/Helpers.sol';
 
 /**
  * @dev Harness to deploy the abstract contract

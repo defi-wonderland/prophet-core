@@ -1,0 +1,55 @@
+name: Production Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Release
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        export_type: ['interfaces', 'all']
+
+    env:
+      PROJECT_NAME: '@defi-wonderland/prophet-core'
+      EXPORT_NAME: ${{ matrix.export_type == 'interfaces' && '-interfaces' || '' }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          node-version: 20.x
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Build project and generate out directory
+        run: yarn build
+
+      - name: Export Solidity - Export Type ${{ matrix.export_type }}
+        uses: defi-wonderland/solidity-exporter-action@v2.1.0
+        with:
+          package_name: ${{ env.PROJECT_NAME }}
+          out: 'out'
+          interfaces: 'solidity/interfaces'
+          contracts: 'solidity/contracts'
+          libraries: "solidity/libraries"
+          export_type: '${{ matrix.export_type }}'
+
+      - name: Publish to NPM - Export Type ${{ matrix.export_type }}
+        run: cd export/${{ env.PROJECT_NAME }}${{ env.EXPORT_NAME }} && npm publish --access public --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

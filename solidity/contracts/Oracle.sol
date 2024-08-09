@@ -9,9 +9,11 @@ import {IFinalityModule} from '../interfaces/modules/finality/IFinalityModule.so
 import {IRequestModule} from '../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
-import {ValidatorLib} from '../lib/ValidatorLib.sol';
+import {ValidatorLib} from '../libraries/ValidatorLib.sol';
 
 contract Oracle is IOracle {
+  using ValidatorLib for *;
+
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => uint128 _finalizedAt) public finalizedAt;
 
@@ -106,7 +108,7 @@ contract Oracle is IOracle {
     Response calldata _response
   ) external returns (bytes32 _responseId) {
     bytes32 _requestId = ValidatorLib._getId(_request);
-    (_responseId) = ValidatorLib._validateResponse(_request, _response);
+    _responseId = ValidatorLib._validateResponse(_request, _response);
 
     if (requestCreatedAt[_requestId] == 0) {
       revert Oracle_InvalidRequest();
