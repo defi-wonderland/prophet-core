@@ -107,8 +107,9 @@ contract Oracle is IOracle {
     Request calldata _request,
     Response calldata _response
   ) external returns (bytes32 _responseId) {
-    bytes32 _requestId = ValidatorLib._getId(_request);
     _responseId = ValidatorLib._validateResponse(_request, _response);
+
+    bytes32 _requestId = _response.requestId;
 
     if (requestCreatedAt[_requestId] == 0) {
       revert Oracle_InvalidRequest();
@@ -124,16 +125,16 @@ contract Oracle is IOracle {
       revert Oracle_InvalidResponseBody();
     }
 
-    if (finalizedAt[_response.requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_response.requestId);
+    if (finalizedAt[_requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], _response.proposer);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
-    _responseIds[_response.requestId] = abi.encodePacked(_responseIds[_response.requestId], _responseId);
+    _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     responseCreatedAt[_responseId] = uint128(block.number);
 
-    emit ResponseProposed(_response.requestId, _responseId, _response, block.number);
+    emit ResponseProposed(_requestId, _responseId, _response, block.number);
   }
 
   /// @inheritdoc IOracle
@@ -144,6 +145,8 @@ contract Oracle is IOracle {
   ) external returns (bytes32 _disputeId) {
     bytes32 _responseId;
     (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+
+    bytes32 _requestId = _dispute.requestId;
 
     if (responseCreatedAt[_responseId] == 0) {
       revert Oracle_InvalidResponse();
@@ -157,33 +160,33 @@ contract Oracle is IOracle {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (finalizedAt[_response.requestId] != 0) {
-      revert Oracle_AlreadyFinalized(_response.requestId);
+    if (finalizedAt[_requestId] != 0) {
+      revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    if (disputeOf[_dispute.responseId] != bytes32(0)) {
-      revert Oracle_ResponseAlreadyDisputed(_dispute.responseId);
+    if (disputeOf[_responseId] != bytes32(0)) {
+      revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
 
-    _participants[_response.requestId] = abi.encodePacked(_participants[_response.requestId], msg.sender);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
-    disputeOf[_dispute.responseId] = _disputeId;
+    disputeOf[_responseId] = _disputeId;
     disputeCreatedAt[_disputeId] = uint128(block.number);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
-    emit ResponseDisputed(_dispute.responseId, _disputeId, _dispute, block.number);
+    emit ResponseDisputed(_responseId, _disputeId, _dispute, block.number);
   }
 
   /// @inheritdoc IOracle
   function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+    (bytes32 _responseId, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDispute();
     }
 
-    if (disputeOf[_dispute.responseId] != _disputeId) {
+    if (disputeOf[_responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
@@ -207,13 +210,13 @@ contract Oracle is IOracle {
 
   /// @inheritdoc IOracle
   function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
-    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+    (bytes32 _responseId, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDispute();
     }
 
-    if (disputeOf[_dispute.responseId] != _disputeId) {
+    if (disputeOf[_responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
@@ -239,13 +242,13 @@ contract Oracle is IOracle {
     Dispute calldata _dispute,
     DisputeStatus _status
   ) external {
-    (, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
+    (bytes32 _responseId, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
       revert Oracle_InvalidDispute();
     }
 
-    if (disputeOf[_dispute.responseId] != _disputeId) {
+    if (disputeOf[_responseId] != _disputeId) {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
@@ -394,13 +397,10 @@ contract Oracle is IOracle {
   ) internal returns (bytes32 _requestId, bytes32 _responseId) {
     _responseId = ValidatorLib._validateResponse(_request, _response);
 
+    _requestId = _response.requestId;
+
     if (responseCreatedAt[_responseId] == 0) {
       revert Oracle_InvalidResponse();
-    }
-
-    _requestId = _response.requestId;
-    if (!_matchBytes(_responseId, _responseIds[_requestId], 32)) {
-      revert Oracle_InvalidFinalizedResponse();
     }
 
     DisputeStatus _status = disputeStatus[disputeOf[_responseId]];
@@ -428,7 +428,7 @@ contract Oracle is IOracle {
       revert Oracle_InvalidRequestBody();
     }
 
-    _requestId = keccak256(abi.encode(_request));
+    _requestId = ValidatorLib._getId(_request);
     nonceToRequestId[_requestNonce] = _requestId;
     requestCreatedAt[_requestId] = uint128(block.number);
 
