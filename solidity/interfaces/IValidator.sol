@@ -21,6 +21,7 @@ interface IValidator {
    * @notice Thrown when the dispute provided does not exist
    */
   error Validator_InvalidDispute();
+
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
   //////////////////////////////////////////////////////////////*/

@@ -6,7 +6,7 @@ import {IOracle} from '../interfaces/IOracle.sol';
 
 import {Validator} from './Validator.sol';
 
-abstract contract Module is IModule, Validator {
+abstract contract Module is Validator, IModule {
   constructor(IOracle _oracle) Validator(_oracle) {}
 
   /**
