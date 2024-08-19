@@ -2,12 +2,13 @@
 pragma solidity ^0.8.19;
 
 import {IOracle} from './IOracle.sol';
+import {IValidator} from './IValidator.sol';
 
 /**
  * @title Module
  * @notice Abstract contract to be inherited by all modules
  */
-interface IModule {
+interface IModule is IValidator {
   /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
