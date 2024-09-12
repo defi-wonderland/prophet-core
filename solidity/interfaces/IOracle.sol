@@ -193,6 +193,8 @@ interface IOracle {
    * @param disputeModule The address of the dispute module
    * @param resolutionModule The address of the resolution module
    * @param finalityModule The address of the finality module
+   * @param accessControlModule The address of the access control module
+   * //  * @param accessControlModuleData The parameters for the access control module // TODO: Access control could be used to create a request so there is no way to have general data?
    * @param requestModuleData The parameters for the request module
    * @param responseModuleData The parameters for the response module
    * @param disputeModuleData The parameters for the dispute module
@@ -209,6 +211,8 @@ interface IOracle {
     address disputeModule;
     address resolutionModule;
     address finalityModule;
+    address accessControlModule;
+    bytes accessControlModuleData;
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
@@ -252,7 +256,9 @@ interface IOracle {
    * @param _responseId The response id to get the dispute for
    * @return _disputeId The id of the dispute associated with the given response
    */
-  function disputeOf(bytes32 _responseId) external view returns (bytes32 _disputeId);
+  function disputeOf(
+    bytes32 _responseId
+  ) external view returns (bytes32 _disputeId);
 
   /**
    * @notice Returns the total number of requests stored in the oracle
@@ -267,7 +273,9 @@ interface IOracle {
    * @param _disputeId The id of the dispute
    * @return _status The status of the dispute
    */
-  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
+  function disputeStatus(
+    bytes32 _disputeId
+  ) external view returns (DisputeStatus _status);
 
   /**
    * @notice The id of each request in chronological order
@@ -275,7 +283,9 @@ interface IOracle {
    * @param _nonce The nonce of the request
    * @return _requestId The id of the request
    */
-  function nonceToRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
+  function nonceToRequestId(
+    uint256 _nonce
+  ) external view returns (bytes32 _requestId);
 
   /**
    * @notice Returns the finalized response ID for a given request
@@ -283,7 +293,9 @@ interface IOracle {
    * @param _requestId The id of the request
    * @return _finalizedResponseId The id of the finalized response
    */
-  function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
+  function finalizedResponseId(
+    bytes32 _requestId
+  ) external view returns (bytes32 _finalizedResponseId);
 
   /**
    * @notice The number of the block at which a request was created
@@ -291,7 +303,9 @@ interface IOracle {
    * @param _id The request id
    * @return _requestCreatedAt The block number
    */
-  function requestCreatedAt(bytes32 _id) external view returns (uint128 _requestCreatedAt);
+  function requestCreatedAt(
+    bytes32 _id
+  ) external view returns (uint128 _requestCreatedAt);
 
   /**
    * @notice The number of the block at which a response was created
@@ -299,7 +313,9 @@ interface IOracle {
    * @param _id The response id
    * @return _responseCreatedAt The block number
    */
-  function responseCreatedAt(bytes32 _id) external view returns (uint128 _responseCreatedAt);
+  function responseCreatedAt(
+    bytes32 _id
+  ) external view returns (uint128 _responseCreatedAt);
 
   /**
    * @notice The number of the block at which a dispute was created
@@ -307,7 +323,9 @@ interface IOracle {
    * @param _id The dispute id
    * @return _disputeCreatedAt The block number
    */
-  function disputeCreatedAt(bytes32 _id) external view returns (uint128 _disputeCreatedAt);
+  function disputeCreatedAt(
+    bytes32 _id
+  ) external view returns (uint128 _disputeCreatedAt);
 
   /**
    * @notice The number of the block at which a request was finalized
@@ -315,7 +333,9 @@ interface IOracle {
    * @param _requestId The request id
    * @return _finalizedAt The block number
    */
-  function finalizedAt(bytes32 _requestId) external view returns (uint128 _finalizedAt);
+  function finalizedAt(
+    bytes32 _requestId
+  ) external view returns (uint128 _finalizedAt);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
@@ -435,7 +455,9 @@ interface IOracle {
    * @param _requestId The id of the request
    * @return _ids The ids of the responses
    */
-  function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
+  function getResponseIds(
+    bytes32 _requestId
+  ) external view returns (bytes32[] memory _ids);
 
   /**
    * @notice Finalizes the request and executes the post-request logic on the modules

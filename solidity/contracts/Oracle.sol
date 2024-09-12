@@ -11,7 +11,9 @@ import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionMod
 import {IResponseModule} from '../interfaces/modules/response/IResponseModule.sol';
 import {ValidatorLib} from '../libraries/ValidatorLib.sol';
 
-contract Oracle is IOracle {
+import {AccessController} from './AccessController.sol';
+
+contract Oracle is IOracle, AccessController {
   using ValidatorLib for *;
 
   /// @inheritdoc IOracle
@@ -301,7 +303,9 @@ contract Oracle is IOracle {
   }
 
   /// @inheritdoc IOracle
-  function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
+  function getResponseIds(
+    bytes32 _requestId
+  ) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
 
@@ -355,7 +359,9 @@ contract Oracle is IOracle {
    * @param _request The request to be finalized
    * @return _requestId The id of the finalized request
    */
-  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
+  function _finalizeWithoutResponse(
+    IOracle.Request calldata _request
+  ) internal view returns (bytes32 _requestId) {
     _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {
@@ -419,7 +425,11 @@ contract Oracle is IOracle {
    * @param _ipfsHash The hashed IPFS CID of the metadata json
    * @return _requestId The id of the created request
    */
-  function _createRequest(Request memory _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
+  function _createRequest(
+    Request memory _request,
+    bytes32 _ipfsHash,
+    AccessControl memory _accessControl
+  ) internal hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
     if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
