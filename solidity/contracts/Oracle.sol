@@ -303,9 +303,7 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
-  function getResponseIds(
-    bytes32 _requestId
-  ) public view returns (bytes32[] memory _ids) {
+  function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
 
@@ -359,9 +357,7 @@ contract Oracle is IOracle, AccessController {
    * @param _request The request to be finalized
    * @return _requestId The id of the finalized request
    */
-  function _finalizeWithoutResponse(
-    IOracle.Request calldata _request
-  ) internal view returns (bytes32 _requestId) {
+  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
     _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {
