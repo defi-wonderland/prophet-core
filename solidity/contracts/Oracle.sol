@@ -59,20 +59,25 @@ contract Oracle is IOracle, AccessController {
   uint256 public totalRequestCount;
 
   /// @inheritdoc IOracle
-  function createRequest(Request calldata _request, bytes32 _ipfsHash) external returns (bytes32 _requestId) {
-    _requestId = _createRequest(_request, _ipfsHash);
+  function createRequest(
+    Request calldata _request,
+    AccessControl memory _accessControl,
+    bytes32 _ipfsHash
+  ) external returns (bytes32 _requestId) {
+    _requestId = _createRequest(_request, _ipfsHash, _accessControl);
   }
 
   /// @inheritdoc IOracle
   function createRequests(
     Request[] calldata _requestsData,
-    bytes32[] calldata _ipfsHashes
+    bytes32[] calldata _ipfsHashes,
+    AccessControl memory _accessControl
   ) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
+      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i], _accessControl);
       unchecked {
         ++_i;
       }
@@ -107,8 +112,9 @@ contract Oracle is IOracle, AccessController {
   /// @inheritdoc IOracle
   function proposeResponse(
     Request calldata _request,
-    Response calldata _response
-  ) external returns (bytes32 _responseId) {
+    Response calldata _response,
+    AccessControl memory _accessControl
+  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _responseId) {
     _responseId = ValidatorLib._validateResponse(_request, _response);
 
     bytes32 _requestId = _response.requestId;
@@ -118,7 +124,7 @@ contract Oracle is IOracle, AccessController {
     }
 
     // The caller must be the proposer, unless the response is coming from a dispute module
-    if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
+    if (_accessControl.user != _response.proposer && _accessControl.user != address(_request.disputeModule)) {
       revert Oracle_InvalidResponseBody();
     }
 
@@ -132,7 +138,7 @@ contract Oracle is IOracle, AccessController {
     }
 
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
-    IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
+    IResponseModule(_request.responseModule).propose(_request, _response, _accessControl.user);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     responseCreatedAt[_responseId] = uint128(block.number);
 
@@ -143,8 +149,9 @@ contract Oracle is IOracle, AccessController {
   function disputeResponse(
     Request calldata _request,
     Response calldata _response,
-    Dispute calldata _dispute
-  ) external returns (bytes32 _disputeId) {
+    Dispute calldata _dispute,
+    AccessControl memory _accessControl
+  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _disputeId) {
     bytes32 _responseId;
     (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
@@ -158,7 +165,7 @@ contract Oracle is IOracle, AccessController {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != msg.sender) {
+    if (_dispute.disputer != _accessControl.user) {
       revert Oracle_InvalidDisputeBody();
     }
 
@@ -170,7 +177,7 @@ contract Oracle is IOracle, AccessController {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
 
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _accessControl.user);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
     disputeCreatedAt[_disputeId] = uint128(block.number);
@@ -202,7 +209,8 @@ contract Oracle is IOracle, AccessController {
     // Notify the dispute module about the escalation
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
-    emit DisputeEscalated(msg.sender, _disputeId, block.number);
+    // TODO: Let's remove the msg.sender from this event and we can remove the access control
+    emit DisputeEscalated(msg.sender, _disputeId, block.number); 
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
@@ -234,6 +242,7 @@ contract Oracle is IOracle, AccessController {
 
     IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _response, _dispute);
 
+    // TODO: Same, remove the sender from this event. We don't really need it
     emit DisputeResolved(_disputeId, _dispute, msg.sender, block.number);
   }
 
@@ -319,7 +328,11 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
-  function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+  function finalize(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    AccessControl memory _accessControl
+  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) {
     bytes32 _requestId;
     bytes32 _responseId;
 
@@ -430,7 +443,7 @@ contract Oracle is IOracle, AccessController {
 
     if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
 
-    if (msg.sender != _request.requester || _requestNonce != _request.nonce) {
+    if (_accessControl.user != _request.requester || _requestNonce != _request.nonce) {
       revert Oracle_InvalidRequestBody();
     }
 
@@ -447,8 +460,8 @@ contract Oracle is IOracle, AccessController {
       _request.finalityModule
     );
 
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
-    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _accessControl.user);
+    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, _accessControl.user);
 
     emit RequestCreated(_requestId, _request, _ipfsHash, block.number);
   }

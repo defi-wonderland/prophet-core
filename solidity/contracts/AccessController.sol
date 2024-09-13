@@ -16,9 +16,9 @@ abstract contract AccessController {
 
   /**
    * @notice Modifier to check if the caller has access to the user
-    * @param _accessControlModule The access control module
-    * @param _caller The caller
-    * @param _accessControl The access control struct
+   * @param _accessControlModule The access control module
+   * @param _caller The caller
+   * @param _accessControl The access control struct
    */
   modifier hasAccess(IAccessControlModule _accessControlModule, address _caller, AccessControl memory _accessControl) {
     bool _hasAccess = _caller == _accessControl.user
