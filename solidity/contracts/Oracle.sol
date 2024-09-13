@@ -350,18 +350,18 @@ contract Oracle is IOracle, AccessController {
     finalizedAt[_requestId] = uint128(block.number);
 
     if (address(_request.finalityModule) != address(0)) {
-      IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
+      IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, _accessControl.user);
     }
 
     if (address(_request.resolutionModule) != address(0)) {
-      IResolutionModule(_request.resolutionModule).finalizeRequest(_request, _response, msg.sender);
+      IResolutionModule(_request.resolutionModule).finalizeRequest(_request, _response, _accessControl.user);
     }
 
-    IDisputeModule(_request.disputeModule).finalizeRequest(_request, _response, msg.sender);
-    IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
-    IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
+    IDisputeModule(_request.disputeModule).finalizeRequest(_request, _response, _accessControl.user);
+    IResponseModule(_request.responseModule).finalizeRequest(_request, _response, _accessControl.user);
+    IRequestModule(_request.requestModule).finalizeRequest(_request, _response, _accessControl.user);
 
-    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, _accessControl.user, block.number);
   }
 
   /**
