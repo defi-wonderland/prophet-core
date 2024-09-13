@@ -193,6 +193,8 @@ interface IOracle {
    * @param disputeModule The address of the dispute module
    * @param resolutionModule The address of the resolution module
    * @param finalityModule The address of the finality module
+   * @param accessControlModule The address of the access control module
+   * //  * @param accessControlModuleData The parameters for the access control module // TODO: Access control could be used to create a request so there is no way to have general data?
    * @param requestModuleData The parameters for the request module
    * @param responseModuleData The parameters for the response module
    * @param disputeModuleData The parameters for the dispute module
@@ -209,6 +211,8 @@ interface IOracle {
     address disputeModule;
     address resolutionModule;
     address finalityModule;
+    address accessControlModule;
+    bytes accessControlModuleData;
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
