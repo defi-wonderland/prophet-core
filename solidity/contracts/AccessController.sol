@@ -16,18 +16,17 @@ abstract contract AccessController {
 
   /**
    * @notice Modifier to check if the caller has access to the user
-   * @param _caller The caller of the function
-   * @param _user The user to check access for
-   * @param _data The data to check access for
+    * @param _accessControlModule The access control module
+    * @param _caller The caller
+    * @param _accessControl The access control struct
    */
   modifier hasAccess(IAccessControlModule _accessControlModule, address _caller, AccessControl memory _accessControl) {
-    if (
-      _caller == _accessControl.user
-        || (
-          address(_accessControlModule) != address(0)
-            && _accessControlModule.hasAccess(_caller, _accessControl.user, _accessControl.data)
-        )
-    ) revert AccessController_NoAccess();
+    bool _hasAccess = _caller == _accessControl.user
+      || (
+        address(_accessControlModule) != address(0)
+          && _accessControlModule.hasAccess(_caller, _accessControl.user, _accessControl.data)
+      );
+    if (!_hasAccess) revert AccessController_NoAccess();
     _;
   }
 }
