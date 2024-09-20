@@ -481,7 +481,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidProposer.selector);
 
     // Test: try to propose a response from a random address
     vm.prank(_caller);
@@ -500,7 +500,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     oracle.proposeResponse(mockRequest, mockResponse);
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    vm.expectRevert(IOracle.Oracle_ResponseAlreadyProposed.selector);
 
     // Test: try to propose the same response again
     vm.prank(proposer);
@@ -576,7 +576,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), uint128(block.number));
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidProposer.selector);
 
     mockDispute.proposer = _otherProposer;
 
@@ -606,7 +606,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     vm.assume(_caller != disputer);
 
     // Check: revert?
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidDisputer.selector);
 
     // Test: try to dispute the response again
     vm.prank(_caller);
