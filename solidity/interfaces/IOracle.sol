@@ -171,12 +171,12 @@ interface IOracle {
   error Oracle_ResponseAlreadyProposed();
 
   /**
-   * @notice Thrown when the proposer is invalid.
+   * @notice Thrown when the proposer is invalid
    */
   error Oracle_InvalidProposer();
 
   /**
-   * @notice Thrown when the disputer is invalid.
+   * @notice Thrown when the disputer is invalid
    */
   error Oracle_InvalidDisputer();
 
