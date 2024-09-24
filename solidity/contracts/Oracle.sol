@@ -132,7 +132,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
-    responseCreatedAt[_responseId] = uint128(block.number);
+    responseCreatedAt[_responseId] = uint128(block.timestamp);
 
     emit ResponseProposed(_requestId, _responseId, _response, block.number);
   }
@@ -171,7 +171,7 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
-    disputeCreatedAt[_disputeId] = uint128(block.number);
+    disputeCreatedAt[_disputeId] = uint128(block.timestamp);
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
@@ -332,7 +332,7 @@ contract Oracle is IOracle {
       revert Oracle_AlreadyFinalized(_requestId);
     }
 
-    finalizedAt[_requestId] = uint128(block.number);
+    finalizedAt[_requestId] = uint128(block.timestamp);
 
     if (address(_request.finalityModule) != address(0)) {
       IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
@@ -430,7 +430,7 @@ contract Oracle is IOracle {
 
     _requestId = ValidatorLib._getId(_request);
     nonceToRequestId[_requestNonce] = _requestId;
-    requestCreatedAt[_requestId] = uint128(block.number);
+    requestCreatedAt[_requestId] = uint128(block.timestamp);
 
     // solhint-disable-next-line func-named-parameters
     _allowedModules[_requestId] = abi.encodePacked(

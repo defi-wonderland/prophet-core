@@ -301,34 +301,34 @@ interface IOracle {
   function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
 
   /**
-   * @notice The number of the block at which a request was created
+   * @notice The block's timestamp at which a request was created
    *
    * @param _id The request id
-   * @return _requestCreatedAt The block number
+   * @return _requestCreatedAt The block's timestamp
    */
   function requestCreatedAt(bytes32 _id) external view returns (uint128 _requestCreatedAt);
 
   /**
-   * @notice The number of the block at which a response was created
+   * @notice The block's timestamp at which a response was created
    *
    * @param _id The response id
-   * @return _responseCreatedAt The block number
+   * @return _responseCreatedAt The block's timestamp
    */
   function responseCreatedAt(bytes32 _id) external view returns (uint128 _responseCreatedAt);
 
   /**
-   * @notice The number of the block at which a dispute was created
+   * @notice The block's timestamp at which a dispute was created
    *
    * @param _id The dispute id
-   * @return _disputeCreatedAt The block number
+   * @return _disputeCreatedAt The block's timestamp
    */
   function disputeCreatedAt(bytes32 _id) external view returns (uint128 _disputeCreatedAt);
 
   /**
-   * @notice The number of the block at which a request was finalized
+   * @notice The block's timestamp at which a request was finalized
    *
    * @param _requestId The request id
-   * @return _finalizedAt The block number
+   * @return _finalizedAt The block's timestamp
    */
   function finalizedAt(bytes32 _requestId) external view returns (uint128 _finalizedAt);
 
