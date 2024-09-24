@@ -117,12 +117,12 @@ contract Oracle is IOracle {
 
     // The caller must be the proposer, unless the response is coming from a dispute module
     if (msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)) {
-      revert Oracle_InvalidResponseBody();
+      revert Oracle_InvalidProposer();
     }
 
     // Can't propose the same response twice
     if (responseCreatedAt[_responseId] != 0) {
-      revert Oracle_InvalidResponseBody();
+      revert Oracle_ResponseAlreadyProposed();
     }
 
     if (finalizedAt[_requestId] != 0) {
@@ -153,11 +153,11 @@ contract Oracle is IOracle {
     }
 
     if (_dispute.proposer != _response.proposer) {
-      revert Oracle_InvalidDisputeBody();
+      revert Oracle_InvalidProposer();
     }
 
     if (_dispute.disputer != msg.sender) {
-      revert Oracle_InvalidDisputeBody();
+      revert Oracle_InvalidDisputer();
     }
 
     if (finalizedAt[_requestId] != 0) {

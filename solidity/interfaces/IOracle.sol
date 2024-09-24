@@ -165,6 +165,21 @@ interface IOracle {
    */
   error Oracle_InvalidDispute();
 
+  /**
+   * @notice Thrown when response has been already proposed
+   */
+  error Oracle_ResponseAlreadyProposed();
+
+  /**
+   * @notice Thrown when the proposer is invalid
+   */
+  error Oracle_InvalidProposer();
+
+  /**
+   * @notice Thrown when the disputer is invalid
+   */
+  error Oracle_InvalidDisputer();
+
   /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
