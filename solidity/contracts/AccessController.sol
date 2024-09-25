@@ -14,17 +14,29 @@ abstract contract AccessController {
     bytes data;
   }
 
+  error AccessController_NoAccess();
+
   /**
    * @notice Modifier to check if the caller has access to the user
    * @param _accessControlModule The access control module
-   * @param _caller The caller
    * @param _accessControl The access control struct
    */
-  modifier hasAccess(IAccessControlModule _accessControlModule, address _caller, AccessControl memory _accessControl) {
-    bool _hasAccess = _caller == _accessControl.user
+  modifier hasAccess(
+    address _accessControlModule,
+    bytes32 _typehash,
+    bytes memory _params,
+    AccessControl memory _accessControl
+  ) {
+    bool _hasAccess = msg.sender == _accessControl.user
       || (
-        address(_accessControlModule) != address(0)
-          && _accessControlModule.hasAccess(_caller, _accessControl.user, _accessControl.data)
+        _accessControlModule != address(0)
+          && IAccessControlModule(_accessControlModule).hasAccess({
+            _caller: msg.sender,
+            _user: _accessControl.user,
+            _typehash: _typehash,
+            _params: _params,
+            _data: _accessControl.data
+          })
       );
     if (!_hasAccess) revert AccessController_NoAccess();
     _;

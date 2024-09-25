@@ -13,7 +13,9 @@ import {ValidatorLib} from '../libraries/ValidatorLib.sol';
 
 import {AccessController} from './AccessController.sol';
 
-contract Oracle is IOracle, AccessController {
+import {OracleTypehash} from './OracleTypehash.sol';
+
+contract Oracle is IOracle, AccessController, OracleTypehash {
   using ValidatorLib for *;
 
   /// @inheritdoc IOracle
@@ -114,7 +116,11 @@ contract Oracle is IOracle, AccessController {
     Request calldata _request,
     Response calldata _response,
     AccessControl memory _accessControl
-  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _responseId) {
+  )
+    external
+    hasAccess(_request.accessControlModule, PROPOSE_TYPEHASH, abi.encode(_request, _response), _accessControl)
+    returns (bytes32 _responseId)
+  {
     _responseId = ValidatorLib._validateResponse(_request, _response);
 
     bytes32 _requestId = _response.requestId;
@@ -210,7 +216,7 @@ contract Oracle is IOracle, AccessController {
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
     // TODO: Let's remove the msg.sender from this event and we can remove the access control
-    emit DisputeEscalated(msg.sender, _disputeId, block.number); 
+    emit DisputeEscalated(msg.sender, _disputeId, block.number);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
@@ -312,7 +318,9 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
-  function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
+  function getResponseIds(
+    bytes32 _requestId
+  ) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
 
@@ -370,7 +378,9 @@ contract Oracle is IOracle, AccessController {
    * @param _request The request to be finalized
    * @return _requestId The id of the finalized request
    */
-  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
+  function _finalizeWithoutResponse(
+    IOracle.Request calldata _request
+  ) internal view returns (bytes32 _requestId) {
     _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {

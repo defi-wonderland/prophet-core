@@ -8,5 +8,11 @@ import {IModule} from '../../IModule.sol';
  * @notice Common interface for all response modules
  */
 interface IAccessControlModule is IModule {
-  function hasAccess(address _caller, address _user, bytes calldata _data) external view returns (bool _hasAccess);
+  function hasAccess(
+    address _caller,
+    address _user,
+    bytes32 _typehash,
+    bytes memory _params,
+    bytes calldata _data
+  ) external returns (bool _hasAccess);
 }
