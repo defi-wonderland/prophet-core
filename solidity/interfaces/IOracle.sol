@@ -15,68 +15,55 @@ interface IOracle {
    * @param _requestId The id of the created request
    * @param _request The request that has been created
    * @param _ipfsHash The hashed IPFS CID of the metadata json
-   * @param _blockNumber The current block number
    */
-  event RequestCreated(bytes32 indexed _requestId, Request _request, bytes32 _ipfsHash, uint256 _blockNumber);
+  event RequestCreated(bytes32 indexed _requestId, Request _request, bytes32 _ipfsHash);
 
   /**
    * @notice Emitted when a response is proposed
    * @param _requestId The id of the request
    * @param _responseId The id of the proposed response
    * @param _response The response that has been proposed
-   * @param _blockNumber The current block number
    */
-  event ResponseProposed(
-    bytes32 indexed _requestId, bytes32 indexed _responseId, Response _response, uint256 _blockNumber
-  );
+  event ResponseProposed(bytes32 indexed _requestId, bytes32 indexed _responseId, Response _response);
 
   /**
    * @notice Emitted when a response is disputed
    * @param _responseId The id of the response being disputed
    * @param _disputeId The id of the dispute
    * @param _dispute The dispute that has been created
-   * @param _blockNumber The current block number
    */
-  event ResponseDisputed(
-    bytes32 indexed _responseId, bytes32 indexed _disputeId, Dispute _dispute, uint256 _blockNumber
-  );
+  event ResponseDisputed(bytes32 indexed _responseId, bytes32 indexed _disputeId, Dispute _dispute);
 
   /**
    * @notice Emitted when a request is finalized
    * @param _requestId The id of the request being finalized
    * @param _responseId The id of the final response, may be empty
    * @param _caller The address of the user who finalized the request
-   * @param _blockNumber The current block number
    */
-  event OracleRequestFinalized(
-    bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
-  );
+  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller);
 
   /**
    * @notice Emitted when a dispute is escalated
    * @param _caller The address of the user who escalated the dispute
    * @param _disputeId The id of the dispute being escalated
-   * @param _blockNumber The block number of the escalation
    */
-  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
 
   /**
    * @notice Emitted when a dispute's status changes
    * @param _disputeId The id of the dispute
    * @param _dispute The dispute that is being updated
    * @param _status The new dispute status
-   * @param _blockNumber The block number of the status update
    */
-  event DisputeStatusUpdated(bytes32 indexed _disputeId, Dispute _dispute, DisputeStatus _status, uint256 _blockNumber);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, Dispute _dispute, DisputeStatus _status);
 
   /**
    * @notice Emitted when a dispute is resolved
    * @param _disputeId The id of the dispute being resolved
    * @param _dispute The dispute that is being updated
    * @param _caller The address of the user who resolved the dispute
-   * @param _blockNumber The block number of the dispute resolution
    */
-  event DisputeResolved(bytes32 indexed _disputeId, Dispute _dispute, address indexed _caller, uint256 _blockNumber);
+  event DisputeResolved(bytes32 indexed _disputeId, Dispute _dispute, address indexed _caller);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS

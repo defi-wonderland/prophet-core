@@ -134,7 +134,7 @@ contract Oracle is IOracle {
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     responseCreatedAt[_responseId] = uint128(block.timestamp);
 
-    emit ResponseProposed(_requestId, _responseId, _response, block.number);
+    emit ResponseProposed(_requestId, _responseId, _response);
   }
 
   /// @inheritdoc IOracle
@@ -175,7 +175,7 @@ contract Oracle is IOracle {
 
     IDisputeModule(_request.disputeModule).disputeResponse(_request, _response, _dispute);
 
-    emit ResponseDisputed(_responseId, _disputeId, _dispute, block.number);
+    emit ResponseDisputed(_responseId, _disputeId, _dispute);
   }
 
   /// @inheritdoc IOracle
@@ -200,7 +200,7 @@ contract Oracle is IOracle {
     // Notify the dispute module about the escalation
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
-    emit DisputeEscalated(msg.sender, _disputeId, block.number);
+    emit DisputeEscalated(msg.sender, _disputeId);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
@@ -232,7 +232,7 @@ contract Oracle is IOracle {
 
     IResolutionModule(_request.resolutionModule).resolveDispute(_disputeId, _request, _response, _dispute);
 
-    emit DisputeResolved(_disputeId, _dispute, msg.sender, block.number);
+    emit DisputeResolved(_disputeId, _dispute, msg.sender);
   }
 
   /// @inheritdoc IOracle
@@ -258,7 +258,7 @@ contract Oracle is IOracle {
     disputeStatus[_disputeId] = _status;
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
-    emit DisputeStatusUpdated(_disputeId, _dispute, _status, block.number);
+    emit DisputeStatusUpdated(_disputeId, _dispute, _status);
   }
 
   /**
@@ -346,7 +346,7 @@ contract Oracle is IOracle {
     IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
     IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
 
-    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, msg.sender);
   }
 
   /**
@@ -444,6 +444,6 @@ contract Oracle is IOracle {
     _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
-    emit RequestCreated(_requestId, _request, _ipfsHash, block.number);
+    emit RequestCreated(_requestId, _request, _ipfsHash);
   }
 }

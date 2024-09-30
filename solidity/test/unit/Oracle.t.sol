@@ -91,23 +91,13 @@ contract BaseTest is Test, Helpers {
   bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
 
   // Events
-  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, bytes32 _ipfsHash, uint256 _blockNumber);
-  event ResponseProposed(
-    bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Response _response, uint256 _blockNumber
-  );
-  event ResponseDisputed(
-    bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute, uint256 _blockNumber
-  );
-  event OracleRequestFinalized(
-    bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
-  );
-  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, uint256 _blockNumber);
-  event DisputeStatusUpdated(
-    bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status, uint256 _blockNumber
-  );
-  event DisputeResolved(
-    bytes32 indexed _disputeId, IOracle.Dispute _dispute, address indexed _caller, uint256 _blockNumber
-  );
+  event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, bytes32 _ipfsHash);
+  event ResponseProposed(bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Response _response);
+  event ResponseDisputed(bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
+  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
+  event DisputeResolved(bytes32 indexed _disputeId, IOracle.Dispute _dispute, address indexed _caller);
 
   function setUp() public virtual {
     oracle = new MockOracle();
@@ -164,7 +154,7 @@ contract Oracle_Unit_CreateRequest is BaseTest {
 
     // Check: emits RequestCreated event?
     _expectEmit(address(oracle));
-    emit RequestCreated(_getId(mockRequest), mockRequest, _ipfsHash, block.number);
+    emit RequestCreated(_getId(mockRequest), mockRequest, _ipfsHash);
 
     // Test: create the request
     vm.prank(requester);
@@ -262,7 +252,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
 
       // Check: emits RequestCreated event?
       _expectEmit(address(oracle));
-      emit RequestCreated(_theoreticalRequestId, mockRequest, _ipfsHashes[_i], block.number);
+      emit RequestCreated(_theoreticalRequestId, mockRequest, _ipfsHashes[_i]);
     }
 
     vm.prank(requester);
@@ -435,7 +425,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 
     // Check: emits ResponseProposed event?
     _expectEmit(address(oracle));
-    emit ResponseProposed(_requestId, _responseId, mockResponse, block.number);
+    emit ResponseProposed(_requestId, _responseId, mockResponse);
 
     // Test: propose the response
     vm.prank(proposer);
@@ -445,7 +435,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 
     // Check: emits ResponseProposed event?
     _expectEmit(address(oracle));
-    emit ResponseProposed(_requestId, _getId(mockResponse), mockResponse, block.number);
+    emit ResponseProposed(_requestId, _getId(mockResponse), mockResponse);
 
     vm.prank(proposer);
     bytes32 _secondResponseId = oracle.proposeResponse(mockRequest, mockResponse);
@@ -558,7 +548,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
 
       // Check: emits ResponseDisputed event?
       _expectEmit(address(oracle));
-      emit ResponseDisputed(_responseId, _disputeId, mockDispute, block.number);
+      emit ResponseDisputed(_responseId, _disputeId, mockDispute);
 
       vm.prank(disputer);
       oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
@@ -656,7 +646,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
 
         // Check: emits DisputeStatusUpdated event?
         _expectEmit(address(oracle));
-        emit DisputeStatusUpdated(_disputeId, mockDispute, IOracle.DisputeStatus(_newStatus), block.number);
+        emit DisputeStatusUpdated(_disputeId, mockDispute, IOracle.DisputeStatus(_newStatus));
 
         // Test: change the status
         vm.prank(address(resolutionModule));
@@ -751,7 +741,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
 
     // Check: emits DisputeResolved event?
     _expectEmit(address(oracle));
-    emit DisputeResolved(_disputeId, mockDispute, address(this), block.number);
+    emit DisputeResolved(_disputeId, mockDispute, address(this));
 
     // Test: resolve the dispute
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
@@ -930,7 +920,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, _responseId, _caller, block.number);
+    emit OracleRequestFinalized(_requestId, _responseId, _caller);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1059,7 +1049,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, bytes32(0), _caller, block.number);
+    emit OracleRequestFinalized(_requestId, bytes32(0), _caller);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1107,7 +1097,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     // The finalization should come through
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, bytes32(0), _caller, block.number);
+    emit OracleRequestFinalized(_requestId, bytes32(0), _caller);
 
     // Test: finalize the request
     vm.prank(_caller);
@@ -1180,7 +1170,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId, block.number);
+    emit DisputeEscalated(address(this), _disputeId);
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
@@ -1219,7 +1209,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId, block.number);
+    emit DisputeEscalated(address(this), _disputeId);
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
