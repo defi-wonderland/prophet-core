@@ -36,7 +36,7 @@ contract MockOracle is Oracle {
     finalizedResponseId[_requestId] = _finalizedResponseId;
   }
 
-  function mock_setFinalizedAt(bytes32 _requestId, uint128 _finalizedAt) external {
+  function mock_setFinalizedAt(bytes32 _requestId, uint256 _finalizedAt) external {
     finalizedAt[_requestId] = _finalizedAt;
   }
 
@@ -52,15 +52,15 @@ contract MockOracle is Oracle {
     nonceToRequestId[_nonce] = _requestId;
   }
 
-  function mock_setRequestCreatedAt(bytes32 _requestId, uint128 _requestCreatedAt) external {
+  function mock_setRequestCreatedAt(bytes32 _requestId, uint256 _requestCreatedAt) external {
     requestCreatedAt[_requestId] = _requestCreatedAt;
   }
 
-  function mock_setResponseCreatedAt(bytes32 _responseId, uint128 _responseCreatedAt) external {
+  function mock_setResponseCreatedAt(bytes32 _responseId, uint256 _responseCreatedAt) external {
     responseCreatedAt[_responseId] = _responseCreatedAt;
   }
 
-  function mock_setDisputeCreatedAt(bytes32 _disputeId, uint128 _disputeCreatedAt) external {
+  function mock_setDisputeCreatedAt(bytes32 _disputeId, uint256 _disputeCreatedAt) external {
     disputeCreatedAt[_disputeId] = _disputeCreatedAt;
   }
 

@@ -293,7 +293,7 @@ interface IOracle {
    * @param _id The request id
    * @return _requestCreatedAt The block's timestamp
    */
-  function requestCreatedAt(bytes32 _id) external view returns (uint128 _requestCreatedAt);
+  function requestCreatedAt(bytes32 _id) external view returns (uint256 _requestCreatedAt);
 
   /**
    * @notice The block's timestamp at which a response was created
@@ -301,7 +301,7 @@ interface IOracle {
    * @param _id The response id
    * @return _responseCreatedAt The block's timestamp
    */
-  function responseCreatedAt(bytes32 _id) external view returns (uint128 _responseCreatedAt);
+  function responseCreatedAt(bytes32 _id) external view returns (uint256 _responseCreatedAt);
 
   /**
    * @notice The block's timestamp at which a dispute was created
@@ -309,7 +309,7 @@ interface IOracle {
    * @param _id The dispute id
    * @return _disputeCreatedAt The block's timestamp
    */
-  function disputeCreatedAt(bytes32 _id) external view returns (uint128 _disputeCreatedAt);
+  function disputeCreatedAt(bytes32 _id) external view returns (uint256 _disputeCreatedAt);
 
   /**
    * @notice The block's timestamp at which a request was finalized
@@ -317,7 +317,7 @@ interface IOracle {
    * @param _requestId The request id
    * @return _finalizedAt The block's timestamp
    */
-  function finalizedAt(bytes32 _requestId) external view returns (uint128 _finalizedAt);
+  function finalizedAt(bytes32 _requestId) external view returns (uint256 _finalizedAt);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
