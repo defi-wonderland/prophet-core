@@ -200,7 +200,7 @@ contract Oracle is IOracle {
     // Notify the dispute module about the escalation
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
-    emit DisputeEscalated(msg.sender, _disputeId);
+    emit DisputeEscalated(msg.sender, _disputeId, _dispute);
 
     if (address(_request.resolutionModule) != address(0)) {
       // Initiate the resolution
