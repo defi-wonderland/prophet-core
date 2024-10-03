@@ -95,7 +95,7 @@ contract BaseTest is Test, Helpers {
   event ResponseProposed(bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Response _response);
   event ResponseDisputed(bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
   event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller);
-  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
   event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event DisputeResolved(bytes32 indexed _disputeId, IOracle.Dispute _dispute, address indexed _caller);
 
@@ -1170,7 +1170,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId);
+    emit DisputeEscalated(address(this), _disputeId, mockDispute);
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
@@ -1209,7 +1209,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId);
+    emit DisputeEscalated(address(this), _disputeId, mockDispute);
 
     // Test: escalate the dispute
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);

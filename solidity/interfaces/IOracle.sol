@@ -46,8 +46,9 @@ interface IOracle {
    * @notice Emitted when a dispute is escalated
    * @param _caller The address of the user who escalated the dispute
    * @param _disputeId The id of the dispute being escalated
+   * @param _dispute The dispute that is being escalated
    */
-  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId);
+  event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, Dispute _dispute);
 
   /**
    * @notice Emitted when a dispute's status changes
