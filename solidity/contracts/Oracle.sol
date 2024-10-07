@@ -38,20 +38,16 @@ contract Oracle is IOracle {
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => bytes32 _finalizedResponseId) public finalizedResponseId;
 
+  /// @inheritdoc IOracle
+  mapping(bytes32 _requestId => mapping(address _module => bool _allowed)) public allowedModule;
+
+  /// @inheritdoc IOracle
+  mapping(bytes32 _requestId => mapping(address _user => bool _isParticipant)) public isParticipant;
+
   /**
    * @notice The list of the response ids for each request
    */
   mapping(bytes32 _requestId => bytes _responseIds) internal _responseIds;
-
-  /**
-   * @notice The list of the participants for each request
-   */
-  mapping(bytes32 _requestId => bytes _participants) internal _participants;
-
-  /**
-   * @notice The list of the allowed modules for each request
-   */
-  mapping(bytes32 _requestId => bytes _allowedModules) internal _allowedModules;
 
   /// @inheritdoc IOracle
   uint256 public totalRequestCount;
@@ -128,8 +124,7 @@ contract Oracle is IOracle {
     if (finalizedAt[_requestId] != 0) {
       revert Oracle_AlreadyFinalized(_requestId);
     }
-
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _response.proposer);
+    isParticipant[_requestId][_response.proposer] = true;
     IResponseModule(_request.responseModule).propose(_request, _response, msg.sender);
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
     responseCreatedAt[_responseId] = block.timestamp;
@@ -167,8 +162,7 @@ contract Oracle is IOracle {
     if (disputeOf[_responseId] != bytes32(0)) {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
-
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    isParticipant[_requestId][msg.sender] = true;
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
     disputeCreatedAt[_disputeId] = block.timestamp;
@@ -259,45 +253,6 @@ contract Oracle is IOracle {
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
     emit DisputeStatusUpdated(_disputeId, _dispute, _status);
-  }
-
-  /**
-   * @notice Matches a bytes32 value against an encoded list of values
-   *
-   * @param _sought The value to be matched
-   * @param _list The encoded list of values
-   * @param _chunkSize The size of each chunk in bytes
-   * @return _found Whether the value was found or not
-   */
-  function _matchBytes(bytes32 _sought, bytes memory _list, uint256 _chunkSize) internal pure returns (bool _found) {
-    assembly {
-      let length := mload(_list)
-      let i := 0
-      let shiftBy := sub(256, mul(_chunkSize, 8))
-
-      // Iterate N-bytes chunks of the list
-      for {} lt(i, length) { i := add(i, _chunkSize) } {
-        // Load the value at index i
-        let _chunk := mload(add(add(_list, 0x20), i))
-
-        // Shift the value to the right and compare with _sought
-        if eq(shr(shiftBy, _chunk), _sought) {
-          // Set _found to true and return
-          _found := true
-          break
-        }
-      }
-    }
-  }
-
-  /// @inheritdoc IOracle
-  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _isAllowed) {
-    _isAllowed = _matchBytes(bytes32(uint256(uint160(_module))), _allowedModules[_requestId], 20);
-  }
-
-  /// @inheritdoc IOracle
-  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant) {
-    _isParticipant = _matchBytes(bytes32(uint256(uint160(_user))), _participants[_requestId], 20);
   }
 
   /// @inheritdoc IOracle
@@ -432,16 +387,14 @@ contract Oracle is IOracle {
     nonceToRequestId[_requestNonce] = _requestId;
     requestCreatedAt[_requestId] = block.timestamp;
 
-    // solhint-disable-next-line func-named-parameters
-    _allowedModules[_requestId] = abi.encodePacked(
-      _request.requestModule,
-      _request.responseModule,
-      _request.disputeModule,
-      _request.resolutionModule,
-      _request.finalityModule
-    );
+    allowedModule[_requestId][_request.requestModule] = true;
+    allowedModule[_requestId][_request.responseModule] = true;
+    allowedModule[_requestId][_request.disputeModule] = true;
+    allowedModule[_requestId][_request.resolutionModule] = true;
+    allowedModule[_requestId][_request.finalityModule] = true;
 
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    isParticipant[_requestId][msg.sender] = true;
+
     IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
     emit RequestCreated(_requestId, _request, _ipfsHash);

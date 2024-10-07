@@ -25,11 +25,11 @@ contract MockOracle is Oracle {
   constructor() Oracle() {}
 
   function mock_addParticipant(bytes32 _requestId, address _participant) external {
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _participant);
+    isParticipant[_requestId][_participant] = true;
   }
 
   function mock_addAllowedModule(bytes32 _requestId, address _module) external {
-    _allowedModules[_requestId] = abi.encodePacked(_allowedModules[_requestId], _module);
+    allowedModule[_requestId][_module] = true;
   }
 
   function mock_setFinalizedResponseId(bytes32 _requestId, bytes32 _finalizedResponseId) external {
