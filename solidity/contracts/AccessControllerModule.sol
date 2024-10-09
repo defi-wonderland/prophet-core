@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {Module} from '../contracts/Module.sol';
+import {IOracle} from '../interfaces/IOracle.sol';
 import {IAccessControlModule} from '../interfaces/modules/accessControl/IAccessControlModule.sol';
 
-abstract contract AccessController {
+abstract contract AccessController is Module {
   /**
    * @notice The access control struct
    * @param user The address of the user
@@ -15,6 +17,10 @@ abstract contract AccessController {
   }
 
   error AccessController_NoAccess();
+
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /**
    * @notice Modifier to check if the caller has access to the user
@@ -29,7 +35,7 @@ abstract contract AccessController {
   ) {
     bool _hasAccess = msg.sender == _accessControl.user
       || (
-        _accessControlModule != address(0)
+        _accessControlModule != address(0) && ORACLE.isAccessControlApproved(_accessControl.user, _accessControlModule)
           && IAccessControlModule(_accessControlModule).hasAccess({
             _caller: msg.sender,
             _user: _accessControl.user,
