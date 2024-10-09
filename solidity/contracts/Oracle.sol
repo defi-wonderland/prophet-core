@@ -123,6 +123,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
     hasAccess(_request.accessControlModule, PROPOSE_TYPEHASH, abi.encode(_request, _response), _accessControl)
     returns (bytes32 _responseId)
   {
+    // TODO: Validate that the _accessControl.user has approved the _request.accessControlModule
     _responseId = ValidatorLib._validateResponse(_request, _response);
 
     bytes32 _requestId = _response.requestId;
