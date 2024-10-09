@@ -42,6 +42,8 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
   /// @inheritdoc IOracle
   mapping(bytes32 _requestId => bytes32 _finalizedResponseId) public finalizedResponseId;
 
+  mapping(address _user => mapping(address _accessControlModule => bool _approved)) public isAccessControlApproved;
+
   /**
    * @notice The list of the response ids for each request
    */
@@ -276,6 +278,10 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
     IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
 
     emit DisputeStatusUpdated(_disputeId, _dispute, _status, block.number);
+  }
+
+  function setAccessControlModuleApproval(address _module, bool _approved) external {
+    isAccessControlApproved[msg.sender][_module] = _approved;
   }
 
   /**
