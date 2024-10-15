@@ -63,25 +63,20 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
   uint256 public totalRequestCount;
 
   /// @inheritdoc IOracle
-  function createRequest(
-    Request calldata _request,
-    AccessControl memory _accessControl,
-    bytes32 _ipfsHash
-  ) external returns (bytes32 _requestId) {
-    _requestId = _createRequest(_request, _ipfsHash, _accessControl);
+  function createRequest(Request calldata _request, bytes32 _ipfsHash) external returns (bytes32 _requestId) {
+    _requestId = _createRequest(_request, _ipfsHash);
   }
 
   /// @inheritdoc IOracle
   function createRequests(
     Request[] calldata _requestsData,
-    bytes32[] calldata _ipfsHashes,
-    AccessControl memory _accessControl
+    bytes32[] calldata _ipfsHashes
   ) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i], _accessControl);
+      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
       unchecked {
         ++_i;
       }
@@ -158,9 +153,8 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
   function disputeResponse(
     Request calldata _request,
     Response calldata _response,
-    Dispute calldata _dispute,
-    AccessControl memory _accessControl
-  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _disputeId) {
+    Dispute calldata _dispute
+  ) external returns (bytes32 _disputeId) {
     bytes32 _responseId;
     (_responseId, _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
@@ -174,7 +168,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
       revert Oracle_InvalidDisputeBody();
     }
 
-    if (_dispute.disputer != _accessControl.user) {
+    if (_dispute.disputer != msg.sender) {
       revert Oracle_InvalidDisputeBody();
     }
 
@@ -186,7 +180,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
       revert Oracle_ResponseAlreadyDisputed(_responseId);
     }
 
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _accessControl.user);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
     disputeStatus[_disputeId] = DisputeStatus.Active;
     disputeOf[_responseId] = _disputeId;
     disputeCreatedAt[_disputeId] = uint128(block.number);
@@ -325,9 +319,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
   }
 
   /// @inheritdoc IOracle
-  function getResponseIds(
-    bytes32 _requestId
-  ) public view returns (bytes32[] memory _ids) {
+  function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
     uint256 _length = _responses.length / 32;
 
@@ -343,11 +335,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
   }
 
   /// @inheritdoc IOracle
-  function finalize(
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
-    AccessControl memory _accessControl
-  ) external hasAccess(_request.accessControlModule, msg.sender, _accessControl) {
+  function finalize(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
     bytes32 _requestId;
     bytes32 _responseId;
 
@@ -365,18 +353,19 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
     finalizedAt[_requestId] = uint128(block.number);
 
     if (address(_request.finalityModule) != address(0)) {
-      IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, _accessControl.user);
+      IFinalityModule(_request.finalityModule).finalizeRequest(_request, _response, msg.sender);
     }
 
     if (address(_request.resolutionModule) != address(0)) {
-      IResolutionModule(_request.resolutionModule).finalizeRequest(_request, _response, _accessControl.user);
+      IResolutionModule(_request.resolutionModule).finalizeRequest(_request, _response, msg.sender);
     }
 
-    IDisputeModule(_request.disputeModule).finalizeRequest(_request, _response, _accessControl.user);
-    IResponseModule(_request.responseModule).finalizeRequest(_request, _response, _accessControl.user);
-    IRequestModule(_request.requestModule).finalizeRequest(_request, _response, _accessControl.user);
+    IDisputeModule(_request.disputeModule).finalizeRequest(_request, _response, msg.sender);
+    IResponseModule(_request.responseModule).finalizeRequest(_request, _response, msg.sender);
+    IRequestModule(_request.requestModule).finalizeRequest(_request, _response, msg.sender);
 
-    emit OracleRequestFinalized(_requestId, _responseId, _accessControl.user, block.number);
+    // TODO: Remove msg.sender as this funciton is permissionless
+    emit OracleRequestFinalized(_requestId, _responseId, msg.sender, block.number);
   }
 
   /**
@@ -385,9 +374,7 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
    * @param _request The request to be finalized
    * @return _requestId The id of the finalized request
    */
-  function _finalizeWithoutResponse(
-    IOracle.Request calldata _request
-  ) internal view returns (bytes32 _requestId) {
+  function _finalizeWithoutResponse(IOracle.Request calldata _request) internal view returns (bytes32 _requestId) {
     _requestId = ValidatorLib._getId(_request);
 
     if (requestCreatedAt[_requestId] == 0) {
@@ -451,16 +438,12 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
    * @param _ipfsHash The hashed IPFS CID of the metadata json
    * @return _requestId The id of the created request
    */
-  function _createRequest(
-    Request memory _request,
-    bytes32 _ipfsHash,
-    AccessControl memory _accessControl
-  ) internal hasAccess(_request.accessControlModule, msg.sender, _accessControl) returns (bytes32 _requestId) {
+  function _createRequest(Request memory _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
     uint256 _requestNonce = totalRequestCount++;
 
     if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
 
-    if (_accessControl.user != _request.requester || _requestNonce != _request.nonce) {
+    if (msg.sender != _request.requester || _requestNonce != _request.nonce) {
       revert Oracle_InvalidRequestBody();
     }
 
@@ -477,8 +460,8 @@ contract Oracle is IOracle, AccessController, OracleTypehash {
       _request.finalityModule
     );
 
-    _participants[_requestId] = abi.encodePacked(_participants[_requestId], _accessControl.user);
-    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, _accessControl.user);
+    _participants[_requestId] = abi.encodePacked(_participants[_requestId], msg.sender);
+    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
 
     emit RequestCreated(_requestId, _request, _ipfsHash, block.number);
   }

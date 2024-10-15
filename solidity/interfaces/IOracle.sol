@@ -45,11 +45,10 @@ interface IOracle {
    * @notice Emitted when a request is finalized
    * @param _requestId The id of the request being finalized
    * @param _responseId The id of the final response, may be empty
-   * @param _caller The address of the user who finalized the request
    * @param _blockNumber The current block number
    */
   event OracleRequestFinalized(
-    bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller, uint256 _blockNumber
+    bytes32 indexed _requestId, bytes32 indexed _responseId, uint256 _blockNumber
   );
 
   /**

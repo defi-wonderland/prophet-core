@@ -42,3 +42,11 @@ abstract contract AccessController {
     _;
   }
 }
+
+// contract HorizonAccessControlModule {
+
+//   function hasAccess(address _caller, address _user, bytes32, bytes, bytes) {
+//       return horizonStaking.isAuthorized(_caller, _user);
+//   }
+
+// }

@@ -5,7 +5,7 @@ import {Module} from '../contracts/Module.sol';
 import {IOracle} from '../interfaces/IOracle.sol';
 import {IAccessControlModule} from '../interfaces/modules/accessControl/IAccessControlModule.sol';
 
-abstract contract AccessController is Module {
+abstract contract AccessControllerModule is Module {
   /**
    * @notice The access control struct
    * @param user The address of the user

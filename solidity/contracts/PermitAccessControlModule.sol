@@ -36,7 +36,7 @@ contract PermitAccessControl is Nonces, EIP712 {
   function hasAccess(
     address,
     address _user,
-    bytes32 _signature,
+    bytes32 _typehash,
     bytes memory _params,
     bytes calldata _data
   ) external returns (bool _hasAccess) {
@@ -49,14 +49,16 @@ contract PermitAccessControl is Nonces, EIP712 {
       revert ERC2612ExpiredSignature(_permit.deadline);
     }
     // signature, params (removing the last parameter for the access control), nonce, deadline
-    bytes32 structHash = keccak256(abi.encode(_signature, _params, _useNonce(_user), _permit.deadline));
+    bytes32 structHash = keccak256(abi.encode(_typehash, _params, _useNonce(_user), _permit.deadline));
 
-    bytes32 hash = _hashTypedDataV4(structHash);
+    bytes32 _hash = _hashTypedDataV4(structHash);
 
-    address signer = ECDSA.recover(hash, _permit.v, _permit.r, _permit.s);
+    address signer = ECDSA.recover(_hash, _permit.v, _permit.r, _permit.s);
 
     if (signer != _user) {
       revert ERC2612InvalidSigner(signer, _user);
     }
+
+    return true;
   }
 }
