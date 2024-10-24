@@ -14,12 +14,19 @@ contract Integration_EscalateDispute is IntegrationBase {
     oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
     vm.stopPrank();
 
-    // Dispute reverts if caller is not authorized
-    vm.startPrank(badCaller);
-    vm.expectRevert(abi.encodeWithSelector(IAccessController.AccessControlData_NoAccess.selector));
-    mockAccessControl.user = disputer;
+    // Revert if not approved to dispute
+    address _badDisputer = makeAddr('badDisputer');
+    mockAccessControl.user = _badDisputer;
+
+    // Reverts because caller is not approved to dispute
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AccessControlModuleNotApproved.selector));
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
-    vm.stopPrank();
+
+    // Dispute reverts if caller is not approved
+    mockAccessControl.user = disputer;
+    vm.expectRevert(abi.encodeWithSelector(IAccessController.AccessControlData_NoAccess.selector));
+    vm.prank(badCaller);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
     // Dispute the response
     vm.startPrank(caller);

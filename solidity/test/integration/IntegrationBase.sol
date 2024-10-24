@@ -149,9 +149,10 @@ contract IntegrationBase is TestConstants, Helpers {
     mockDispute.responseId = _getId(mockResponse);
 
     // Add the allowed callers to the access control module
-    address[] memory _allowedCallers = new address[](1);
-    _allowedCallers[0] = caller;
-    _accessControlModule.setHasAccess(_allowedCallers);
+    _setAccessControlForACaller(requester, caller);
+    _setAccessControlForACaller(proposer, caller);
+    _setAccessControlForACaller(disputer, caller);
+    _setAccessControlForACaller(finalizer, caller);
 
     vm.startPrank(caller);
   }
@@ -163,5 +164,14 @@ contract IntegrationBase is TestConstants, Helpers {
   function _mineBlocks(uint256 _blocks) internal {
     vm.warp(block.timestamp + _blocks * BLOCK_TIME);
     vm.roll(block.number + _blocks);
+  }
+
+  function _setAccessControlForACaller(address _delegator, address _caller) internal {
+    vm.startPrank(_delegator);
+    address[] memory _allowedCallers = new address[](1);
+    _allowedCallers[0] = _caller;
+    _accessControlModule.setHasAccess(_allowedCallers);
+    oracle.setAccessControlModule(address(_accessControlModule), true);
+    vm.stopPrank();
   }
 }

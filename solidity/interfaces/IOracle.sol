@@ -13,6 +13,14 @@ interface IOracle is IAccessController {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Emitted when the access control module is set
+   * @param _user The address of the user
+   * @param _accessControlModule The address of the access control module
+   * @param _approved If the module is approved
+   */
+  event AccessControlModuleSet(address indexed _user, address indexed _accessControlModule, bool _approved);
+
+  /**
    * @notice Emitted when a request is created
    * @param _requestId The id of the created request
    * @param _request The request that has been created
@@ -69,6 +77,11 @@ interface IOracle is IAccessController {
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when user didn't approve the access control module
+   */
+  error Oracle_AccessControlModuleNotApproved();
 
   /**
    * @notice Thrown when an unauthorized caller is trying to change a dispute's status
@@ -371,6 +384,14 @@ interface IOracle is IAccessController {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Sets the address of the access control module
+   *
+   * @param _accessControlModule The address of the access control module
+   * @param _approved If the module is approved
+   */
+  function setAccessControlModule(address _accessControlModule, bool _approved) external;
+
+  /**
    * @notice Generates the request ID and initializes the modules for the request
    *
    * @dev The modules must be real contracts following the IModule interface
@@ -450,14 +471,8 @@ interface IOracle is IAccessController {
    * @param _request The request
    * @param _response The disputed response
    * @param _dispute The dispute that is being resolved
-   * @param _accessControl The access control data
    */
-  function resolveDispute(
-    Request calldata _request,
-    Response calldata _response,
-    Dispute calldata _dispute,
-    AccessControl calldata _accessControl
-  ) external;
+  function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
 
   /**
    * @notice Updates the status of a dispute

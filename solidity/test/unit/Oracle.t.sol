@@ -73,6 +73,10 @@ contract MockOracle is Oracle {
   function mock_addResponseId(bytes32 _requestId, bytes32 _responseId) external {
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
   }
+
+  function mock_setAccessControlApproved(address _user, address _accessControlModule, bool _approved) external {
+    isAccessControlApproved[_user][_accessControlModule] = _approved;
+  }
 }
 
 /**
@@ -101,6 +105,7 @@ contract BaseTest is Test, Helpers {
   event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
   event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event DisputeResolved(bytes32 indexed _disputeId, IOracle.Dispute _dispute);
+  event AccessControlModuleSet(address indexed _user, address indexed _accessControlModule, bool _approved);
 
   function setUp() public virtual {
     oracle = new MockOracle();
@@ -129,10 +134,28 @@ contract BaseTest is Test, Helpers {
   }
 }
 
+contract Oracle_Unit_SetAccessControlModule is BaseTest {
+  /**
+   * @notice Test the access control module setter
+   */
+  function test_setAccessControlModuleTrue(bool _approved) public {
+    // Check: emits AccessControlModuleSet event?
+    _expectEmit(address(oracle));
+    emit AccessControlModuleSet(address(this), address(accessControlModule), _approved);
+
+    // Test: set the access control module
+    oracle.setAccessControlModule(address(accessControlModule), _approved);
+
+    // Check: correct access control module set?
+    assertEq(oracle.isAccessControlApproved(address(this), address(accessControlModule)), _approved);
+  }
+}
+
 contract Oracle_Unit_CreateRequest is BaseTest {
   modifier happyPath() {
     mockAccessControl.user = requester;
     vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
     _;
   }
   /**
@@ -196,6 +219,34 @@ contract Oracle_Unit_CreateRequest is BaseTest {
   }
 
   /**
+   * @notice Check that creating a request with a non-approved access control module reverts
+   */
+  function test_createRequest_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+  }
+
+  /**
+   * @notice Check that reverts if the access control module returns false
+   */
+  function test_createRequest_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != requester);
+
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = requester;
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to create the request
+    vm.prank(_caller);
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+  }
+
+  /**
    * @notice Check that creating a request with a nonce that already exists reverts
    */
   function test_createRequest_revertsIfInvalidNonce(uint256 _nonce) public happyPath {
@@ -245,6 +296,9 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
     IAccessController.AccessControl[] memory _accessControls = new IAccessController.AccessControl[](_requestsAmount);
 
+    vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
+
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
       mockRequest.requestModuleData = _requestData;
@@ -265,7 +319,6 @@ contract Oracle_Unit_CreateRequests is BaseTest {
       emit RequestCreated(_theoreticalRequestId, mockRequest, _ipfsHashes[_i]);
     }
 
-    vm.prank(requester);
     bytes32[] memory _requestsIds = oracle.createRequests(_requests, _ipfsHashes, _accessControls);
 
     for (uint256 _i = 0; _i < _requestsIds.length; _i++) {
@@ -327,7 +380,8 @@ contract Oracle_Unit_CreateRequests is BaseTest {
       _accessControls[_i].user = requester;
     }
 
-    vm.prank(requester);
+    vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
     oracle.createRequests(_requests, _ipfsHashes, _accessControls);
 
     uint256 _newNonce = oracle.totalRequestCount();
@@ -416,6 +470,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
   modifier happyPath() {
     mockAccessControl.user = proposer;
     vm.startPrank(proposer);
+    oracle.mock_setAccessControlApproved(proposer, address(accessControlModule), true);
     _;
   }
   /**
@@ -469,6 +524,17 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     assertEq(_responseIds[1], _secondResponseId);
   }
 
+  /**
+   * @notice Check that proposing a response with a non-approved access control module reverts
+   */
+  function test_proposeResponse_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
+  }
+
   function test_proposeResponse_revertsIfInvalidRequest() public happyPath {
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidRequest.selector);
@@ -502,6 +568,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
 
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
     mockAccessControl.user = _caller;
 
     // Check: revert?
@@ -562,6 +629,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   modifier happyPath() {
     mockAccessControl.user = disputer;
     vm.startPrank(disputer);
+    oracle.mock_setAccessControlApproved(disputer, address(accessControlModule), true);
     _;
   }
 
@@ -592,6 +660,17 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
       // Reset the dispute of the response
       oracle.mock_setDisputeOf(_responseId, bytes32(0));
     }
+  }
+
+  /**
+   * @notice Check that dispute a response with a non-approved access control module reverts
+   */
+  function test_disputeResponse_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   /**
@@ -645,6 +724,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   function test_disputeResponse_revertIfWrongDisputer(address _caller) public {
     vm.assume(_caller != disputer);
 
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
     mockAccessControl.user = _caller;
 
     // Check: revert?
@@ -672,6 +752,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
   modifier happyPath() {
     mockAccessControl.user = address(disputeModule);
     vm.startPrank(address(disputeModule));
+    oracle.mock_setAccessControlApproved(address(disputeModule), address(accessControlModule), true);
     _;
   }
   /**
@@ -717,6 +798,17 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
   }
 
   /**
+   * @notice Check that update dispute status with a non-approved access control module reverts
+   */
+  function test_updateDisputeStatus_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Active, mockAccessControl);
+  }
+
+  /**
    * @notice Providing a dispute that does not match the response should revert
    */
   function test_updateDisputeStatus_revertsIfInvalidDisputeId(bytes32 _randomId, uint256 _newStatus) public happyPath {
@@ -746,6 +838,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
 
     mockRequest.accessControlModule = address(0);
     mockAccessControl.user = address(disputeModule);
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
 
     // Check: revert?
     vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
@@ -768,6 +861,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
     // Mock the dispute
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     oracle.mock_setDisputeCreatedAt(_disputeId, block.timestamp);
+    oracle.mock_setAccessControlApproved(proposer, address(accessControlModule), true);
 
     mockAccessControl.user = proposer;
     vm.mockCall(
@@ -793,6 +887,7 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
     mockAccessControl.user = address(resolutionModule);
 
     oracle.mock_setDisputeCreatedAt(_disputeId, 0);
+    oracle.mock_setAccessControlApproved(address(resolutionModule), address(accessControlModule), true);
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDispute.selector));
@@ -805,7 +900,6 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
 
 contract Oracle_Unit_ResolveDispute is BaseTest {
   modifier happyPath() {
-    mockAccessControl.user = address(resolutionModule);
     vm.startPrank(address(resolutionModule));
     _;
   }
@@ -835,24 +929,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
     emit DisputeResolved(_disputeId, mockDispute);
 
     // Test: resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
-  }
-
-  /**
-   * @notice Revert if the access control module returns false
-   */
-  function test_resolveDispute_revertsIfInvalidAccessControlData(address _caller) public {
-    vm.assume(_caller != address(resolutionModule));
-
-    mockRequest.accessControlModule = address(0);
-    mockAccessControl.user = address(resolutionModule);
-
-    // Check: revert?
-    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
-
-    // Test: try to propose a response from a random address
-    vm.prank(_caller);
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
   }
 
   /**
@@ -865,7 +942,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _getId(mockDispute)));
 
     // Test: try to resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
   }
 
   /**
@@ -878,7 +955,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDispute.selector));
 
     // Test: try to resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
   }
 
   /**
@@ -905,7 +982,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
       vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotResolve.selector, _disputeId));
 
       // Test: try to resolve the dispute
-      oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
+      oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
     }
   }
 
@@ -935,7 +1012,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NoResolutionModule.selector, _disputeId));
 
     // Test: try to resolve the dispute
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
   }
 }
 
@@ -1276,6 +1353,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
   modifier happyPath(address _caller) {
     mockAccessControl.user = _caller;
     vm.startPrank(_caller);
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
     _;
   }
   /**

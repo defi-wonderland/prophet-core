@@ -18,7 +18,6 @@ import {
   _ESCALATE_TYPEHASH,
   _FINALIZE_TYPEHASH,
   _PROPOSE_TYPEHASH,
-  _RESOLVE_TYPEHASH,
   _UPDATE_TYPEHASH
 } from './utils/OracleTypehash.sol';
 
@@ -66,6 +65,18 @@ contract Oracle is IOracle, AccessController {
    */
   mapping(bytes32 _requestId => bytes _responseIds) internal _responseIds;
 
+  /**
+   * @notice Modifier to check if the user approved to the access control module
+   * @param _user The address of the user
+   * @param _accessControlModule The access control module to check if approved
+   */
+  modifier isApproved(address _user, address _accessControlModule) {
+    if (_accessControlModule != address(0) && !isAccessControlApproved[_user][_accessControlModule]) {
+      revert Oracle_AccessControlModuleNotApproved();
+    }
+    _;
+  }
+
   /// @inheritdoc IOracle
   function getResponseIds(bytes32 _requestId) public view returns (bytes32[] memory _ids) {
     bytes memory _responses = _responseIds[_requestId];
@@ -108,6 +119,13 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
+  function setAccessControlModule(address _accessControlModule, bool _approved) external {
+    isAccessControlApproved[msg.sender][_accessControlModule] = _approved;
+
+    emit AccessControlModuleSet(msg.sender, _accessControlModule, _approved);
+  }
+
+  /// @inheritdoc IOracle
   function createRequest(
     Request calldata _request,
     bytes32 _ipfsHash,
@@ -125,7 +143,7 @@ contract Oracle is IOracle, AccessController {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
-    for (uint256 _i = 0; _i < _requestsAmount;) {
+    for (uint256 _i; _i < _requestsAmount;) {
       _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i], _accessControl[_i]);
       unchecked {
         ++_i;
@@ -140,6 +158,7 @@ contract Oracle is IOracle, AccessController {
     AccessControl calldata _accessControl
   )
     external
+    isApproved(_accessControl.user, _request.accessControlModule)
     hasAccess(_request.accessControlModule, _PROPOSE_TYPEHASH, abi.encode(_request, _response), _accessControl)
     returns (bytes32 _responseId)
   {
@@ -180,6 +199,7 @@ contract Oracle is IOracle, AccessController {
     AccessControl calldata _accessControl
   )
     external
+    isApproved(_accessControl.user, _request.accessControlModule)
     hasAccess(_request.accessControlModule, _DISPUTE_TYPEHASH, abi.encode(_request, _response, _dispute), _accessControl)
     returns (bytes32 _disputeId)
   {
@@ -225,6 +245,7 @@ contract Oracle is IOracle, AccessController {
     AccessControl calldata _accessControl
   )
     external
+    isApproved(_accessControl.user, _request.accessControlModule)
     hasAccess(_request.accessControlModule, _ESCALATE_TYPEHASH, abi.encode(_request, _response, _dispute), _accessControl)
   {
     (bytes32 _responseId, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
@@ -256,15 +277,7 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
-  function resolveDispute(
-    Request calldata _request,
-    Response calldata _response,
-    Dispute calldata _dispute,
-    AccessControl calldata _accessControl
-  )
-    external
-    hasAccess(_request.accessControlModule, _RESOLVE_TYPEHASH, abi.encode(_request, _response, _dispute), _accessControl)
-  {
+  function resolveDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external {
     (bytes32 _responseId, bytes32 _disputeId) = ValidatorLib._validateResponseAndDispute(_request, _response, _dispute);
 
     if (disputeCreatedAt[_disputeId] == 0) {
@@ -292,13 +305,14 @@ contract Oracle is IOracle, AccessController {
 
   /// @inheritdoc IOracle
   function updateDisputeStatus(
-    Request calldata _request,
-    Response calldata _response,
-    Dispute calldata _dispute,
+    Request memory _request,
+    Response memory _response,
+    Dispute memory _dispute,
     DisputeStatus _status,
     AccessControl calldata _accessControl
   )
     external
+    isApproved(_accessControl.user, _request.accessControlModule)
     hasAccess(
       _request.accessControlModule,
       _UPDATE_TYPEHASH,
@@ -316,16 +330,24 @@ contract Oracle is IOracle, AccessController {
       revert Oracle_InvalidDisputeId(_disputeId);
     }
 
+    // Needed to avoid stack too deep when try to compile
+    Request memory _currentRequest = _request;
+    Response memory _currentResponse = _response;
+    Dispute memory _currentDispute = _dispute;
+    DisputeStatus _currentStatus = _status;
+
     if (
-      _accessControl.user != address(_request.disputeModule)
-        && _accessControl.user != address(_request.resolutionModule)
+      _accessControl.user != address(_currentRequest.disputeModule)
+        && _accessControl.user != address(_currentRequest.resolutionModule)
     ) {
       revert Oracle_NotDisputeOrResolutionModule(_accessControl.user);
     }
-    disputeStatus[_disputeId] = _status;
-    IDisputeModule(_request.disputeModule).onDisputeStatusChange(_disputeId, _request, _response, _dispute);
+    disputeStatus[_disputeId] = _currentStatus;
+    IDisputeModule(_currentRequest.disputeModule).onDisputeStatusChange(
+      _disputeId, _currentRequest, _currentResponse, _currentDispute
+    );
 
-    emit DisputeStatusUpdated(_disputeId, _dispute, _status);
+    emit DisputeStatusUpdated(_disputeId, _currentDispute, _currentStatus);
   }
 
   /// @inheritdoc IOracle
@@ -445,6 +467,7 @@ contract Oracle is IOracle, AccessController {
     AccessControl calldata _accessControl
   )
     internal
+    isApproved(_accessControl.user, _request.accessControlModule)
     hasAccess(_request.accessControlModule, _CREATE_TYPEHASH, abi.encode(_request), _accessControl)
     returns (bytes32 _requestId)
   {
