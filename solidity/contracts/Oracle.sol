@@ -450,7 +450,6 @@ contract Oracle is IOracle, AccessController {
     allowedModule[_requestId][_request.disputeModule] = true;
     allowedModule[_requestId][_request.resolutionModule] = true;
     allowedModule[_requestId][_request.finalityModule] = true;
-    allowedModule[_requestId][_request.accessControlModule] = true;
 
     isParticipant[_requestId][msg.sender] = true;
 

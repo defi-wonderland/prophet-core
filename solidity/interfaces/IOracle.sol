@@ -202,7 +202,6 @@ interface IOracle is IAccessController {
    * @param disputeModuleData The parameters for the dispute module
    * @param resolutionModuleData The parameters for the resolution module
    * @param finalityModuleData The parameters for the finality module
-   * @param accessControlModuleData The parameters for the access control module
    * @param requester The address of the user who created the request
    * @param nonce The nonce of the request
    */
@@ -220,7 +219,6 @@ interface IOracle is IAccessController {
     bytes disputeModuleData;
     bytes resolutionModuleData;
     bytes finalityModuleData;
-    bytes accessControlModuleData;
   }
 
   /**
