@@ -7,18 +7,21 @@ import {console} from 'forge-std/console.sol';
 
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 
+import {IAccessControlModule} from '../../interfaces/modules/accessControl/IAccessControlModule.sol';
 import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
 import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
 
 import {IOracle, Oracle} from '../../contracts/Oracle.sol';
+import {IAccessController} from '../../interfaces/IAccessController.sol';
 
 import {IMockAccounting, MockAccounting} from '../mocks/contracts/MockAccounting.sol';
 import {MockCallback} from '../mocks/contracts/MockCallback.sol';
 
 import {IMockDisputeModule, MockDisputeModule} from '../mocks/contracts/MockDisputeModule.sol';
 
+import {IMockAccessControlModule, MockAccessControlModule} from '../mocks/contracts/MockAccessControlModule.sol';
 import {IMockFinalityModule, MockFinalityModule} from '../mocks/contracts/MockFinalityModule.sol';
 import {IMockRequestModule, MockRequestModule} from '../mocks/contracts/MockRequestModule.sol';
 import {IMockResolutionModule, MockResolutionModule} from '../mocks/contracts/MockResolutionModule.sol';
@@ -38,6 +41,8 @@ contract IntegrationBase is TestConstants, Helpers {
 
   address public keeper = makeAddr('keeper');
   address public governance = makeAddr('governance');
+  address public caller = makeAddr('caller');
+  address public badCaller = makeAddr('badCaller');
 
   Oracle public oracle;
   MockAccounting internal _accountingExtension;
@@ -46,6 +51,7 @@ contract IntegrationBase is TestConstants, Helpers {
   MockDisputeModule internal _disputeModule;
   MockResolutionModule internal _resolutionModule;
   MockFinalityModule internal _finalityModule;
+  MockAccessControlModule internal _accessControlModule;
   MockCallback internal _mockCallback;
 
   IERC20 public usdc = IERC20(_label(USDC_ADDRESS, 'USDC'));
@@ -86,6 +92,7 @@ contract IntegrationBase is TestConstants, Helpers {
     _disputeModule = new MockDisputeModule(oracle);
     _resolutionModule = new MockResolutionModule(oracle);
     _finalityModule = new MockFinalityModule(oracle);
+    _accessControlModule = new MockAccessControlModule(oracle);
 
     vm.stopPrank();
 
@@ -131,6 +138,7 @@ contract IntegrationBase is TestConstants, Helpers {
     mockRequest.disputeModule = address(_disputeModule);
     mockRequest.resolutionModule = address(_resolutionModule);
     mockRequest.finalityModule = address(_finalityModule);
+    mockRequest.accessControlModule = address(_accessControlModule);
     mockRequest.requester = requester;
 
     // Configure the mock response
@@ -139,6 +147,14 @@ contract IntegrationBase is TestConstants, Helpers {
     // Configure the mock dispute
     mockDispute.requestId = _getId(mockRequest);
     mockDispute.responseId = _getId(mockResponse);
+
+    // Add the allowed callers to the access control module
+    _setAccessControlForACaller(requester, caller);
+    _setAccessControlForACaller(proposer, caller);
+    _setAccessControlForACaller(disputer, caller);
+    _setAccessControlForACaller(finalizer, caller);
+
+    vm.startPrank(caller);
   }
 
   function _mineBlock() internal {
@@ -148,5 +164,14 @@ contract IntegrationBase is TestConstants, Helpers {
   function _mineBlocks(uint256 _blocks) internal {
     vm.warp(block.timestamp + _blocks * BLOCK_TIME);
     vm.roll(block.number + _blocks);
+  }
+
+  function _setAccessControlForACaller(address _delegator, address _caller) internal {
+    vm.startPrank(_delegator);
+    address[] memory _allowedCallers = new address[](1);
+    _allowedCallers[0] = _caller;
+    _accessControlModule.setHasAccess(_allowedCallers);
+    oracle.setAccessControlModule(address(_accessControlModule), true);
+    vm.stopPrank();
   }
 }

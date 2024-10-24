@@ -16,33 +16,43 @@ contract Integration_ResponseDispute is IntegrationBase {
 
     mockRequest.nonce = uint96(oracle.totalRequestCount());
 
-    vm.prank(requester);
-    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
     mockResponse.requestId = _requestId;
 
-    vm.prank(proposer);
-    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+    mockAccessControl.user = proposer;
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   function test_disputeResponse_alreadyFinalized() public {
     vm.warp(_expectedDeadline + _baseDisputeWindow);
-    oracle.finalize(mockRequest, mockResponse);
+    mockAccessControl.user = finalizer;
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
 
-    vm.prank(disputer);
+    // Revert if the dispute is already finalized
+    mockAccessControl.user = disputer;
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   function test_disputeResponse_alreadyDisputed() public {
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    // Dispute the response
+    mockAccessControl.user = disputer;
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
     address _anotherDisputer = makeAddr('anotherDisputer');
     mockDispute.disputer = _anotherDisputer;
+    mockAccessControl.user = _anotherDisputer;
 
-    vm.prank(_anotherDisputer);
+    // Revert if the response is access control is not approved
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AccessControlModuleNotApproved.selector));
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
+
+    //  Revert if the response is already disputed
+    mockAccessControl.user = disputer;
+    mockDispute.disputer = disputer;
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 }

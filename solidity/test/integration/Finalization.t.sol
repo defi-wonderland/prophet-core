@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_Finalization is IntegrationBase {
-  address internal _finalizer = makeAddr('finalizer');
   address internal _callbackTarget = makeAddr('target');
 
   function setUp() public override {
@@ -23,14 +22,13 @@ contract Integration_Finalization is IntegrationBase {
       })
     );
 
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
     _jumpToFinalization();
 
     vm.warp(block.timestamp + _baseDisputeWindow);
-    vm.prank(_finalizer);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -40,8 +38,8 @@ contract Integration_Finalization is IntegrationBase {
     mockRequest.finalityModuleData =
       abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}));
 
-    vm.prank(requester);
-    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
     _jumpToFinalization();
 
@@ -49,8 +47,8 @@ contract Integration_Finalization is IntegrationBase {
     vm.expectCall(_callbackTarget, _calldata);
 
     vm.warp(block.timestamp + _baseDisputeWindow);
-    vm.prank(_finalizer);
-    oracle.finalize(mockRequest, mockResponse);
+    mockAccessControl.user = finalizer;
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
 
     bytes32 _responseId = oracle.finalizedResponseId(_requestId);
     // Check: is request finalized?
@@ -61,14 +59,21 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Test to check that finalizing a request that has no response will succeed.
    */
   function test_finalizeWithoutResponse() public {
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+    vm.stopPrank();
 
     mockResponse.requestId = bytes32(0);
+    mockAccessControl.user = finalizer;
+
+    vm.startPrank(badCaller);
+    vm.expectRevert(abi.encodeWithSelector(IAccessController.AccessControlData_NoAccess.selector));
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
+    vm.stopPrank();
 
     // Check: finalizes if request has no response?
-    vm.prank(_finalizer);
-    oracle.finalize(mockRequest, mockResponse);
+    vm.prank(caller);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -82,18 +87,18 @@ contract Integration_Finalization is IntegrationBase {
     mockDispute.requestId = mockResponse.requestId;
     mockDispute.responseId = _getId(mockResponse);
 
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    mockAccessControl.user = proposer;
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    mockAccessControl.user = disputer;
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
-    vm.prank(_finalizer);
+    mockAccessControl.user = finalizer;
     vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -103,8 +108,8 @@ contract Integration_Finalization is IntegrationBase {
     mockRequest.finalityModuleData =
       abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: bytes('')}));
 
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    mockAccessControl.user = requester;
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
   }
 
   /**
@@ -114,15 +119,23 @@ contract Integration_Finalization is IntegrationBase {
     mockRequest.finalityModuleData =
       abi.encode(IMockFinalityModule.RequestParameters({target: _callbackTarget, data: _calldata}));
 
+    mockAccessControl.user = requester;
     vm.expectCall(_callbackTarget, _calldata);
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
     _jumpToFinalization();
 
     vm.warp(block.timestamp + _baseDisputeWindow);
-    vm.prank(_finalizer);
-    oracle.finalize(mockRequest, mockResponse);
+    mockAccessControl.user = finalizer;
+    vm.stopPrank();
+
+    vm.startPrank(badCaller);
+    vm.expectRevert(abi.encodeWithSelector(IAccessController.AccessControlData_NoAccess.selector));
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
+    vm.stopPrank();
+
+    vm.prank(caller);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -131,8 +144,8 @@ contract Integration_Finalization is IntegrationBase {
   function _jumpToFinalization() internal returns (bytes32 _responseId) {
     mockResponse.requestId = _getId(mockRequest);
 
-    vm.prank(proposer);
-    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+    mockAccessControl.user = proposer;
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     vm.warp(_expectedDeadline + 1);
   }

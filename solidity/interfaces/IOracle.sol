@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from './IAccessController.sol';
+
 /**
  * @title Oracle
  * @notice The main contract storing requests, responses and disputes, and routing the calls to the modules.
  */
-interface IOracle {
+interface IOracle is IAccessController {
   /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Emitted when the access control module is set
+   * @param _user The address of the user
+   * @param _accessControlModule The address of the access control module
+   * @param _approved If the module is approved
+   */
+  event AccessControlModuleSet(address indexed _user, address indexed _accessControlModule, bool _approved);
 
   /**
    * @notice Emitted when a request is created
@@ -38,9 +48,8 @@ interface IOracle {
    * @notice Emitted when a request is finalized
    * @param _requestId The id of the request being finalized
    * @param _responseId The id of the final response, may be empty
-   * @param _caller The address of the user who finalized the request
    */
-  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller);
+  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId);
 
   /**
    * @notice Emitted when a dispute is escalated
@@ -62,13 +71,17 @@ interface IOracle {
    * @notice Emitted when a dispute is resolved
    * @param _disputeId The id of the dispute being resolved
    * @param _dispute The dispute that is being updated
-   * @param _caller The address of the user who resolved the dispute
    */
-  event DisputeResolved(bytes32 indexed _disputeId, Dispute _dispute, address indexed _caller);
+  event DisputeResolved(bytes32 indexed _disputeId, Dispute _dispute);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when user didn't approve the access control module
+   */
+  error Oracle_AccessControlModuleNotApproved();
 
   /**
    * @notice Thrown when an unauthorized caller is trying to change a dispute's status
@@ -196,6 +209,7 @@ interface IOracle {
    * @param disputeModule The address of the dispute module
    * @param resolutionModule The address of the resolution module
    * @param finalityModule The address of the finality module
+   * @param accessControlModule The address of the access control module
    * @param requestModuleData The parameters for the request module
    * @param responseModuleData The parameters for the response module
    * @param disputeModuleData The parameters for the dispute module
@@ -212,6 +226,7 @@ interface IOracle {
     address disputeModule;
     address resolutionModule;
     address finalityModule;
+    address accessControlModule;
     bytes requestModuleData;
     bytes responseModuleData;
     bytes disputeModuleData;
@@ -250,43 +265,12 @@ interface IOracle {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Returns the dispute id for a given response
+   * @notice The block's timestamp at which a request was finalized
    *
-   * @param _responseId The response id to get the dispute for
-   * @return _disputeId The id of the dispute associated with the given response
+   * @param _requestId The request id
+   * @return _finalizedAt The block's timestamp
    */
-  function disputeOf(bytes32 _responseId) external view returns (bytes32 _disputeId);
-
-  /**
-   * @notice Returns the total number of requests stored in the oracle
-   *
-   * @return _count The total number of requests
-   */
-  function totalRequestCount() external view returns (uint256 _count);
-
-  /**
-   * @notice Returns the status of a dispute
-   *
-   * @param _disputeId The id of the dispute
-   * @return _status The status of the dispute
-   */
-  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
-
-  /**
-   * @notice The id of each request in chronological order
-   *
-   * @param _nonce The nonce of the request
-   * @return _requestId The id of the request
-   */
-  function nonceToRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
-
-  /**
-   * @notice Returns the finalized response ID for a given request
-   *
-   * @param _requestId The id of the request
-   * @return _finalizedResponseId The id of the finalized response
-   */
-  function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
+  function finalizedAt(bytes32 _requestId) external view returns (uint256 _finalizedAt);
 
   /**
    * @notice The block's timestamp at which a request was created
@@ -313,38 +297,70 @@ interface IOracle {
   function disputeCreatedAt(bytes32 _id) external view returns (uint256 _disputeCreatedAt);
 
   /**
-   * @notice The block's timestamp at which a request was finalized
+   * @notice Returns the dispute id for a given response
    *
-   * @param _requestId The request id
-   * @return _finalizedAt The block's timestamp
+   * @param _responseId The response id to get the dispute for
+   * @return _disputeId The id of the dispute associated with the given response
    */
-  function finalizedAt(bytes32 _requestId) external view returns (uint256 _finalizedAt);
-
-  /*///////////////////////////////////////////////////////////////
-                              LOGIC
-  //////////////////////////////////////////////////////////////*/
+  function disputeOf(bytes32 _responseId) external view returns (bytes32 _disputeId);
 
   /**
-   * @notice Generates the request ID and initializes the modules for the request
+   * @notice Returns the status of a dispute
    *
-   * @dev The modules must be real contracts following the IModule interface
-   * @param _request The request data
-   * @param _ipfsHash The hashed IPFS CID of the metadata json
-   * @return _requestId The id of the request, can be used to propose a response or query results
+   * @param _disputeId The id of the dispute
+   * @return _status The status of the dispute
    */
-  function createRequest(Request memory _request, bytes32 _ipfsHash) external returns (bytes32 _requestId);
+  function disputeStatus(bytes32 _disputeId) external view returns (DisputeStatus _status);
 
   /**
-   * @notice Creates multiple requests, the same way as createRequest
+   * @notice The id of each request in chronological order
    *
-   * @param _requestsData The array of calldata for each request
-   * @return _batchRequestsIds The array of request IDs
-   * @param _ipfsHashes The array of hashed IPFS CIDs of the metadata files
+   * @param _nonce The nonce of the request
+   * @return _requestId The id of the request
    */
-  function createRequests(
-    Request[] calldata _requestsData,
-    bytes32[] calldata _ipfsHashes
-  ) external returns (bytes32[] memory _batchRequestsIds);
+  function nonceToRequestId(uint256 _nonce) external view returns (bytes32 _requestId);
+
+  /**
+   * @notice Returns the finalized response ID for a given request
+   *
+   * @param _requestId The id of the request
+   * @return _finalizedResponseId The id of the finalized response
+   */
+  function finalizedResponseId(bytes32 _requestId) external view returns (bytes32 _finalizedResponseId);
+
+  /**
+   * @notice Checks if the given address is a module used in the request
+   *
+   * @param _requestId The id of the request
+   * @param _module The address to check
+   * @return _allowed If the module is a part of the request
+   */
+  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowed);
+
+  /**
+   * @notice Checks if the given address is participating in a specific request
+   *
+   * @param _requestId The id of the request
+   * @param _user The address to check
+   * @return _isParticipant If the user is a participant of the request
+   */
+  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant);
+
+  /**
+   * @notice Checks if the given address approved the access control module
+   *
+   * @param _user The address to check
+   * @param _accessControlModule The address of the access control module
+   * @return _approved If the user approved the access control module
+   */
+  function isAccessControlApproved(address _user, address _accessControlModule) external view returns (bool _approved);
+
+  /**
+   * @notice Returns the total number of requests stored in the oracle
+   *
+   * @return _count The total number of requests
+   */
+  function totalRequestCount() external view returns (uint256 _count);
 
   /**
    * @notice Returns the list of request IDs
@@ -356,15 +372,66 @@ interface IOracle {
   function listRequestIds(uint256 _startFrom, uint256 _batchSize) external view returns (bytes32[] memory _list);
 
   /**
+   * @notice Returns the ids of the responses for a given request
+   *
+   * @param _requestId The id of the request
+   * @return _ids The ids of the responses
+   */
+  function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
+
+  /*///////////////////////////////////////////////////////////////
+                              LOGIC
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Sets the address of the access control module
+   *
+   * @param _accessControlModule The address of the access control module
+   * @param _approved If the module is approved
+   */
+  function setAccessControlModule(address _accessControlModule, bool _approved) external;
+
+  /**
+   * @notice Generates the request ID and initializes the modules for the request
+   *
+   * @dev The modules must be real contracts following the IModule interface
+   * @param _request The request data
+   * @param _ipfsHash The hashed IPFS CID of the metadata json
+   * @param _accessControl The access control data
+   * @return _requestId The id of the request, can be used to propose a response or query results
+   */
+  function createRequest(
+    Request memory _request,
+    bytes32 _ipfsHash,
+    AccessControl calldata _accessControl
+  ) external returns (bytes32 _requestId);
+
+  /**
+   * @notice Creates multiple requests, the same way as createRequest
+   *
+   * @param _requestsData The array of calldata for each request
+   * @return _batchRequestsIds The array of request IDs
+   * @param _ipfsHashes The array of hashed IPFS CIDs of the metadata files
+   * @param _accessControl The array of access control datas
+   */
+  function createRequests(
+    Request[] calldata _requestsData,
+    bytes32[] calldata _ipfsHashes,
+    AccessControl[] calldata _accessControl
+  ) external returns (bytes32[] memory _batchRequestsIds);
+
+  /**
    * @notice Creates a new response for a given request
    *
    * @param _request The request to create a response for
    * @param _response The response data
+   * @param _accessControl The access control data
    * @return _responseId The id of the created response
    */
   function proposeResponse(
     Request calldata _request,
-    Response calldata _response
+    Response calldata _response,
+    AccessControl calldata _accessControl
   ) external returns (bytes32 _responseId);
 
   /**
@@ -373,12 +440,14 @@ interface IOracle {
    * @param _request The request
    * @param _response The response to dispute
    * @param _dispute The dispute data
+   * @param _accessControl The access control data
    * @return _disputeId The id of the created dispute
    */
   function disputeResponse(
     Request calldata _request,
     Response calldata _response,
-    Dispute calldata _dispute
+    Dispute calldata _dispute,
+    AccessControl calldata _accessControl
   ) external returns (bytes32 _disputeId);
 
   /**
@@ -387,8 +456,14 @@ interface IOracle {
    * @param _request The request
    * @param _response The disputed response
    * @param _dispute The dispute that is being escalated
+   * @param _accessControl The access control data
    */
-  function escalateDispute(Request calldata _request, Response calldata _response, Dispute calldata _dispute) external;
+  function escalateDispute(
+    Request calldata _request,
+    Response calldata _response,
+    Dispute calldata _dispute,
+    AccessControl calldata _accessControl
+  ) external;
 
   /**
    * @notice Resolves a dispute
@@ -406,39 +481,15 @@ interface IOracle {
    * @param _response The disputed response
    * @param _dispute The dispute that is being updated
    * @param _status The new status of the dispute
+   * @param _accessControl The access control data
    */
   function updateDisputeStatus(
     Request calldata _request,
     Response calldata _response,
     Dispute calldata _dispute,
-    DisputeStatus _status
+    DisputeStatus _status,
+    AccessControl calldata _accessControl
   ) external;
-
-  /**
-   * @notice Checks if the given address is a module used in the request
-   *
-   * @param _requestId The id of the request
-   * @param _module The address to check
-   * @return _allowedModule If the module is a part of the request
-   */
-  function allowedModule(bytes32 _requestId, address _module) external view returns (bool _allowedModule);
-
-  /**
-   * @notice Checks if the given address is participating in a specific request
-   *
-   * @param _requestId The id of the request
-   * @param _user The address to check
-   * @return _isParticipant If the user is a participant of the request
-   */
-  function isParticipant(bytes32 _requestId, address _user) external view returns (bool _isParticipant);
-
-  /**
-   * @notice Returns the ids of the responses for a given request
-   *
-   * @param _requestId The id of the request
-   * @return _ids The ids of the responses
-   */
-  function getResponseIds(bytes32 _requestId) external view returns (bytes32[] memory _ids);
 
   /**
    * @notice Finalizes the request and executes the post-request logic on the modules
@@ -446,6 +497,11 @@ interface IOracle {
    * @dev In case of a request with no responses, an response with am empty `requestId` is expected
    * @param _request The request being finalized
    * @param _response The final response
+   * @param _accessControl The access control data
    */
-  function finalize(Request calldata _request, Response calldata _response) external;
+  function finalize(
+    Request calldata _request,
+    Response calldata _response,
+    AccessControl calldata _accessControl
+  ) external;
 }

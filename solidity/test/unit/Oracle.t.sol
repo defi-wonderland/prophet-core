@@ -8,6 +8,8 @@ import {IOracle} from '../../interfaces/IOracle.sol';
 
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 
+import {IAccessController} from '../../interfaces/IAccessController.sol';
+import {IAccessControlModule} from '../../interfaces/modules/accessControl/IAccessControlModule.sol';
 import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
@@ -71,6 +73,10 @@ contract MockOracle is Oracle {
   function mock_addResponseId(bytes32 _requestId, bytes32 _responseId) external {
     _responseIds[_requestId] = abi.encodePacked(_responseIds[_requestId], _responseId);
   }
+
+  function mock_setAccessControlApproved(address _user, address _accessControlModule, bool _approved) external {
+    isAccessControlApproved[_user][_accessControlModule] = _approved;
+  }
 }
 
 /**
@@ -86,6 +92,7 @@ contract BaseTest is Test, Helpers {
   IDisputeModule public disputeModule = IDisputeModule(_mockContract('disputeModule'));
   IResolutionModule public resolutionModule = IResolutionModule(_mockContract('resolutionModule'));
   IFinalityModule public finalityModule = IFinalityModule(_mockContract('finalityModule'));
+  IAccessControlModule public accessControlModule = IAccessControlModule(_mockContract('accessControlModule'));
 
   // Mock IPFS hash
   bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
@@ -94,10 +101,11 @@ contract BaseTest is Test, Helpers {
   event RequestCreated(bytes32 indexed _requestId, IOracle.Request _request, bytes32 _ipfsHash);
   event ResponseProposed(bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Response _response);
   event ResponseDisputed(bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
-  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId, address indexed _caller);
+  event OracleRequestFinalized(bytes32 indexed _requestId, bytes32 indexed _responseId);
   event DisputeEscalated(address indexed _caller, bytes32 indexed _disputeId, IOracle.Dispute _dispute);
   event DisputeStatusUpdated(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
-  event DisputeResolved(bytes32 indexed _disputeId, IOracle.Dispute _dispute, address indexed _caller);
+  event DisputeResolved(bytes32 indexed _disputeId, IOracle.Dispute _dispute);
+  event AccessControlModuleSet(address indexed _user, address indexed _accessControlModule, bool _approved);
 
   function setUp() public virtual {
     oracle = new MockOracle();
@@ -107,6 +115,7 @@ contract BaseTest is Test, Helpers {
     mockRequest.disputeModule = address(disputeModule);
     mockRequest.resolutionModule = address(resolutionModule);
     mockRequest.finalityModule = address(finalityModule);
+    mockRequest.accessControlModule = address(accessControlModule);
 
     mockResponse.requestId = _getId(mockRequest);
     mockDispute.requestId = mockResponse.requestId;
@@ -125,11 +134,35 @@ contract BaseTest is Test, Helpers {
   }
 }
 
+contract Oracle_Unit_SetAccessControlModule is BaseTest {
+  /**
+   * @notice Test the access control module setter
+   */
+  function test_setAccessControlModuleTrue(bool _approved) public {
+    // Check: emits AccessControlModuleSet event?
+    _expectEmit(address(oracle));
+    emit AccessControlModuleSet(address(this), address(accessControlModule), _approved);
+
+    // Test: set the access control module
+    oracle.setAccessControlModule(address(accessControlModule), _approved);
+
+    // Check: correct access control module set?
+    assertEq(oracle.isAccessControlApproved(address(this), address(accessControlModule)), _approved);
+  }
+}
+
 contract Oracle_Unit_CreateRequest is BaseTest {
+  modifier happyPath() {
+    mockAccessControl.user = requester;
+    vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
+    _;
+  }
   /**
    * @notice Test the request creation with correct arguments and nonce increment
    * @dev The request might or might not use a dispute and a finality module, this is fuzzed
    */
+
   function test_createRequest(
     bool _useResolutionAndFinality,
     bytes calldata _requestData,
@@ -137,7 +170,7 @@ contract Oracle_Unit_CreateRequest is BaseTest {
     bytes calldata _disputeData,
     bytes calldata _resolutionData,
     bytes calldata _finalityData
-  ) public setResolutionAndFinality(_useResolutionAndFinality) {
+  ) public setResolutionAndFinality(_useResolutionAndFinality) happyPath {
     uint256 _initialNonce = oracle.totalRequestCount();
 
     // Create the request
@@ -157,8 +190,7 @@ contract Oracle_Unit_CreateRequest is BaseTest {
     emit RequestCreated(_getId(mockRequest), mockRequest, _ipfsHash);
 
     // Test: create the request
-    vm.prank(requester);
-    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
 
     // Check: Adds the requester to the list of participants
     assertTrue(oracle.isParticipant(_requestId, requester));
@@ -187,9 +219,37 @@ contract Oracle_Unit_CreateRequest is BaseTest {
   }
 
   /**
+   * @notice Check that creating a request with a non-approved access control module reverts
+   */
+  function test_createRequest_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+  }
+
+  /**
+   * @notice Check that reverts if the access control module returns false
+   */
+  function test_createRequest_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != requester);
+
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = requester;
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to create the request
+    vm.prank(_caller);
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+  }
+
+  /**
    * @notice Check that creating a request with a nonce that already exists reverts
    */
-  function test_createRequest_revertsIfInvalidNonce(uint256 _nonce) public {
+  function test_createRequest_revertsIfInvalidNonce(uint256 _nonce) public happyPath {
     vm.assume(_nonce != oracle.totalRequestCount());
 
     // Set the nonce
@@ -199,14 +259,13 @@ contract Oracle_Unit_CreateRequest is BaseTest {
     vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
 
     // Test: try to create the request
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
   }
 
   /**
    * @notice Check that creating a request with a misconfigured requester reverts
    */
-  function test_createRequest_revertsIfInvalidRequester(address _requester) public {
+  function test_createRequest_revertsIfInvalidRequester(address _requester) public happyPath {
     vm.assume(_requester != requester);
 
     // Set the nonce
@@ -216,8 +275,7 @@ contract Oracle_Unit_CreateRequest is BaseTest {
     vm.expectRevert(IOracle.Oracle_InvalidRequestBody.selector);
 
     // Test: try to create the request
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
   }
 }
 
@@ -236,6 +294,10 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
     bool _useResolutionAndFinality = _requestData.length % 2 == 0;
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
+    IAccessController.AccessControl[] memory _accessControls = new IAccessController.AccessControl[](_requestsAmount);
+
+    vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
 
     // Generate requests batch
     for (uint256 _i = 0; _i < _requestsAmount; _i++) {
@@ -250,13 +312,14 @@ contract Oracle_Unit_CreateRequests is BaseTest {
       _precalculatedIds[_i] = _theoreticalRequestId;
       _ipfsHashes[_i] = keccak256(abi.encode(_theoreticalRequestId, mockRequest.nonce));
 
+      _accessControls[_i].user = requester;
+
       // Check: emits RequestCreated event?
       _expectEmit(address(oracle));
       emit RequestCreated(_theoreticalRequestId, mockRequest, _ipfsHashes[_i]);
     }
 
-    vm.prank(requester);
-    bytes32[] memory _requestsIds = oracle.createRequests(_requests, _ipfsHashes);
+    bytes32[] memory _requestsIds = oracle.createRequests(_requests, _ipfsHashes, _accessControls);
 
     for (uint256 _i = 0; _i < _requestsIds.length; _i++) {
       assertEq(_requestsIds[_i], _precalculatedIds[_i]);
@@ -298,6 +361,7 @@ contract Oracle_Unit_CreateRequests is BaseTest {
     IOracle.Request[] memory _requests = new IOracle.Request[](_requestsAmount);
     bytes32[] memory _precalculatedIds = new bytes32[](_requestsAmount);
     bytes32[] memory _ipfsHashes = new bytes32[](_requestsAmount);
+    IAccessController.AccessControl[] memory _accessControls = new IAccessController.AccessControl[](_requestsAmount);
 
     mockRequest.requestModuleData = _requestData;
     mockRequest.responseModuleData = _responseData;
@@ -313,10 +377,12 @@ contract Oracle_Unit_CreateRequests is BaseTest {
       _requests[_i] = mockRequest;
       _precalculatedIds[_i] = _theoreticalRequestId;
       _ipfsHashes[_i] = _ipfsHash;
+      _accessControls[_i].user = requester;
     }
 
-    vm.prank(requester);
-    oracle.createRequests(_requests, _ipfsHashes);
+    vm.startPrank(requester);
+    oracle.mock_setAccessControlApproved(requester, address(accessControlModule), true);
+    oracle.createRequests(_requests, _ipfsHashes, _accessControls);
 
     uint256 _newNonce = oracle.totalRequestCount();
     assertEq(_newNonce, _initialNonce + _requestsAmount);
@@ -401,10 +467,17 @@ contract Oracle_Unit_ListRequestIds is BaseTest {
 }
 
 contract Oracle_Unit_ProposeResponse is BaseTest {
+  modifier happyPath() {
+    mockAccessControl.user = proposer;
+    vm.startPrank(proposer);
+    oracle.mock_setAccessControlApproved(proposer, address(accessControlModule), true);
+    _;
+  }
   /**
    * @notice Proposing a response should call the response module, emit an event and return the response id
    */
-  function test_proposeResponse(bytes calldata _responseData) public {
+
+  function test_proposeResponse_emitsEvent(bytes calldata _responseData) public happyPath {
     bytes32 _requestId = _getId(mockRequest);
 
     // Update mock response
@@ -428,8 +501,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     emit ResponseProposed(_requestId, _responseId, mockResponse);
 
     // Test: propose the response
-    vm.prank(proposer);
-    bytes32 _actualResponseId = oracle.proposeResponse(mockRequest, mockResponse);
+    bytes32 _actualResponseId = oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     mockResponse.response = bytes('secondResponse');
 
@@ -437,8 +509,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     _expectEmit(address(oracle));
     emit ResponseProposed(_requestId, _getId(mockResponse), mockResponse);
 
-    vm.prank(proposer);
-    bytes32 _secondResponseId = oracle.proposeResponse(mockRequest, mockResponse);
+    bytes32 _secondResponseId = oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     // Check: correct response id returned?
     assertEq(_actualResponseId, _responseId);
@@ -453,13 +524,40 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
     assertEq(_responseIds[1], _secondResponseId);
   }
 
-  function test_proposeResponse_revertsIfInvalidRequest() public {
+  /**
+   * @notice Check that proposing a response with a non-approved access control module reverts
+   */
+  function test_proposeResponse_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
+  }
+
+  function test_proposeResponse_revertsIfInvalidRequest() public happyPath {
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidRequest.selector);
 
     // Test: try to propose a response with an invalid request
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
+  }
+
+  /**
+   * @notice Revert if the access control module returns false
+   */
+  function test_proposeResponse_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != proposer);
+
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = proposer;
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to propose a response from a random address
+    vm.prank(_caller);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -470,37 +568,38 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
 
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
+    mockAccessControl.user = _caller;
+
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidProposer.selector);
 
     // Test: try to propose a response from a random address
     vm.prank(_caller);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Revert if the response has been already proposed
    */
-  function test_proposeResponse_revertsIfDuplicateResponse() public {
+  function test_proposeResponse_revertsIfDuplicateResponse() public happyPath {
     // Set the request creation time
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
 
     // Test: propose a response
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_ResponseAlreadyProposed.selector);
 
     // Test: try to propose the same response again
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Proposing a response to a finalized request should fail
    */
-  function test_proposeResponse_revertsIfAlreadyFinalized(uint128 _finalizedAt) public {
+  function test_proposeResponse_revertsIfAlreadyFinalized(uint128 _finalizedAt) public happyPath {
     vm.assume(_finalizedAt > 0);
 
     // Set the finalization time
@@ -510,8 +609,7 @@ contract Oracle_Unit_ProposeResponse is BaseTest {
 
     // Check: Reverts if already finalized?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, (_requestId)));
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 }
 
@@ -528,10 +626,17 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     oracle.mock_setResponseCreatedAt(_responseId, block.timestamp);
   }
 
+  modifier happyPath() {
+    mockAccessControl.user = disputer;
+    vm.startPrank(disputer);
+    oracle.mock_setAccessControlApproved(disputer, address(accessControlModule), true);
+    _;
+  }
+
   /**
    * @notice Calls the dispute module, sets the correct status of the dispute, emits events
    */
-  function test_disputeResponse() public {
+  function test_disputeResponse_emitsEvent() public happyPath {
     // Add a response to the request
     oracle.mock_addResponseId(_getId(mockRequest), _responseId);
 
@@ -550,8 +655,7 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
       _expectEmit(address(oracle));
       emit ResponseDisputed(_responseId, _disputeId, mockDispute);
 
-      vm.prank(disputer);
-      oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+      oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
       // Reset the dispute of the response
       oracle.mock_setDisputeOf(_responseId, bytes32(0));
@@ -559,9 +663,20 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   }
 
   /**
+   * @notice Check that dispute a response with a non-approved access control module reverts
+   */
+  function test_disputeResponse_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
+  }
+
+  /**
    * @notice Reverts if the dispute proposer and response proposer are not same
    */
-  function test_disputeResponse_revertIfProposerIsNotValid(address _otherProposer) public {
+  function test_disputeResponse_revertIfProposerIsNotValid(address _otherProposer) public happyPath {
     vm.assume(_otherProposer != proposer);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
 
@@ -571,22 +686,36 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
     mockDispute.proposer = _otherProposer;
 
     // Test: try to dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   /**
    * @notice Reverts if the response doesn't exist
    */
-  function test_disputeResponse_revertIfInvalidResponse() public {
+  function test_disputeResponse_revertIfInvalidResponse() public happyPath {
     oracle.mock_setResponseCreatedAt(_getId(mockResponse), 0);
 
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidResponse.selector);
 
     // Test: try to dispute the response
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
+  }
+
+  /**
+   * @notice Revert if the access control module returns false
+   */
+  function test_disputeResponse_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != disputer);
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = disputer;
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to propose a response from a random address
+    vm.prank(_caller);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   /**
@@ -595,34 +724,43 @@ contract Oracle_Unit_DisputeResponse is BaseTest {
   function test_disputeResponse_revertIfWrongDisputer(address _caller) public {
     vm.assume(_caller != disputer);
 
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
+    mockAccessControl.user = _caller;
+
     // Check: revert?
     vm.expectRevert(IOracle.Oracle_InvalidDisputer.selector);
 
     // Test: try to dispute the response again
     vm.prank(_caller);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   /**
    * @notice Reverts if the request has already been disputed
    */
-  function test_disputeResponse_revertIfAlreadyDisputed() public {
+  function test_disputeResponse_revertIfAlreadyDisputed() public happyPath {
     // Check: revert?
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _responseId));
 
     // Test: try to dispute the response again
-    vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 }
 
 contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
+  modifier happyPath() {
+    mockAccessControl.user = address(disputeModule);
+    vm.startPrank(address(disputeModule));
+    oracle.mock_setAccessControlApproved(address(disputeModule), address(accessControlModule), true);
+    _;
+  }
   /**
    * @notice Test if the dispute status is updated correctly and the event is emitted
    * @dev This is testing every combination of previous and new status
    */
-  function test_updateDisputeStatus() public {
+
+  function test_updateDisputeStatus_emitsEvent() public happyPath {
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setDisputeCreatedAt(_getId(mockDispute), block.timestamp);
 
@@ -649,8 +787,9 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
         emit DisputeStatusUpdated(_disputeId, mockDispute, IOracle.DisputeStatus(_newStatus));
 
         // Test: change the status
-        vm.prank(address(resolutionModule));
-        oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus));
+        oracle.updateDisputeStatus(
+          mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus), mockAccessControl
+        );
 
         // Check: correct status stored?
         assertEq(_newStatus, uint256(oracle.disputeStatus(_disputeId)));
@@ -659,9 +798,20 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
   }
 
   /**
+   * @notice Check that update dispute status with a non-approved access control module reverts
+   */
+  function test_updateDisputeStatus_revertsIfNotApproved() public {
+    // Check: revert?
+    vm.expectRevert(IOracle.Oracle_AccessControlModuleNotApproved.selector);
+
+    // Test: try to create the request
+    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Active, mockAccessControl);
+  }
+
+  /**
    * @notice Providing a dispute that does not match the response should revert
    */
-  function test_updateDisputeStatus_revertsIfInvalidDisputeId(bytes32 _randomId, uint256 _newStatus) public {
+  function test_updateDisputeStatus_revertsIfInvalidDisputeId(bytes32 _randomId, uint256 _newStatus) public happyPath {
     // 0 to 3 status, fuzzed
     _newStatus = bound(_newStatus, 0, 3);
     bytes32 _disputeId = _getId(mockDispute);
@@ -675,8 +825,27 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
 
     // Test: Try to update the dispute
-    vm.prank(proposer);
-    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus));
+    oracle.updateDisputeStatus(
+      mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus), mockAccessControl
+    );
+  }
+
+  /**
+   * @notice Revert if the access control module returns false
+   */
+  function test_updateDisputeStatus_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != address(disputeModule));
+
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = address(disputeModule);
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to propose a response from a random address
+    vm.prank(_caller);
+    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Active, mockAccessControl);
   }
 
   /**
@@ -692,13 +861,21 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
     // Mock the dispute
     oracle.mock_setDisputeOf(_responseId, _disputeId);
     oracle.mock_setDisputeCreatedAt(_disputeId, block.timestamp);
+    oracle.mock_setAccessControlApproved(proposer, address(accessControlModule), true);
+
+    mockAccessControl.user = proposer;
+    vm.mockCall(
+      address(accessControlModule), abi.encodeWithSelector(IAccessControlModule.hasAccess.selector), abi.encode(true)
+    );
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_NotDisputeOrResolutionModule.selector, proposer));
 
     // Test: try to update the status from an EOA
     vm.prank(proposer);
-    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus));
+    oracle.updateDisputeStatus(
+      mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus(_newStatus), mockAccessControl
+    );
   }
 
   /**
@@ -707,22 +884,30 @@ contract Oracle_Unit_UpdateDisputeStatus is BaseTest {
   function test_updateDisputeStatus_revertsIfInvalidDispute() public {
     bytes32 _disputeId = _getId(mockDispute);
 
+    mockAccessControl.user = address(resolutionModule);
+
     oracle.mock_setDisputeCreatedAt(_disputeId, 0);
+    oracle.mock_setAccessControlApproved(address(resolutionModule), address(accessControlModule), true);
 
     // Check: revert?
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDispute.selector));
 
     // Test: try to update the status
     vm.prank(address(resolutionModule));
-    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Active);
+    oracle.updateDisputeStatus(mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Active, mockAccessControl);
   }
 }
 
 contract Oracle_Unit_ResolveDispute is BaseTest {
+  modifier happyPath() {
+    vm.startPrank(address(resolutionModule));
+    _;
+  }
   /**
    * @notice Test if the resolution module is called and the event is emitted
    */
-  function test_resolveDispute_callsResolutionModule() public {
+
+  function test_resolveDispute_callsResolutionModule() public happyPath {
     // Mock the dispute
     bytes32 _disputeId = _getId(mockDispute);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
@@ -741,7 +926,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
 
     // Check: emits DisputeResolved event?
     _expectEmit(address(oracle));
-    emit DisputeResolved(_disputeId, mockDispute, address(this));
+    emit DisputeResolved(_disputeId, mockDispute);
 
     // Test: resolve the dispute
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
@@ -750,7 +935,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test the revert when the function is called with an non-existent dispute id
    */
-  function test_resolveDispute_revertsIfInvalidDisputeId() public {
+  function test_resolveDispute_revertsIfInvalidDisputeId() public happyPath {
     oracle.mock_setDisputeCreatedAt(_getId(mockDispute), block.timestamp);
 
     // Check: revert?
@@ -763,7 +948,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Revert if the dispute doesn't exist
    */
-  function test_resolveDispute_revertsIfInvalidDispute() public {
+  function test_resolveDispute_revertsIfInvalidDispute() public happyPath {
     oracle.mock_setDisputeCreatedAt(_getId(mockDispute), 0);
 
     // Check: revert?
@@ -776,7 +961,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test the revert when the function is called with a dispute in unresolvable status
    */
-  function test_resolveDispute_revertsIfWrongDisputeStatus() public {
+  function test_resolveDispute_revertsIfWrongDisputeStatus() public happyPath {
     bytes32 _disputeId = _getId(mockDispute);
 
     for (uint256 _status; _status < uint256(type(IOracle.DisputeStatus).max); _status++) {
@@ -804,7 +989,7 @@ contract Oracle_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Revert if the request has no resolution module configured
    */
-  function test_resolveDispute_revertsIfNoResolutionModule() public {
+  function test_resolveDispute_revertsIfNoResolutionModule() public happyPath {
     // Clear the resolution module
     mockRequest.resolutionModule = address(0);
     bytes32 _requestId = _getId(mockRequest);
@@ -890,6 +1075,12 @@ contract Oracle_Unit_Finalize is BaseTest {
     _;
   }
 
+  modifier happyPath() {
+    mockAccessControl.user = address(requester);
+    vm.startPrank(address(requester));
+    _;
+  }
+
   /**
    * @notice Finalizing with a valid response, the happy path
    * @dev The request might or might not use a dispute and a finality module, this is fuzzed
@@ -901,6 +1092,8 @@ contract Oracle_Unit_Finalize is BaseTest {
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
     bytes32 _responseId = _getId(mockResponse);
+
+    mockAccessControl.user = _caller;
 
     oracle.mock_addResponseId(_requestId, _responseId);
     oracle.mock_setRequestCreatedAt(_requestId, block.timestamp);
@@ -920,11 +1113,11 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, _responseId, _caller);
+    emit OracleRequestFinalized(_requestId, _responseId);
 
     // Test: finalize the request
     vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
 
     assertEq(oracle.finalizedAt(_requestId), block.timestamp);
   }
@@ -932,18 +1125,30 @@ contract Oracle_Unit_Finalize is BaseTest {
   /**
    * @notice Revert if the request doesn't exist
    */
-  function test_finalize_revertsIfInvalidRequest() public {
+  function test_finalize_revertsIfInvalidRequest() public happyPath {
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), 0);
     vm.expectRevert(IOracle.Oracle_InvalidResponse.selector);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
+  }
 
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+  function test_finalize_revertsIfInvalidAccessControlData(address _caller) public {
+    vm.assume(_caller != address(requester));
+
+    mockRequest.accessControlModule = address(0);
+    mockAccessControl.user = address(requester);
+
+    // Check: revert?
+    vm.expectRevert(IAccessController.AccessControlData_NoAccess.selector);
+
+    // Test: try to finalize the request from a random address
+    vm.prank(_caller);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Revert if the response doesn't exist
    */
-  function test_finalize_revertsIfInvalidResponse() public {
+  function test_finalize_revertsIfInvalidResponse() public happyPath {
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setRequestCreatedAt(_requestId, block.timestamp);
     oracle.mock_setResponseCreatedAt(_requestId, 0);
@@ -952,14 +1157,13 @@ contract Oracle_Unit_Finalize is BaseTest {
     vm.expectRevert(IOracle.Oracle_InvalidResponse.selector);
 
     // Test: finalize the request
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Finalizing an already finalized request
    */
-  function test_finalize_withResponse_revertsWhenAlreadyFinalized() public {
+  function test_finalize_withResponse_revertsWhenAlreadyFinalized() public happyPath {
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _responseId = _getId(mockResponse);
 
@@ -970,14 +1174,13 @@ contract Oracle_Unit_Finalize is BaseTest {
     oracle.mock_setResponseCreatedAt(_responseId, block.timestamp);
 
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Test the response validation, its requestId should match the id of the provided request
    */
-  function test_finalize_withResponse_revertsInvalidRequestId(bytes32 _requestId) public {
+  function test_finalize_withResponse_revertsInvalidRequestId(bytes32 _requestId) public happyPath {
     vm.assume(_requestId != bytes32(0) && _requestId != _getId(mockRequest));
 
     mockResponse.requestId = _requestId;
@@ -990,14 +1193,13 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Test: finalize the request
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Finalizing a request with a successfully disputed response should revert
    */
-  function test_finalize_withResponse_revertsIfDisputedResponse(uint256 _status) public {
+  function test_finalize_withResponse_revertsIfDisputedResponse(uint256 _status) public happyPath {
     vm.assume(_status != uint256(IOracle.DisputeStatus.Lost));
     vm.assume(_status != uint256(IOracle.DisputeStatus.None));
     vm.assume(_status <= uint256(type(IOracle.DisputeStatus).max));
@@ -1017,8 +1219,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
 
     // Test: finalize the request
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -1034,6 +1235,7 @@ contract Oracle_Unit_Finalize is BaseTest {
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setRequestCreatedAt(_requestId, block.timestamp);
     mockResponse.requestId = bytes32(0);
+    mockAccessControl.user = _caller;
 
     // Create mock request and store it
     bytes memory _calldata = abi.encodeCall(IModule.finalizeRequest, (mockRequest, mockResponse, _caller));
@@ -1049,11 +1251,11 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, bytes32(0), _caller);
+    emit OracleRequestFinalized(_requestId, bytes32(0));
 
     // Test: finalize the request
     vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -1075,6 +1277,7 @@ contract Oracle_Unit_Finalize is BaseTest {
 
     bytes32 _requestId = _getId(mockRequest);
     oracle.mock_setRequestCreatedAt(_requestId, block.timestamp);
+    mockAccessControl.user = _caller;
 
     IOracle.DisputeStatus _disputeStatus = IOracle.DisputeStatus(_status);
 
@@ -1097,11 +1300,11 @@ contract Oracle_Unit_Finalize is BaseTest {
     // The finalization should come through
     // Check: emits OracleRequestFinalized event?
     _expectEmit(address(oracle));
-    emit OracleRequestFinalized(_requestId, bytes32(0), _caller);
+    emit OracleRequestFinalized(_requestId, bytes32(0));
 
     // Test: finalize the request
     vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -1114,16 +1317,22 @@ contract Oracle_Unit_Finalize is BaseTest {
     oracle.mock_setFinalizedAt(_requestId, block.timestamp);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
 
+    mockAccessControl.user = _caller;
+
     // Test: finalize a finalized request
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
     vm.prank(_caller);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
    * @notice Finalizing a request with a non-disputed response should revert
    */
-  function test_finalize_withoutResponse_revertsWithNonDisputedResponse(bytes32 _responseId) public withoutResponse {
+  function test_finalize_withoutResponse_revertsWithNonDisputedResponse(bytes32 _responseId)
+    public
+    withoutResponse
+    happyPath
+  {
     vm.assume(_responseId != bytes32(0));
 
     bytes32 _requestId = _getId(mockRequest);
@@ -1136,16 +1345,22 @@ contract Oracle_Unit_Finalize is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_FinalizableResponseExists.selector, _responseId));
 
     // Test: finalize the request
-    vm.prank(requester);
-    oracle.finalize(mockRequest, mockResponse);
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
   }
 }
 
 contract Oracle_Unit_EscalateDispute is BaseTest {
+  modifier happyPath(address _caller) {
+    mockAccessControl.user = _caller;
+    vm.startPrank(_caller);
+    oracle.mock_setAccessControlApproved(_caller, address(accessControlModule), true);
+    _;
+  }
   /**
    * @notice Test if the dispute is escalated correctly and the event is emitted
    */
-  function test_escalateDispute() public {
+
+  function test_escalateDispute_emitsEvent(address _caller) public happyPath(_caller) {
     bytes32 _disputeId = _getId(mockDispute);
 
     oracle.mock_setDisputeOf(_getId(mockResponse), _disputeId);
@@ -1170,10 +1385,10 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId, mockDispute);
+    emit DisputeEscalated(mockAccessControl.user, _disputeId, mockDispute);
 
     // Test: escalate the dispute
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
     // Check: The dispute has been escalated
     assertEq(uint256(oracle.disputeStatus(_disputeId)), uint256(IOracle.DisputeStatus.Escalated));
@@ -1182,7 +1397,7 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
   /**
    * @notice Should not revert if no resolution module was configured
    */
-  function test_escalateDispute_noResolutionModule() public {
+  function test_escalateDispute_noResolutionModule(address _caller) public happyPath(_caller) {
     mockRequest.resolutionModule = address(0);
 
     bytes32 _requestId = _getId(mockRequest);
@@ -1209,10 +1424,10 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
 
     // Expect dispute escalated event
     _expectEmit(address(oracle));
-    emit DisputeEscalated(address(this), _disputeId, mockDispute);
+    emit DisputeEscalated(mockAccessControl.user, _disputeId, mockDispute);
 
     // Test: escalate the dispute
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
 
     // Check: The dispute has been escalated
     assertEq(uint256(oracle.disputeStatus(_disputeId)), uint256(IOracle.DisputeStatus.Escalated));
@@ -1222,20 +1437,20 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
    * /**
    * @notice Revert if the dispute doesn't exist
    */
-  function test_escalateDispute_revertsIfInvalidDispute() public {
+  function test_escalateDispute_revertsIfInvalidDispute(address _caller) public happyPath(_caller) {
     bytes32 _disputeId = _getId(mockDispute);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
     oracle.mock_setResponseCreatedAt(_getId(mockResponse), block.timestamp);
     oracle.mock_setDisputeCreatedAt(_disputeId, 0);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDispute.selector));
 
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
   /**
    * @notice Revert if the provided dispute does not match the request or the response
    */
-  function test_escalateDispute_revertsIfDisputeNotValid() public {
+  function test_escalateDispute_revertsIfDisputeNotValid(address _caller) public happyPath(_caller) {
     bytes32 _disputeId = _getId(mockDispute);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
     oracle.mock_setResponseCreatedAt(_getId(mockResponse), block.timestamp);
@@ -1243,10 +1458,10 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidDisputeId.selector, _disputeId));
 
     // Test: escalate the dispute
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 
-  function test_escalateDispute_revertsIfDisputeNotActive() public {
+  function test_escalateDispute_revertsIfDisputeNotActive(address _caller) public happyPath(_caller) {
     bytes32 _disputeId = _getId(mockDispute);
     oracle.mock_setRequestCreatedAt(_getId(mockRequest), block.timestamp);
     oracle.mock_setResponseCreatedAt(_getId(mockResponse), block.timestamp);
@@ -1256,6 +1471,6 @@ contract Oracle_Unit_EscalateDispute is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
 
     // Test: escalate the dispute
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
   }
 }
