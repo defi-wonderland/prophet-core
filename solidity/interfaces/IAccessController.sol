@@ -25,5 +25,5 @@ interface IAccessController {
   /**
    * @notice Reverts if the caller has no access
    */
-  error IAccessControlData_NoAccess();
+  error AccessControlData_NoAccess();
 }

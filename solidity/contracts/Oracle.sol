@@ -13,6 +13,7 @@ import {ValidatorLib} from '../libraries/ValidatorLib.sol';
 import {AccessController} from './AccessController.sol';
 
 import {
+  _CREATE_TYPEHASH,
   _DISPUTE_TYPEHASH,
   _ESCALATE_TYPEHASH,
   _FINALIZE_TYPEHASH,
@@ -107,20 +108,25 @@ contract Oracle is IOracle, AccessController {
   }
 
   /// @inheritdoc IOracle
-  function createRequest(Request calldata _request, bytes32 _ipfsHash) external returns (bytes32 _requestId) {
-    _requestId = _createRequest(_request, _ipfsHash);
+  function createRequest(
+    Request calldata _request,
+    bytes32 _ipfsHash,
+    AccessControl calldata _accessControl
+  ) external returns (bytes32 _requestId) {
+    _requestId = _createRequest(_request, _ipfsHash, _accessControl);
   }
 
   /// @inheritdoc IOracle
   function createRequests(
     Request[] calldata _requestsData,
-    bytes32[] calldata _ipfsHashes
+    bytes32[] calldata _ipfsHashes,
+    AccessControl[] calldata _accessControl
   ) external returns (bytes32[] memory _batchRequestsIds) {
     uint256 _requestsAmount = _requestsData.length;
     _batchRequestsIds = new bytes32[](_requestsAmount);
 
     for (uint256 _i = 0; _i < _requestsAmount;) {
-      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i]);
+      _batchRequestsIds[_i] = _createRequest(_requestsData[_i], _ipfsHashes[_i], _accessControl[_i]);
       unchecked {
         ++_i;
       }
@@ -430,14 +436,23 @@ contract Oracle is IOracle, AccessController {
    *
    * @param _request The request to be created
    * @param _ipfsHash The hashed IPFS CID of the metadata json
+   * @param _accessControl The access control struct
    * @return _requestId The id of the created request
    */
-  function _createRequest(Request memory _request, bytes32 _ipfsHash) internal returns (bytes32 _requestId) {
+  function _createRequest(
+    Request memory _request,
+    bytes32 _ipfsHash,
+    AccessControl calldata _accessControl
+  )
+    internal
+    hasAccess(_request.accessControlModule, _CREATE_TYPEHASH, abi.encode(_request), _accessControl)
+    returns (bytes32 _requestId)
+  {
     uint256 _requestNonce = totalRequestCount++;
 
     if (_request.nonce == 0) _request.nonce = uint96(_requestNonce);
 
-    if (msg.sender != _request.requester || _requestNonce != _request.nonce) {
+    if (_accessControl.user != _request.requester || _requestNonce != _request.nonce) {
       revert Oracle_InvalidRequestBody();
     }
 
@@ -451,9 +466,9 @@ contract Oracle is IOracle, AccessController {
     allowedModule[_requestId][_request.resolutionModule] = true;
     allowedModule[_requestId][_request.finalityModule] = true;
 
-    isParticipant[_requestId][msg.sender] = true;
+    isParticipant[_requestId][_accessControl.user] = true;
 
-    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, msg.sender);
+    IRequestModule(_request.requestModule).createRequest(_requestId, _request.requestModuleData, _accessControl.user);
 
     emit RequestCreated(_requestId, _request, _ipfsHash);
   }

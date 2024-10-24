@@ -27,7 +27,7 @@ abstract contract AccessController is IAccessController {
             _data: _accessControl.data
           })
       );
-    if (!_hasAccess) revert IAccessControlData_NoAccess();
+    if (!_hasAccess) revert AccessControlData_NoAccess();
     _;
   }
 }

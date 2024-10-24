@@ -1,45 +1,53 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// import './IntegrationBase.sol';
+import './IntegrationBase.sol';
 
-// contract Integration_ResponseProposal is IntegrationBase {
-//   bytes32 internal _requestId;
+contract Integration_ResponseProposal is IntegrationBase {
+  bytes32 internal _requestId;
 
-//   function setUp() public override {
-//     super.setUp();
+  function setUp() public override {
+    super.setUp();
+    vm.stopPrank();
 
-//     mockRequest.nonce = uint96(oracle.totalRequestCount());
+    mockRequest.nonce = uint96(oracle.totalRequestCount());
+    mockAccessControl.user = requester;
 
-//     vm.prank(requester);
-//     _requestId = oracle.createRequest(mockRequest, _ipfsHash);
-//   }
+    vm.startPrank(badCaller);
+    vm.expectRevert(abi.encodeWithSelector(IAccessController.AccessControlData_NoAccess.selector));
+    oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+    vm.stopPrank();
 
-//   function test_proposeResponse_validResponse(bytes memory _response) public {
-//     mockResponse.response = _response;
+    vm.startPrank(caller);
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash, mockAccessControl);
+  }
 
-//     vm.prank(proposer);
-//     oracle.proposeResponse(mockRequest, mockResponse);
+  function test_proposeResponse_validResponse(bytes memory _response) public {
+    mockResponse.response = _response;
 
-//     bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
+    mockAccessControl.user = proposer;
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
-//     // Check: response data is correctly stored?
-//     assertEq(_responseIds.length, 1);
-//     assertEq(_responseIds[0], _getId(mockResponse));
-//   }
+    bytes32[] memory _responseIds = oracle.getResponseIds(_requestId);
 
-//   function test_proposeResponse_finalizedRequest(uint256 _timestamp) public {
-//     _timestamp = bound(_timestamp, _expectedDeadline + _baseDisputeWindow, type(uint128).max);
+    // Check: response data is correctly stored?
+    assertEq(_responseIds.length, 1);
+    assertEq(_responseIds[0], _getId(mockResponse));
+  }
 
-//     vm.prank(proposer);
-//     oracle.proposeResponse(mockRequest, mockResponse);
+  function test_proposeResponse_finalizedRequest(uint256 _timestamp) public {
+    _timestamp = bound(_timestamp, _expectedDeadline + _baseDisputeWindow, type(uint128).max);
 
-//     vm.warp(_timestamp);
-//     oracle.finalize(mockRequest, mockResponse);
+    mockAccessControl.user = proposer;
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
-//     mockResponse.response = abi.encode(_timestamp);
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
-//     vm.prank(proposer);
-//     oracle.proposeResponse(mockRequest, mockResponse);
-//   }
-// }
+    vm.warp(_timestamp);
+    mockAccessControl.user = finalizer;
+    oracle.finalize(mockRequest, mockResponse, mockAccessControl);
+
+    mockAccessControl.user = proposer;
+    mockResponse.response = abi.encode(_timestamp);
+    vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
+  }
+}

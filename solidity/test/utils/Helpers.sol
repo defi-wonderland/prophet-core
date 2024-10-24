@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '../../contracts/AccessController.sol';
 import {IOracle} from '../../contracts/Oracle.sol';
 import {Test} from 'forge-std/Test.sol';
 
@@ -12,12 +13,14 @@ contract Helpers is Test {
   address public requester = makeAddr('requester');
   address public proposer = makeAddr('proposer');
   address public disputer = makeAddr('disputer');
+  address public finalizer = makeAddr('finalizer');
 
   // Mock objects
   IOracle.Request public mockRequest;
   IOracle.Response public mockResponse = IOracle.Response({proposer: proposer, requestId: mockId, response: bytes('')});
   IOracle.Dispute public mockDispute =
     IOracle.Dispute({disputer: disputer, responseId: mockId, proposer: proposer, requestId: mockId});
+  IAccessController.AccessControl public mockAccessControl;
 
   modifier assumeFuzzable(address _address) {
     _assumeFuzzable(_address);

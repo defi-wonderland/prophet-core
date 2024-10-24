@@ -376,9 +376,14 @@ interface IOracle is IAccessController {
    * @dev The modules must be real contracts following the IModule interface
    * @param _request The request data
    * @param _ipfsHash The hashed IPFS CID of the metadata json
+   * @param _accessControl The access control data
    * @return _requestId The id of the request, can be used to propose a response or query results
    */
-  function createRequest(Request memory _request, bytes32 _ipfsHash) external returns (bytes32 _requestId);
+  function createRequest(
+    Request memory _request,
+    bytes32 _ipfsHash,
+    AccessControl calldata _accessControl
+  ) external returns (bytes32 _requestId);
 
   /**
    * @notice Creates multiple requests, the same way as createRequest
@@ -386,10 +391,12 @@ interface IOracle is IAccessController {
    * @param _requestsData The array of calldata for each request
    * @return _batchRequestsIds The array of request IDs
    * @param _ipfsHashes The array of hashed IPFS CIDs of the metadata files
+   * @param _accessControl The array of access control datas
    */
   function createRequests(
     Request[] calldata _requestsData,
-    bytes32[] calldata _ipfsHashes
+    bytes32[] calldata _ipfsHashes,
+    AccessControl[] calldata _accessControl
   ) external returns (bytes32[] memory _batchRequestsIds);
 
   /**
